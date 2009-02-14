@@ -1,4 +1,3 @@
-#include "StdAfx.h"
 #include "Engine.h"
 
 CEngine::CEngine(py::object global) 
@@ -44,8 +43,6 @@ void CEngine::ReportFatalError(const char* location, const char* message)
 
 void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data)
 {
-  UNREFERENCED_PARAMETER(data);
-
   v8::String::AsciiValue filename(message->GetScriptResourceName());
   int lineno = message->GetLineNumber();
   v8::String::AsciiValue sourceline(message->GetSourceLine());

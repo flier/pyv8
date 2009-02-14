@@ -1,10 +1,5 @@
 // PyV8.cpp : Defines the entry point for the DLL application.
 //
-
-#include "stdafx.h"
-
-#include <sstream>
-
 #include "Engine.h"
 
 BOOST_PYTHON_MODULE(_PyV8)

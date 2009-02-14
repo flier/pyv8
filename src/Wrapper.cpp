@@ -1,4 +1,3 @@
-#include "StdAfx.h"
 #include "Wrapper.h"
 
 v8::Handle<v8::Value> CPythonWrapper::Getter(
