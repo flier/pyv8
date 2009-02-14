@@ -93,7 +93,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py&#x0D;&#x0A;"
+				CommandLine="copy $(SolutionDir)PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -174,7 +174,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py&#x0D;&#x0A;"
+				CommandLine="copy $(SolutionDir)PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -223,12 +223,7 @@
 			Name="Python Files"
 			>
 			<File
-				RelativePath=".\__init__.py"
-				>
-			</File>
-			<File
-				RelativePath=".\PyV8.py"
-				DeploymentContent="true"
+				RelativePath="..\PyV8.py"
 				>
 			</File>
 			<File
