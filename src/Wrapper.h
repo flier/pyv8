@@ -3,21 +3,25 @@
 #include <cassert>
 #include <stdexcept>
 
-#pragma warning( push )
-#pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
-#pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
-#pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
+#ifdef _WIN32
+# pragma warning( push )
+# pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
+# pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
+# pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
+#endif
 
 #include <boost/python.hpp>
 namespace py = boost::python;
 
 #include <v8.h>
 
-#pragma comment( lib, "v8.lib" )
-#pragma comment( lib, "v8_base.lib" )
-#pragma comment( lib, "v8_snapshot.lib" )
+#ifdef _WIN32
+# pragma comment( lib, "v8.lib" )
+# pragma comment( lib, "v8_base.lib" )
+# pragma comment( lib, "v8_snapshot.lib" )
 
-#pragma warning( pop )
+# pragma warning( pop )
+#endif
 
 class CPythonException : public std::runtime_error
 {
