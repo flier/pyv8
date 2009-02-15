@@ -24,7 +24,7 @@ elif os.name == "posix":
   libraries = ["boost_python", "v8"]
 
 pyv8 = Extension(name = "_PyV8",
-                 sources = [os.path.join("src", file) for file in source_files],
+                 sources = [os.path.join("src", file) for file in source_files],                 
                  define_macros = macros,
                  include_dirs = include_dirs,
                  library_dirs = library_dirs,
