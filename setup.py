@@ -3,7 +3,7 @@ import os, os.path
 from distutils.core import setup, Extension
 import distutils.msvccompiler
 
-source_files = ["Engine.cpp", "Wrapper.cpp", "PyV8.cpp"]
+source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "PyV8.cpp"]
 
 macros = [("BOOST_PYTHON_STATIC_LIB", None)]
 third_party_libraries = ["python", "boost", "v8"]
