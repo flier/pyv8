@@ -284,9 +284,7 @@ CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);
 
-  typedef std::vector< v8::Handle<v8::Value> > params_t;
-  
-  params_t params(::PyList_Size(args.ptr()));
+  std::vector< v8::Handle<v8::Value> > params(::PyList_Size(args.ptr()));
 
   for (size_t i=0; i<params.size(); i++)
   {
