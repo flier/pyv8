@@ -34,7 +34,7 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      version='0.2',
+      version='0.3',
       description='Python Wrapper for Google V8 Engine',
       long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
       platforms="x86",
@@ -46,7 +46,7 @@ setup(name='PyV8',
       py_modules=['PyV8'],
       ext_modules=[pyv8],
       classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 3 - Alpha',
         'Environment :: Plugins',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
