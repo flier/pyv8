@@ -5,6 +5,34 @@ Engine = _PyV8.Engine
 
 import unittest
 
+class TestWrapper(unittest.TestCase):
+    def setUp(self):
+        self.engine = Engine()
+        
+    def tearDown(self):
+        del self.engine
+        
+    def testConverter(self):
+        self.engine.eval("""
+            var_i = 1;
+            var_f = 1.0;
+            var_s = "test";
+        """)
+        
+        var_i = self.engine.context.var_i
+        
+        self.assert_(var_i)
+        self.assertEquals(1, int(var_i))
+        
+        var_f = self.engine.context.var_f
+        
+        self.assert_(var_f)
+        self.assertEquals(1.0, float(self.engine.context.var_f))
+        
+        var_s = self.engine.context.var_s
+        self.assert_(var_s)
+        self.assertEquals("test", str(self.engine.context.var_s))
+
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         self.assertEquals("1.0.1", Engine.version)

@@ -37,12 +37,7 @@ class CContext : public CJavascriptObject
 
     v8::Context::Scope context_scope(context); 
 
-    v8::Handle<v8::String> proto = v8::String::New("__proto__");
-
-    if (context->Global()->Has(proto))
-      return handle_scope.Close(context->Global()->Get(proto)->ToObject());
-    else
-      return handle_scope.Close(context->Global());
+    return handle_scope.Close(context->Global());
   }
 public:
   CContext(v8::Handle<v8::Context> context) 

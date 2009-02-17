@@ -131,8 +131,10 @@ public:
   void SetAttr(const std::string& name, py::object value);
   void DelAttr(const std::string& name);
 
-  operator long() const { return m_obj->Int32Value(); }
-  operator double() const { return m_obj->NumberValue(); }
+  operator long() const;
+  operator double() const;
+
+  CJavascriptObject Invoke(py::list args);
   
   void dump(std::ostream& os) const;
 

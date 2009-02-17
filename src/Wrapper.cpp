@@ -1,5 +1,7 @@
 #include "Wrapper.h"
 
+#include <vector>
+
 py::object CWrapper::Cast(v8::Handle<v8::Value> obj)
 {
   v8::HandleScope handle_scope;
@@ -157,6 +159,8 @@ py::object CPythonWrapper::Unwrap(v8::Handle<v8::Value> obj)
 
 void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
 {
+  assert(v8::Context::InContext());
+
   if (!m_obj->Has(name))
   {
     std::ostringstream msg;
@@ -232,6 +236,43 @@ void CJavascriptObject::dump(std::ostream& os) const
     os << *v8::String::AsciiValue(m_obj->ToString());
 }
 
+CJavascriptObject::operator long() const 
+{ 
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context); 
+  
+  return m_obj->Int32Value(); 
+}
+CJavascriptObject::operator double() const 
+{ 
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context); 
+  
+  return m_obj->NumberValue(); 
+}
+
+CJavascriptObject CJavascriptObject::Invoke(py::list args)
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context);
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);
+
+  std::vector< v8::Handle<v8::Value> > params(py::len(args));
+
+  for (size_t i=0; i<params.size(); i++)
+  {
+    
+  }
+
+  v8::Handle<v8::Value> result = func->Call(m_context->Global(), params.size(), &params[0]);
+
+  return CJavascriptObject(m_context, result->ToObject());
+}
+
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 { 
   obj.dump(os);
@@ -249,5 +290,7 @@ void CJavascriptObject::Expose(void)
     .def(int_(py::self))
     .def(float_(py::self))
     .def(str(py::self))
+
+    .def("invoke", &CJavascriptObject::Invoke)
     ;
 }
