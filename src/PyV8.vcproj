@@ -187,11 +187,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Context.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Debug.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\Engine.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Exception.cpp"
 				>
 			</File>
 			<File
@@ -209,11 +217,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Context.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Debug.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Engine.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Exception.h"
 				>
 			</File>
 			<File

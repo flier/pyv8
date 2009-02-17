@@ -1,88 +1,36 @@
 #pragma once
 
-#include <stdexcept>
 #include <string>
 
 #include <boost/shared_ptr.hpp>
 
-#include "Wrapper.h"
-
-class CEngineException : public CPythonException
-{
-  const std::string generate(v8::TryCatch& try_catch)
-  {
-    v8::String::AsciiValue exception(try_catch.Exception());
-
-    return *exception;
-  }
-public:
-  CEngineException(v8::TryCatch& try_catch) 
-    : CPythonException(generate(try_catch))
-  {
-  }
-
-  CEngineException(const std::string& msg)
-    : CPythonException(msg)
-  {
-  }
-};
-
-class CContext : public CJavascriptObject
-{
-  v8::Persistent<v8::Context> m_context;
-
-  static v8::Handle<v8::Object> GetObject(v8::Handle<v8::Context> context)
-  {
-    v8::HandleScope handle_scope;
-
-    v8::Context::Scope context_scope(context); 
-
-    return handle_scope.Close(context->Global());
-  }
-public:
-  CContext(v8::Handle<v8::Context> context) 
-    : CJavascriptObject(context, GetObject(context))
-  {
-    v8::HandleScope handle_scope;
-
-    m_context = v8::Persistent<v8::Context>::New(context);
-  }
-
-  ~CContext(void)
-  {
-    //m_context.Dispose();
-  }
-
-  void Enter(void) { m_context->Enter(); }
-  void Leave(void) { m_context->Exit(); }
-  void LeaveWith(py::object exc_type, py::object exc_value, py::object traceback) { return m_context->Exit(); }
-
-  static CContext GetEntered(void) { return CContext(v8::Context::GetEntered()); }
-  static CContext GetCurrent(void) { return CContext(v8::Context::GetCurrent()); }
-  static bool InContext(void) { return v8::Context::InContext(); }
-};
+#include "Context.h"
 
 class CScript;
 
+typedef boost::shared_ptr<CScript> CScriptPtr;
+
 class CEngine
 {  
-  v8::Persistent<v8::Context> m_context;
-  CPythonWrapper m_wrapper;
+  CContextPtr m_context;
 protected:
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);  
 public:
-  CEngine(py::object global = py::object());
-
-  ~CEngine()
+  CEngine(py::object global = py::object()) 
+    : m_context(CContext::Create(global))
   {
-    m_wrapper.Detach();    
-    m_context.Dispose();
+
+  }
+  CEngine(CContextPtr context) 
+    : m_context(context)
+  {
+
   }
 
-  CContext GetContext(void) { v8::HandleScope handle_scope; return CContext(m_context); }
+  CContextPtr GetContext(void) { return m_context; }
 
-  boost::shared_ptr<CScript> Compile(const std::string& src);
+  CScriptPtr Compile(const std::string& src);
   py::object Execute(const std::string& src);
 
   void RaiseError(v8::TryCatch& try_catch);

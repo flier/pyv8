@@ -6,22 +6,7 @@ void CEngine::Expose(void)
   v8::V8::SetFatalErrorHandler(ReportFatalError);
   v8::V8::AddMessageListener(ReportMessage);
 
-  py::register_exception_translator<CEngineException>(CPythonException::translator);
-  py::register_exception_translator<CWrapperException>(CPythonException::translator);
-
-  py::class_<CContext, py::bases<CJavascriptObject> >("Context", py::no_init)
-    .add_static_property("entered", CContext::GetEntered)
-    .add_static_property("current", CContext::GetCurrent)
-    .add_static_property("inContext", CContext::InContext)
-
-    .def("enter", &CContext::Enter)
-    .def("leave", &CContext::Leave)
-
-    .def("__enter__", &CContext::Enter)
-    .def("__leave__", &CContext::LeaveWith)
-    ;
-
-  py::class_<CEngine, boost::noncopyable>("Engine", py::no_init)
+  py::class_<CEngine, boost::noncopyable>("JSEngine", py::no_init)
     .def(py::init< py::optional<py::object> >(py::args("global")))
 
     .add_static_property("version", &CEngine::GetVersion)
@@ -32,29 +17,15 @@ void CEngine::Expose(void)
     .def("eval", &CEngine::Execute)
     ;
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
-    py::objects::make_ptr_instance<CScript, 
-    py::objects::pointer_holder<boost::shared_ptr<CScript>,CScript> > >();
-
-  py::class_<CScript, boost::noncopyable>("Script", py::no_init)
+  py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
     .add_property("source", &CScript::GetSource)
 
     .def("run", &CScript::Run)
     ;
-}
 
-CEngine::CEngine(py::object global)
-{
-  v8::HandleScope handle_scope;
-
-  m_context = v8::Context::New(NULL, v8::ObjectTemplate::New());
-  
-  v8::Context::Scope context_scope(m_context);
-
-  m_wrapper.Attach(m_context);
-
-  if (global.ptr() != Py_None)
-    m_context->Global()->Set(v8::String::New("__proto__"), m_wrapper.Wrap(global));  
+  py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
+    py::objects::make_ptr_instance<CScript, 
+    py::objects::pointer_holder<boost::shared_ptr<CScript>,CScript> > >();
 }
 
 void CEngine::ReportFatalError(const char* location, const char* message)
@@ -76,14 +47,14 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
 
   oss << *filename << ":" << lineno << " -> " << *sourceline;
 
-  ::PyErr_SetString(::PyExc_UserWarning, oss.str().c_str());
+  throw CEngineException(oss.str());
 }
 
 boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
 {
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context);
+  v8::Context::Scope context_scope(m_context->Handle());
 
   v8::TryCatch try_catch;
 
@@ -106,7 +77,7 @@ py::object CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
 {    
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context);
+  v8::Context::Scope context_scope(m_context->Handle());
 
   v8::TryCatch try_catch;
 

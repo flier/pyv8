@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 import _PyV8
 
-Engine = _PyV8.Engine
+JSEngine = _PyV8.JSEngine
 
 import unittest
 
 class TestWrapper(unittest.TestCase):
     def setUp(self):
-        self.engine = Engine()
+        self.engine = JSEngine()
         
     def tearDown(self):
         del self.engine
@@ -35,10 +35,10 @@ class TestWrapper(unittest.TestCase):
 
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
-        self.assertEquals("1.0.1", Engine.version)
+        self.assertEquals("1.0.1", JSEngine.version)
         
     def testCompile(self):
-        engine = Engine()
+        engine = JSEngine()
         
         try:
             s = engine.compile("1+2")
@@ -49,7 +49,7 @@ class TestEngine(unittest.TestCase):
             del engine
             
     def testExec(self):
-        engine = Engine()
+        engine = JSEngine()
         
         try:
             self.assertEquals("3", engine.eval("1+2"))
@@ -60,7 +60,7 @@ class TestEngine(unittest.TestCase):
         class Global(object):
             version = "1.0"
             
-        engine = Engine(Global())
+        engine = JSEngine(Global())
         
         try:
             self.assertEquals(Global.version, str(engine.context.version))            

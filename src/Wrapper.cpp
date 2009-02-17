@@ -2,8 +2,29 @@
 
 #include <vector>
 
+void CWrapper::Expose(void)
+{
+  py::class_<CJavascriptObject>("JSObject", py::no_init)
+    .def("__getattr__", &CJavascriptObject::GetAttr)
+    .def("__setattr__", &CJavascriptObject::SetAttr)
+    .def("__delattr__", &CJavascriptObject::DelAttr)
+
+    .def(int_(py::self))
+    .def(float_(py::self))
+    .def(str(py::self))
+
+    .def("invoke", &CJavascriptObject::Invoke)
+    ;
+
+  py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
+    py::objects::make_ptr_instance<CJavascriptObject, 
+    py::objects::pointer_holder<boost::shared_ptr<CJavascriptObject>,CJavascriptObject> > >();
+}
+
 py::object CWrapper::Cast(v8::Handle<v8::Value> obj)
 {
+  assert(v8::Context::InContext());
+
   v8::HandleScope handle_scope;
 
   if (obj->IsNull()) return py::object();
@@ -23,6 +44,8 @@ py::object CWrapper::Cast(v8::Handle<v8::Value> obj)
 
 v8::Handle<v8::Value> CWrapper::Cast(py::object obj)
 {
+  assert(v8::Context::InContext());
+
   v8::HandleScope handle_scope;
 
   if (obj.ptr() == Py_None) return v8::Null();
@@ -44,9 +67,7 @@ v8::Handle<v8::Value> CPythonWrapper::Getter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Handle<v8::Context> context(pThis->m_context);
-
-  v8::Context::Scope context_scope(context);
+  v8::Context::Scope context_scope(pThis->m_context);
 
   py::object obj = pThis->Unwrap(info.Holder());
 
@@ -62,9 +83,7 @@ v8::Handle<v8::Value> CPythonWrapper::Setter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Handle<v8::Context> context(pThis->m_context);
-
-  v8::Context::Scope context_scope(context);
+  v8::Context::Scope context_scope(pThis->m_context);
 
   py::object obj = pThis->Unwrap(info.Holder());
 
@@ -126,6 +145,8 @@ v8::Persistent<v8::ObjectTemplate> CPythonWrapper::SetupTemplate(void)
 
 v8::Handle<v8::Value> CPythonWrapper::Wrap(py::object obj)
 {
+  assert(v8::Context::InContext());
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Value> result = Cast(obj);
@@ -141,6 +162,8 @@ v8::Handle<v8::Value> CPythonWrapper::Wrap(py::object obj)
 }
 py::object CPythonWrapper::Unwrap(v8::Handle<v8::Value> obj)
 {
+  assert(v8::Context::InContext());
+
   v8::HandleScope handle_scope;
   
   py::object result = Cast(obj);
@@ -171,7 +194,7 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
   }
 }
 
-CJavascriptObject CJavascriptObject::GetAttr(const std::string& name)
+CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 {
   v8::HandleScope handle_scope;
 
@@ -185,7 +208,7 @@ CJavascriptObject CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_obj = m_obj->Get(attr_name);
 
-  return CJavascriptObject(m_context, attr_obj->ToObject());
+  return CJavascriptObjectPtr(new CJavascriptObject(m_context, attr_obj->ToObject()));
 }
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 {
@@ -253,7 +276,7 @@ CJavascriptObject::operator double() const
   return m_obj->NumberValue(); 
 }
 
-CJavascriptObject CJavascriptObject::Invoke(py::list args)
+CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
 {
   v8::HandleScope handle_scope;
 
@@ -270,7 +293,7 @@ CJavascriptObject CJavascriptObject::Invoke(py::list args)
 
   v8::Handle<v8::Value> result = func->Call(m_context->Global(), params.size(), &params[0]);
 
-  return CJavascriptObject(m_context, result->ToObject());
+  return CJavascriptObjectPtr(new CJavascriptObject(m_context, result->ToObject()));
 }
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
@@ -278,19 +301,4 @@ std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
   obj.dump(os);
 
   return os;
-}
-
-void CJavascriptObject::Expose(void)
-{
-  py::class_<CJavascriptObject>("JSObject", py::no_init)
-    .def("__getattr__", &CJavascriptObject::GetAttr)
-    .def("__setattr__", &CJavascriptObject::SetAttr)
-    .def("__delattr__", &CJavascriptObject::DelAttr)
-
-    .def(int_(py::self))
-    .def(float_(py::self))
-    .def(str(py::self))
-
-    .def("invoke", &CJavascriptObject::Invoke)
-    ;
 }
