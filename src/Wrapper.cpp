@@ -1,5 +1,40 @@
 #include "Wrapper.h"
 
+py::object CWrapper::Cast(v8::Handle<v8::Value> obj)
+{
+  v8::HandleScope handle_scope;
+
+  if (obj->IsNull()) return py::object();
+  if (obj->IsTrue()) return py::object(py::handle<>(Py_True));
+  if (obj->IsFalse()) return py::object(py::handle<>(Py_False));
+
+  if (obj->IsInt32()) return py::object(obj->Int32Value());  
+  if (obj->IsString()) return py::str(*obj->ToString());
+  if (obj->IsBoolean()) return py::object(py::handle<>(obj->BooleanValue() ? Py_True : Py_False));
+  if (obj->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(obj->NumberValue())));
+
+  return py::object();
+}
+
+#define TRY_CONVERT(type, cls) { py::extract<type> value(obj); \
+  if (value.check()) return handle_scope.Close(cls::New(value())); }
+
+v8::Handle<v8::Value> CWrapper::Cast(py::object obj)
+{
+  v8::HandleScope handle_scope;
+
+  if (obj.ptr() == Py_None) return v8::Null();
+  if (obj.ptr() == Py_True) return v8::True();
+  if (obj.ptr() == Py_False) return v8::False();
+
+  TRY_CONVERT(int, v8::Int32);
+  TRY_CONVERT(const char *, v8::String);
+  TRY_CONVERT(bool, v8::Boolean);
+  TRY_CONVERT(double, v8::Number);
+
+  return v8::Undefined();
+}
+
 v8::Handle<v8::Value> CPythonWrapper::Getter(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
@@ -87,21 +122,13 @@ v8::Persistent<v8::ObjectTemplate> CPythonWrapper::SetupTemplate(void)
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
-#define TRY_CONVERT(type, cls) { py::extract<type> value(obj); \
-  if (value.check()) return handle_scope.Close(cls::New(value())); }
-
 v8::Handle<v8::Value> CPythonWrapper::Wrap(py::object obj)
 {
   v8::HandleScope handle_scope;
 
-  if (obj.ptr() == Py_None) return v8::Null();
-  if (obj.ptr() == Py_True) return v8::True();
-  if (obj.ptr() == Py_False) return v8::False();
+  v8::Handle<v8::Value> result = Cast(obj);
 
-  TRY_CONVERT(int, v8::Int32);
-  TRY_CONVERT(const char *, v8::String);
-  TRY_CONVERT(bool, v8::Boolean);
-  TRY_CONVERT(double, v8::Number);
+  if (!result->IsUndefined()) return handle_scope.Close(result);
 
   v8::Handle<v8::Object> instance = m_template->NewInstance();
   v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
@@ -114,14 +141,9 @@ py::object CPythonWrapper::Unwrap(v8::Handle<v8::Value> obj)
 {
   v8::HandleScope handle_scope;
   
-  if (obj->IsNull()) return py::object();
-  if (obj->IsTrue()) return py::object(py::handle<>(Py_True));
-  if (obj->IsFalse()) return py::object(py::handle<>(Py_False));
+  py::object result = Cast(obj);
 
-  if (obj->IsInt32()) return py::object(obj->Int32Value());  
-  if (obj->IsString()) return py::str(*obj->ToString());
-  if (obj->IsBoolean()) return py::object(py::handle<>(obj->BooleanValue() ? Py_True : Py_False));
-  if (obj->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(obj->NumberValue())));
+  if (result) return result;
 
   if (obj->IsObject())
   {
@@ -131,4 +153,101 @@ py::object CPythonWrapper::Unwrap(v8::Handle<v8::Value> obj)
   }
   
   throw CWrapperException("unknown object type");
+}
+
+void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
+{
+  if (!m_obj->Has(name))
+  {
+    std::ostringstream msg;
+
+    msg << "'" << *m_obj->GetPrototype()->ToString() << "' object has no attribute '" << *name << "'";
+
+    throw CWrapperException(msg.str(), ::PyExc_AttributeError);
+  }
+}
+
+CJavascriptObject CJavascriptObject::GetAttr(const std::string& name)
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context); 
+
+  v8::TryCatch try_catch;
+
+  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+
+  CheckAttr(attr_name);
+
+  v8::Handle<v8::Value> attr_obj = m_obj->Get(attr_name);
+
+  return CJavascriptObject(m_context, attr_obj->ToObject());
+}
+void CJavascriptObject::SetAttr(const std::string& name, py::object value)
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context);
+
+  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+
+  CheckAttr(attr_name);
+
+  v8::Handle<v8::Value> attr_obj = Cast(value);
+
+  m_obj->Set(attr_name, attr_obj);
+}
+void CJavascriptObject::DelAttr(const std::string& name)
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context);
+
+  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+
+  CheckAttr(attr_name);
+  
+  m_obj->Delete(attr_name);
+}
+
+void CJavascriptObject::dump(std::ostream& os) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context);
+
+  if (m_obj->IsInt32())
+    os << m_obj->Int32Value();
+  else if (m_obj->IsNumber())
+    os << m_obj->NumberValue();
+  else if (m_obj->IsBoolean())
+    os << m_obj->BooleanValue();
+  else if (m_obj->IsNull())
+    os << "None";
+  else if (m_obj->IsUndefined())
+    os << "N/A";
+  else if (m_obj->IsString())  
+    os << *v8::String::AsciiValue(v8::Handle<v8::String>::Cast(m_obj));  
+  else 
+    os << *v8::String::AsciiValue(m_obj->ToString());
+}
+
+std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
+{ 
+  obj.dump(os);
+
+  return os;
+}
+
+void CJavascriptObject::Expose(void)
+{
+  py::class_<CJavascriptObject>("JSObject", py::no_init)
+    .def("__getattr__", &CJavascriptObject::GetAttr)
+    .def("__setattr__", &CJavascriptObject::SetAttr)
+    .def("__delattr__", &CJavascriptObject::DelAttr)
+
+    .def(int_(py::self))
+    .def(float_(py::self))
+    .def(str(py::self))
+    ;
 }

@@ -27,6 +27,46 @@ public:
   }
 };
 
+class CContext : public CJavascriptObject
+{
+  v8::Persistent<v8::Context> m_context;
+
+  static v8::Handle<v8::Object> GetObject(v8::Handle<v8::Context> context)
+  {
+    v8::HandleScope handle_scope;
+
+    v8::Context::Scope context_scope(context); 
+
+    v8::Handle<v8::String> proto = v8::String::New("__proto__");
+
+    if (context->Global()->Has(proto))
+      return handle_scope.Close(context->Global()->Get(proto)->ToObject());
+    else
+      return handle_scope.Close(context->Global());
+  }
+public:
+  CContext(v8::Handle<v8::Context> context) 
+    : CJavascriptObject(context, GetObject(context))
+  {
+    v8::HandleScope handle_scope;
+
+    m_context = v8::Persistent<v8::Context>::New(context);
+  }
+
+  ~CContext(void)
+  {
+    //m_context.Dispose();
+  }
+
+  void Enter(void) { m_context->Enter(); }
+  void Leave(void) { m_context->Exit(); }
+  void LeaveWith(py::object exc_type, py::object exc_value, py::object traceback) { return m_context->Exit(); }
+
+  static CContext GetEntered(void) { return CContext(v8::Context::GetEntered()); }
+  static CContext GetCurrent(void) { return CContext(v8::Context::GetCurrent()); }
+  static bool InContext(void) { return v8::Context::InContext(); }
+};
+
 class CScript;
 
 class CEngine
@@ -41,9 +81,11 @@ public:
 
   ~CEngine()
   {
-    m_wrapper.Detach();
+    m_wrapper.Detach();    
     m_context.Dispose();
   }
+
+  CContext GetContext(void) { v8::HandleScope handle_scope; return CContext(m_context); }
 
   boost::shared_ptr<CScript> Compile(const std::string& src);
   py::object Execute(const std::string& src);
@@ -53,8 +95,6 @@ public:
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
-
-  v8::Persistent<v8::Context>& GetContext(void) { return m_context; }
 
   py::object ExecuteScript(v8::Persistent<v8::Script>& m_script);
 };
@@ -75,8 +115,6 @@ public:
   {
     m_script.Dispose();
   }
-
-  static void Expose(void);
 
   const std::string GetSource(void) const { return m_source; }
 

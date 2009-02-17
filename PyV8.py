@@ -32,10 +32,10 @@ class TestEngine(unittest.TestCase):
         class Global(object):
             version = "1.0"
             
-        context = Global()
-        engine = Engine(context)
+        engine = Engine(Global())
         
         try:
+            self.assertEquals(Global.version, str(engine.context.version))            
             self.assertEquals(Global.version, engine.eval("version"))
         finally:
             del engine

@@ -1,18 +1,5 @@
 #include "Engine.h"
 
-CEngine::CEngine(py::object global) 
-{
-  v8::HandleScope handle_scope;
-
-  m_context = v8::Context::New(NULL, v8::ObjectTemplate::New());
-
-  v8::Context::Scope context_scope(m_context);
-  
-  m_wrapper.Attach(*m_context);
-
-  m_context->Global()->Set(v8::String::New("__proto__"), m_wrapper.Wrap(global));  
-}
-
 void CEngine::Expose(void)
 {
   v8::V8::Initialize();
@@ -22,14 +9,52 @@ void CEngine::Expose(void)
   py::register_exception_translator<CEngineException>(CPythonException::translator);
   py::register_exception_translator<CWrapperException>(CPythonException::translator);
 
+  py::class_<CContext, py::bases<CJavascriptObject> >("Context", py::no_init)
+    .add_static_property("entered", CContext::GetEntered)
+    .add_static_property("current", CContext::GetCurrent)
+    .add_static_property("inContext", CContext::InContext)
+
+    .def("enter", &CContext::Enter)
+    .def("leave", &CContext::Leave)
+
+    .def("__enter__", &CContext::Enter)
+    .def("__leave__", &CContext::LeaveWith)
+    ;
+
   py::class_<CEngine, boost::noncopyable>("Engine", py::no_init)
     .def(py::init< py::optional<py::object> >(py::args("global")))
 
     .add_static_property("version", &CEngine::GetVersion)
 
+    .def_readonly("context", &CEngine::GetContext)
+
     .def("compile", &CEngine::Compile)
     .def("eval", &CEngine::Execute)
     ;
+
+  py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
+    py::objects::make_ptr_instance<CScript, 
+    py::objects::pointer_holder<boost::shared_ptr<CScript>,CScript> > >();
+
+  py::class_<CScript, boost::noncopyable>("Script", py::no_init)
+    .add_property("source", &CScript::GetSource)
+
+    .def("run", &CScript::Run)
+    ;
+}
+
+CEngine::CEngine(py::object global)
+{
+  v8::HandleScope handle_scope;
+
+  m_context = v8::Context::New(NULL, v8::ObjectTemplate::New());
+  
+  v8::Context::Scope context_scope(m_context);
+
+  m_wrapper.Attach(m_context);
+
+  if (global.ptr() != Py_None)
+    m_context->Global()->Set(v8::String::New("__proto__"), m_wrapper.Wrap(global));  
 }
 
 void CEngine::ReportFatalError(const char* location, const char* message)
@@ -92,17 +117,4 @@ py::object CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
   if (result->IsUndefined()) return py::object();
 
   return py::str(std::string(*v8::String::AsciiValue(result)));
-}
-
-void CScript::Expose(void)
-{
-  py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
-    py::objects::make_ptr_instance<CScript, 
-    py::objects::pointer_holder<boost::shared_ptr<CScript>,CScript> > >();
-
-  py::class_<CScript, boost::noncopyable>("Script", py::no_init)
-    .add_property("source", &CScript::GetSource)
-
-    .def("run", &CScript::Run)
-    ;
 }
