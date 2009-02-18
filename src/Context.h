@@ -29,6 +29,13 @@ public:
     m_context.Dispose();
   }
 
+  CPythonWrapper *GetWrapper() const 
+  {    
+    v8::Handle<v8::Value> wrapper = m_context->Global()->Get(v8::String::NewSymbol("__wrapper__"));
+
+    return static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(wrapper)->Value());
+  }
+
   v8::Handle<v8::Context> Handle() { return m_context; }
 
   void Enter(void) { m_context->Enter(); }
