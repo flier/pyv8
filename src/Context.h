@@ -27,14 +27,7 @@ public:
     assert(!m_context.IsEmpty());
 
     m_context.Dispose();
-  }
-
-  CPythonWrapper *GetWrapper() const 
-  {    
-    v8::Handle<v8::Value> wrapper = m_context->Global()->Get(v8::String::NewSymbol("__wrapper__"));
-
-    return static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(wrapper)->Value());
-  }
+  }  
 
   v8::Handle<v8::Context> Handle() { return m_context; }
 
@@ -47,6 +40,8 @@ public:
   static bool InContext(void) { return v8::Context::InContext(); }
 
   static CContextPtr Create(py::object global = py::object());
+
+  static CPythonWrapper *GetWrapper(v8::Handle<v8::Context> context);
 
   static void Expose(void);
 };

@@ -32,6 +32,17 @@ void CContext::Expose(void)
     py::objects::pointer_holder<boost::shared_ptr<CContext>,CContext> > >();
 }
 
+CPythonWrapper *CContext::GetWrapper(v8::Handle<v8::Context> context) 
+{    
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Value> wrapper = context->Global()->Get(v8::String::NewSymbol("__wrapper__"));
+
+  return static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(wrapper)->Value());
+}
+
 CContextPtr CContext::Create(py::object global)
 {
   v8::HandleScope handle_scope;
