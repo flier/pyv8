@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os, os.path
 from distutils.core import setup, Extension
-import distutils.msvccompiler
 
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "PyV8.cpp"]
 
@@ -34,7 +33,7 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      version='0.3',
+      version='0.4',
       description='Python Wrapper for Google V8 Engine',
       long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
       platforms="x86",
