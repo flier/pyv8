@@ -88,6 +88,7 @@ class TestEngine(unittest.TestCase):
         
         self.assertEquals("[object global]", str(engine.eval("this")))
             
+        self.assertEquals(1.0, float(engine.eval("this.version")))   
         
 if __name__ == '__main__':
     unittest.main()
