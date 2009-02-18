@@ -82,7 +82,8 @@ class TestEngine(unittest.TestCase):
             del engine
             
     def testThis(self):
-        class GlobalNamespace(object): pass
+        class GlobalNamespace(object): 
+            version = 1.0
         
         engine = JSEngine(GlobalNamespace())
         
