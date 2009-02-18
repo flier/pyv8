@@ -69,9 +69,14 @@ v8::Handle<v8::Value> CPythonWrapper::Getter(
 
   v8::Context::Scope context_scope(pThis->m_context);
 
-  py::object obj = pThis->Unwrap(info.Holder());
+  py::object obj = pThis->Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
+
+  py::str attr_name(*name, name.length());
+
+  if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
+    return v8::Local<v8::Value>();
 
   return handle_scope.Close(pThis->Wrap(obj.attr(*name)));
 }
