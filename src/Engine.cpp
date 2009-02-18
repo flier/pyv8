@@ -68,12 +68,12 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
   return boost::shared_ptr<CScript>(new CScript(*this, src, v8::Persistent<v8::Script>::New(script)));
 }
 
-py::object CEngine::Execute(const std::string& src)
-{
-  return Compile(src)->Run();
+CJavascriptObjectPtr CEngine::Execute(const std::string& src) 
+{ 
+  return Compile(src)->Run(); 
 }
 
-py::object CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
+CJavascriptObjectPtr CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
 {    
   v8::HandleScope handle_scope;
 
@@ -85,7 +85,5 @@ py::object CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
 
   if (result.IsEmpty()) throw CEngineException(try_catch);
 
-  if (result->IsUndefined()) return py::object();
-
-  return py::str(std::string(*v8::String::AsciiValue(result)));
+  return CJavascriptObjectPtr(new CJavascriptObject(m_context->Handle(), result->ToObject()));
 }

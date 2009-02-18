@@ -31,7 +31,7 @@ public:
   CContextPtr GetContext(void) { return m_context; }
 
   CScriptPtr Compile(const std::string& src);
-  py::object Execute(const std::string& src);
+  CJavascriptObjectPtr Execute(const std::string& src);
 
   void RaiseError(v8::TryCatch& try_catch);
 public:
@@ -39,7 +39,7 @@ public:
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
 
-  py::object ExecuteScript(v8::Persistent<v8::Script>& m_script);
+  CJavascriptObjectPtr ExecuteScript(v8::Persistent<v8::Script>& m_script);
 };
 
 class CScript
@@ -61,5 +61,5 @@ public:
 
   const std::string GetSource(void) const { return m_source; }
 
-  py::object Run(void) { return m_engine.ExecuteScript(m_script); }
+  CJavascriptObjectPtr Run(void) { return m_engine.ExecuteScript(m_script); }
 };
