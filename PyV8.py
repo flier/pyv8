@@ -24,7 +24,10 @@ class JSClass(object):
     
     def __defineGetter__(self, name, getter):
         "Binds an object's property to a function to be called when that property is looked up."
-        setter = getattr(self, name).fset if hasattr(self, name) else None
+        if hasattr(self, name):
+            setter = getattr(self, name).fset
+        else:
+            setter = None
         
         setattr(self, name, property(fget=getter, fset=setter))
     
@@ -34,7 +37,10 @@ class JSClass(object):
     
     def __defineSetter__(self, name, setter):
         "Binds an object's property to a function to be called when an attempt is made to set that property."
-        getter = getattr(self, name).fget if hasattr(self, name) else None
+        if hasattr(self, name):
+            getter = getattr(self, name).fget
+        else:
+            getter = None
         
         setattr(self, name, property(fget=getter, fset=setter))
     
