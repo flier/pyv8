@@ -34,7 +34,12 @@ py::object CWrapper::Cast(v8::Handle<v8::Value> obj)
   if (obj->IsFalse()) return py::object(py::handle<>(Py_False));
 
   if (obj->IsInt32()) return py::object(obj->Int32Value());  
-  if (obj->IsString()) return py::str(*obj->ToString());
+  if (obj->IsString())
+  {
+    v8::String::AsciiValue str(v8::Handle<v8::String>::Cast(obj));
+
+    return py::str(*str, str.length());
+  }
   if (obj->IsBoolean()) return py::object(py::handle<>(obj->BooleanValue() ? Py_True : Py_False));
   if (obj->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(obj->NumberValue())));
 
@@ -140,7 +145,7 @@ v8::Persistent<v8::ObjectTemplate> CPythonWrapper::SetupTemplate(void)
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::ObjectTemplate> clazz = v8::ObjectTemplate::New();
-
+ 
   v8::Handle<v8::External> cookie = v8::External::New(this);
 
   clazz->SetInternalFieldCount(1);
@@ -194,8 +199,9 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
   if (!m_obj->Has(name))
   {
     std::ostringstream msg;
-
-    msg << "'" << *m_obj->GetPrototype()->ToString() << "' object has no attribute '" << *name << "'";
+      
+    msg << "'" << *v8::String::AsciiValue(m_obj->ObjectProtoToString()) 
+        << "' object has no attribute '" << *v8::String::AsciiValue(name) << "'";
 
     throw CWrapperException(msg.str(), ::PyExc_AttributeError);
   }
@@ -285,7 +291,11 @@ CJavascriptObject::operator double() const
 
 CJavascriptObject::operator bool() const
 {
-  return !m_obj->IsNull();
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context); 
+
+  return m_obj->BooleanValue();
 }
 
 CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
