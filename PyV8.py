@@ -1,6 +1,47 @@
 #!/usr/bin/env python
 import _PyV8
 
+class JSClass(object):    
+    def toString(self):
+        "Returns a string representation of an object."
+        return "[object %s]" % self.__class__.__name__
+    
+    def toLocaleString(self):
+        "Returns a value as a string value appropriate to the host environment's current locale."
+        return self.toString()
+    
+    def valueOf(self):
+        "Returns the primitive value of the specified object."
+        return self
+    
+    def hasOwnProperty(self, name):
+        "Returns a Boolean value indicating whether an object has a property with the specified name."
+        return hasattr(self, name)
+    
+    def isPrototypeOf(self, obj):
+        "Returns a Boolean value indicating whether an object exists in the prototype chain of another object."
+        raise NotImplementedError()
+    
+    def __defineGetter__(self, name, getter):
+        "Binds an object's property to a function to be called when that property is looked up."
+        setter = getattr(self, name).fset if hasattr(self, name) else None
+        
+        setattr(self, name, property(fget=getter, fset=setter))
+    
+    def __lookupGetter__(self, name):
+        "Return the function bound as a getter to the specified property."
+        return self.name.fget
+    
+    def __defineSetter__(self, name, setter):
+        "Binds an object's property to a function to be called when an attempt is made to set that property."
+        getter = getattr(self, name).fget if hasattr(self, name) else None
+        
+        setattr(self, name, property(fget=getter, fset=setter))
+    
+    def __lookupSetter__(self, name):
+        "Return the function bound as a setter to the specified property."
+        return self.name.fset
+
 JSEngine = _PyV8.JSEngine
 
 import unittest
@@ -82,14 +123,32 @@ class TestEngine(unittest.TestCase):
             del engine
             
     def testThis(self):
-        class GlobalNamespace(object): 
+        class Global(object): 
             version = 1.0
         
-        engine = JSEngine(GlobalNamespace())
+        engine = JSEngine(Global())
         
-        self.assertEquals("[object global]", str(engine.eval("this")))
+        try:        
+            self.assertEquals("[object global]", str(engine.eval("this")))
             
-        self.assertEquals(1.0, float(engine.eval("this.version")))   
+            self.assertEquals(1.0, float(engine.eval("this.version")))
+        finally:
+            del engine
+        
+    def testObjectBuildInMethods(self):
+        class Global(JSClass):
+            version = 1.0
+        
+        engine = JSEngine(Global())
+        
+        try:
+            self.assertEquals("[object Global]", str(engine.eval("this.toString()")))
+            self.assertEquals("[object Global]", str(engine.eval("this.toLocaleString()")))
+            self.assertEquals(Global.version, float(engine.eval("this.valueOf()").version))
+            self.assert_(bool(engine.eval("this.hasOwnProperty(\"version\")")))
+            self.assert_(bool(engine.eval("this.hasOwnProperty(\"nonexistent\")")))
+        finally:
+            del engine
         
 if __name__ == '__main__':
     unittest.main()
