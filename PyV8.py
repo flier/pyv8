@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import _PyV8
 
 class JSClass(object):    
@@ -47,6 +48,54 @@ class JSClass(object):
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
         return self.name.fset
+    
+
+class JSDebug(object):    
+    onMessage = None
+    onBreak = None
+    onException = None
+    onNewFunction = None
+    onBeforeCompile = None
+    onAfterCompile = None    
+    
+    def isEnabled(self):
+        return _PyV8.debug().enabled
+    
+    def setEnabled(self, enable):    
+        dbg = _PyV8.debug()
+        dbg.enabled = enable
+        
+        if enable:            
+            dbg.onDebugEvent = lambda type, evt: self.onDebugEvent(type, evt)
+            dbg.onDebugMessage = lambda msg: self.onDebugMessage(msg)
+        else:
+            dbg.onDebugEvent = None
+            dbg.onDebugMessage = None
+            
+    enabled = property(isEnabled, setEnabled)
+        
+    def onDebugMessage(self, msg):
+        if self.onMessage:
+            self.onMessage(msg)
+            
+    def onDebugEvent(self, type, evt):
+        if type == _PyV8.JSDebugEvent.Break:
+            if self.onBreak:
+                self.onBreak(evt)
+        elif type == _PyV8.JSDebugEvent.Exception:
+            if self.onException:
+                self.onException(evt)
+        elif type == _PyV8.JSDebugEvent.NewFunction:
+            if self.onNewFunction:
+                self.onNewFunction(evt)
+        elif type == _PyV8.JSDebugEvent.BeforeCompile:
+            if self.onBeforeCompile:
+                self.onBeforeCompile(evt)
+        elif type == _PyV8.JSDebugEvent.AfterCompile:
+            if self.onAfterCompile:
+                self.onAfterCompile(evt)    
+        
+debugger = JSDebug()
 
 JSEngine = _PyV8.JSEngine
 
@@ -158,6 +207,22 @@ class TestEngine(unittest.TestCase):
             self.assertEquals("false", str(ret.valueOf(ret)))
         finally:
             del engine
+            
+class TestDebug(unittest.TestCase):
+    def setUp(self):
+        self.engine = JSEngine()
+        
+    def tearDown(self):
+        del self.engine        
+        
+    def testEventDispatch(self):
+        global debugger
+        
+        self.assert_(not debugger.enabled)
+        
+        debugger.enabled = True
+        
+        self.assert_(debugger.enabled)                
         
 if __name__ == '__main__':
     unittest.main()

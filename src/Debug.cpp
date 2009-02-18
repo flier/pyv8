@@ -10,9 +10,6 @@ void CDebug::Init(void)
   v8::Handle<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
   m_global_context = v8::Context::New(NULL, global_template);
   m_global_context->SetSecurityToken(v8::Undefined());
-
-  m_evaluation_context = v8::Context::New(NULL, global_template);
-  m_evaluation_context->SetSecurityToken(v8::Undefined());
 }
 
 void CDebug::SetEnable(bool enable)
@@ -38,19 +35,6 @@ void CDebug::SetEnable(bool enable)
   m_enabled = enable;
 }
 
-const CDebugEvent& CDebug::GetDebugEvent(v8::DebugEvent event)
-{
-  switch (event)
-  {
-  case v8::Break: return m_onBreak;
-  case v8::Exception: return m_onException;
-  case v8::NewFunction: return m_onNewFunction;
-  case v8::BeforeCompile: return m_onBeforeCompile;
-  case v8::AfterCompile: return m_onAfterCompile;
-  default: throw CWrapperException("unknown debug event");
-  }
-}
-
 void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
   v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data)
 {
@@ -58,57 +42,41 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
   
   CDebug *pThis = static_cast<CDebug *>(v8::Handle<v8::External>::Cast(data)->Value());
 
+  if (pThis->m_onDebugEvent.ptr() == Py_None) return;
+
   v8::Context::Scope context_scope(pThis->m_global_context);
 
-  v8::TryCatch try_catch;
+  CJavascriptObjectPtr event_obj(new CJavascriptObject(pThis->m_global_context, event_data));
 
-  const CDebugEvent& events = pThis->GetDebugEvent(event);
-
-  CJavascriptObject event_obj(pThis->m_global_context, v8::Persistent<v8::Object>::New(event_data));
-
-  for (size_t i=0; i<events.m_callbacks.size(); i++)
-  {    
-    py::object callback = events.m_callbacks[i];
-
-    py::call<void>(callback.ptr(), event_obj);
-  }
+  py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
 }
 
 void CDebug::OnDebugMessage(const uint16_t* message, int length, void* data)
 {
-  v8::HandleScope scope;
-
   CDebug *pThis = static_cast<CDebug *>(data);
+
+  if (pThis->m_onDebugMessage.ptr() == Py_None) return;
   
-  v8::Context::Scope context_scope(pThis->m_global_context);
+  std::wstring msg(reinterpret_cast<std::wstring::const_pointer>(message), length);
 
-  v8::TryCatch try_catch;
-
-  for (size_t i=0; i<pThis->m_onMessage.m_callbacks.size(); i++)
-  {
-    py::object callback = pThis->m_onMessage.m_callbacks[i];
-
-    std::wstring msg(reinterpret_cast<std::wstring::const_pointer>(message), length);
-
-    py::call<void>(callback.ptr(), msg);
-  }
+  py::call<void>(pThis->m_onDebugMessage.ptr(), msg);
 }
 
 void CDebug::Expose(void)
 {
-  py::class_<CDebugEvent, boost::noncopyable>("DebugEvent", py::no_init)
-    .def(py::self += py::object())
-    .def(py::self -= py::other<py::object>())
-    ;
-
-  py::class_<CDebug, boost::noncopyable>("Debug", py::no_init)
+  py::class_<CDebug, boost::noncopyable>("JSDebug", py::no_init)
     .add_property("enabled", &CDebug::IsEnabled, &CDebug::SetEnable)
 
-    .def_readonly("onBreak", &CDebug::m_onBreak)
-    .def_readonly("onException", &CDebug::m_onException)
-    .def_readonly("onNewFunction", &CDebug::m_onNewFunction)
-    .def_readonly("onBeforeCompile", &CDebug::m_onBeforeCompile)
-    .def_readonly("onAfterCompile", &CDebug::m_onAfterCompile)
+    .def_readwrite("onDebugEvent", &CDebug::m_onDebugEvent)
+    .def_readwrite("onDebugMessage", &CDebug::m_onDebugMessage)
+    ;
+
+  py::enum_<v8::DebugEvent>("JSDebugEvent")
+    .value("Break", v8::Break)
+    .value("Exception", v8::Exception)
+    .value("NewFunction", v8::NewFunction)
+    .value("BeforeCompile", v8::BeforeCompile)
+    .value("AfterCompile", v8::AfterCompile)
     ;
 
   def("debug", &CDebug::GetInstance, 
