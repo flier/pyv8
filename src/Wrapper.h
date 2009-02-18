@@ -82,6 +82,7 @@ public:
   
   operator long() const;
   operator double() const;
+  operator bool() const;
 
   CJavascriptObjectPtr Invoke(py::list args);
   

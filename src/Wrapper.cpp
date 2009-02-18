@@ -13,6 +13,8 @@ void CWrapper::Expose(void)
     .def(float_(py::self))
     .def(str(py::self))
 
+    .def("__nonzero__", &CJavascriptObject::operator bool)
+
     .def("invoke", &CJavascriptObject::Invoke)
     ;
 
@@ -279,6 +281,11 @@ CJavascriptObject::operator double() const
   v8::Context::Scope context_scope(m_context); 
   
   return m_obj->NumberValue(); 
+}
+
+CJavascriptObject::operator bool() const
+{
+  return !m_obj->IsNull();
 }
 
 CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
