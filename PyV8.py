@@ -146,7 +146,10 @@ class TestEngine(unittest.TestCase):
             self.assertEquals("[object Global]", str(engine.eval("this.toLocaleString()")))
             self.assertEquals(Global.version, float(engine.eval("this.valueOf()").version))
             self.assert_(bool(engine.eval("this.hasOwnProperty(\"version\")")))
-            self.assert_(bool(engine.eval("this.hasOwnProperty(\"nonexistent\")")))
+            
+            ret = engine.eval("this.hasOwnProperty(\"nonexistent\")")
+            
+            self.assertEquals("false", str(ret.valueOf(ret)))
         finally:
             del engine
         

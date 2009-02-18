@@ -2,9 +2,12 @@
 
 #include <vector>
 
+#include "Context.h"
+
 void CWrapper::Expose(void)
 {
   py::class_<CJavascriptObject>("JSObject", py::no_init)
+    .def_readonly("__js__", &CJavascriptObject::Native)
     .def("__getattr__", &CJavascriptObject::GetAttr)
     .def("__setattr__", &CJavascriptObject::SetAttr)
     .def("__delattr__", &CJavascriptObject::DelAttr)
@@ -15,7 +18,8 @@ void CWrapper::Expose(void)
 
     .def("__nonzero__", &CJavascriptObject::operator bool)
 
-    .def("invoke", &CJavascriptObject::Invoke)
+    .def("__call__", &CJavascriptObject::Invoke, (py::arg("self") = py::object(), 
+         py::arg("args") = py::list(), py::arg("kwds") = py::dict()))
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
@@ -221,6 +225,9 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_obj = m_obj->Get(attr_name);
 
+  if (attr_obj.IsEmpty() || try_catch.HasCaught()) 
+    throw CEngineException(try_catch);
+
   return CJavascriptObjectPtr(new CJavascriptObject(m_context, attr_obj->ToObject()));
 }
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
@@ -229,13 +236,16 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 
   v8::Context::Scope context_scope(m_context);
 
+  v8::TryCatch try_catch;
+
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
 
   CheckAttr(attr_name);
 
   v8::Handle<v8::Value> attr_obj = Cast(value);
 
-  m_obj->Set(attr_name, attr_obj);
+  if (!m_obj->Set(attr_name, attr_obj) || try_catch.HasCaught())
+    throw CEngineException(try_catch);
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
@@ -243,11 +253,14 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   v8::Context::Scope context_scope(m_context);
 
+  v8::TryCatch try_catch;
+
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
 
   CheckAttr(attr_name);
   
-  m_obj->Delete(attr_name);
+  if (!m_obj->Delete(attr_name) || try_catch.HasCaught())
+    throw CEngineException(try_catch);
 }
 
 void CJavascriptObject::dump(std::ostream& os) const
@@ -298,11 +311,13 @@ CJavascriptObject::operator bool() const
   return m_obj->BooleanValue();
 }
 
-CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
+CJavascriptObjectPtr CJavascriptObject::Invoke(py::object self, py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
 
   v8::Context::Scope context_scope(m_context);
+
+  v8::TryCatch try_catch;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);
 
@@ -310,10 +325,29 @@ CJavascriptObjectPtr CJavascriptObject::Invoke(py::list args)
 
   for (size_t i=0; i<params.size(); i++)
   {
-    
+    params[i] = Cast(args[i]);
   }
 
-  v8::Handle<v8::Value> result = func->Call(m_context->Global(), params.size(), &params[0]);
+  v8::Handle<v8::Object> recv;
+
+  if (self.ptr() == Py_None)
+  {
+    recv = m_context->Global();
+  }
+  else if (::PyObject_HasAttr(self.ptr(), py::str("__js__").ptr()))
+  {
+    long addr = static_cast<long>(py::extract<long>(self.attr("__js__")));
+    recv = v8::Handle<v8::Object>(reinterpret_cast<v8::Object *>(addr));
+  }
+  else
+  {
+    recv = CContext::GetWrapper(m_context)->Wrap(self)->ToObject();
+  }
+
+  v8::Handle<v8::Value> result = func->Call(recv,
+    params.size(), params.empty() ? NULL : &params[0]);
+
+  if (try_catch.HasCaught()) throw CEngineException(try_catch);
 
   return CJavascriptObjectPtr(new CJavascriptObject(m_context, result->ToObject()));
 }

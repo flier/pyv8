@@ -76,6 +76,8 @@ public:
     m_obj.Dispose();
   }
 
+  long Native(void) { return reinterpret_cast<long>(*m_obj); }
+
   CJavascriptObjectPtr GetAttr(const std::string& name);
   void SetAttr(const std::string& name, py::object value);
   void DelAttr(const std::string& name);
@@ -84,7 +86,7 @@ public:
   operator double() const;
   operator bool() const;
 
-  CJavascriptObjectPtr Invoke(py::list args);
+  CJavascriptObjectPtr Invoke(py::object self, py::list args, py::dict kwds);
   
   void dump(std::ostream& os) const;  
 };
