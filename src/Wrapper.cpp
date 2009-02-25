@@ -4,6 +4,13 @@
 
 #include "Context.h"
 
+std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
+{ 
+  obj.Dump(os);
+
+  return os;
+}
+
 void CWrapper::Expose(void)
 {
   py::class_<CJavascriptObject>("JSObject", py::no_init)
@@ -17,11 +24,15 @@ void CWrapper::Expose(void)
     .def(str(py::self))
 
     .def("__nonzero__", &CJavascriptObject::operator bool)
+    .def("__eq__", &CJavascriptObject::Equals)
+    .def("__ne__", &CJavascriptObject::Unequals)
     ;
 
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject> >("JSFunction", py::no_init)
     .def("__call__", &CJavascriptFunction::Invoke, 
          (py::arg("args") = py::list(), py::arg("kwds") = py::dict()))
+    .add_property("func_name", &CJavascriptFunction::GetName)
+    .add_property("func_owner", &CJavascriptFunction::GetOwner)
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
@@ -273,7 +284,16 @@ void CJavascriptObject::DelAttr(const std::string& name)
     throw CEngineException(try_catch);
 }
 
-void CJavascriptObject::dump(std::ostream& os) const
+bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Context::Scope context_scope(m_context);
+
+  return m_obj->Equals(other->m_obj);
+}
+
+void CJavascriptObject::Dump(std::ostream& os) const
 {
   v8::HandleScope handle_scope;
 
@@ -346,9 +366,20 @@ CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
   return CJavascriptObjectPtr(new CJavascriptObject(m_context, result->ToObject()));
 }
 
-std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
-{ 
-  obj.dump(os);
+const std::string CJavascriptFunction::GetName(void) const
+{
+  v8::HandleScope handle_scope;
 
-  return os;
+  v8::Context::Scope context_scope(m_context);
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  v8::String::AsciiValue name(v8::Handle<v8::String>::Cast(func->GetName()));
+
+  return std::string(*name, name.length());
+}
+
+CJavascriptObjectPtr CJavascriptFunction::GetOwner(void) const
+{
+  return CJavascriptObjectPtr(new CJavascriptObject(m_context, m_self));
 }

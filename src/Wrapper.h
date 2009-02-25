@@ -87,7 +87,10 @@ public:
   operator double() const;
   operator bool() const;  
   
-  void dump(std::ostream& os) const;  
+  bool Equals(CJavascriptObjectPtr other) const;
+  bool Unequals(CJavascriptObjectPtr other) const { return !Equals(other); }
+  
+  void Dump(std::ostream& os) const;  
 };
 
 class CJavascriptFunction : public CJavascriptObject
@@ -106,4 +109,7 @@ public:
   }
 
   CJavascriptObjectPtr Invoke(py::list args, py::dict kwds);
+
+  const std::string GetName(void) const;
+  CJavascriptObjectPtr GetOwner(void) const;
 };

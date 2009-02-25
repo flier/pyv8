@@ -241,6 +241,8 @@ class TestEngine(unittest.TestCase):
             
             ret = engine.eval("this.hasOwnProperty(\"nonexistent\")")
             
+            self.assertEquals("valueOf", ret.valueOf.func_name)
+            self.assertEquals(ret, ret.valueOf.func_owner)
             self.assertEquals("false", str(ret.valueOf()))
         finally:
             del engine
@@ -270,10 +272,7 @@ class TestDebug(unittest.TestCase):
         engine = JSEngine()
         
         try:
-            engine.eval("eval(\"1+2\")")
-            
-            for evt in events:
-                print evt           
+            engine.eval("eval(\"1+2\")") 
         finally:
             del engine
             
