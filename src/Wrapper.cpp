@@ -17,9 +17,11 @@ void CWrapper::Expose(void)
     .def(str(py::self))
 
     .def("__nonzero__", &CJavascriptObject::operator bool)
+    ;
 
-    .def("__call__", &CJavascriptObject::Invoke, (py::arg("self") = py::object(), 
-         py::arg("args") = py::list(), py::arg("kwds") = py::dict()))
+  py::class_<CJavascriptFunction, py::bases<CJavascriptObject> >("JSFunction", py::no_init)
+    .def("__call__", &CJavascriptFunction::Invoke, 
+         (py::arg("args") = py::list(), py::arg("kwds") = py::dict()))
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
@@ -228,8 +230,16 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
   if (attr_obj.IsEmpty() || try_catch.HasCaught()) 
     throw CEngineException(try_catch);
 
+  if (attr_obj->IsFunction())
+  {
+    v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(attr_obj);
+
+    return CJavascriptObjectPtr(new CJavascriptFunction(m_context, m_obj, func));
+  }
+
   return CJavascriptObjectPtr(new CJavascriptObject(m_context, attr_obj->ToObject()));
 }
+
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 {
   v8::HandleScope handle_scope;
@@ -311,7 +321,7 @@ CJavascriptObject::operator bool() const
   return m_obj->BooleanValue();
 }
 
-CJavascriptObjectPtr CJavascriptObject::Invoke(py::object self, py::list args, py::dict kwds)
+CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
 
@@ -328,23 +338,7 @@ CJavascriptObjectPtr CJavascriptObject::Invoke(py::object self, py::list args, p
     params[i] = Cast(args[i]);
   }
 
-  v8::Handle<v8::Object> recv;
-
-  if (self.ptr() == Py_None)
-  {
-    recv = m_context->Global();
-  }
-  else if (::PyObject_HasAttr(self.ptr(), py::str("__js__").ptr()))
-  {
-    long addr = static_cast<long>(py::extract<long>(self.attr("__js__")));
-    recv = v8::Handle<v8::Object>(reinterpret_cast<v8::Object *>(addr));
-  }
-  else
-  {
-    recv = CContext::GetWrapper(m_context)->Wrap(self)->ToObject();
-  }
-
-  v8::Handle<v8::Value> result = func->Call(recv,
+  v8::Handle<v8::Value> result = func->Call(m_self,
     params.size(), params.empty() ? NULL : &params[0]);
 
   if (try_catch.HasCaught()) throw CEngineException(try_catch);

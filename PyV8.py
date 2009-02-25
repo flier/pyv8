@@ -48,9 +48,50 @@ class JSClass(object):
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
         return self.name.fset
-    
 
-class JSDebug(object):    
+class JSDebug(object):        
+    class DebugEvent(object):
+        def __init__(self, type, event):            
+            self.type = type
+            self.event = event
+            
+    class BreakEvent(DebugEvent):
+        def __init__(self, event):
+            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.Break, event)
+            
+    class ExceptionEvent(DebugEvent):
+        def __init__(self, event):
+            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.Exception, event)
+
+    class NewFunctionEvent(DebugEvent):
+        def __init__(self, event):
+            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.NewFunction, event)
+    
+    class CompileEvent(DebugEvent):
+        def __init__(self, type, event):
+            JSDebug.DebugEvent.__init__(self, type, event)
+            
+        @property
+        def source(self):
+            return str(self.event.script())
+            
+        def __str__(self):
+            return self.source
+            
+    class BeforeCompileEvent(CompileEvent):
+        def __init__(self, event):
+            JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.BeforeCompile, event)
+        
+        def __repr__(self):
+            return "before compile script: " + self.source
+    
+    class AfterCompileEvent(CompileEvent):
+        def __init__(self, event):
+            JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.AfterCompile, event)
+
+        def __repr__(self):
+            return "after compile script: " + self.source
+
     onMessage = None
     onBreak = None
     onException = None
@@ -62,8 +103,7 @@ class JSDebug(object):
         return _PyV8.debug().enabled
     
     def setEnabled(self, enable):    
-        dbg = _PyV8.debug()
-        dbg.enabled = enable
+        dbg = _PyV8.debug()        
         
         if enable:            
             dbg.onDebugEvent = lambda type, evt: self.onDebugEvent(type, evt)
@@ -72,28 +112,25 @@ class JSDebug(object):
             dbg.onDebugEvent = None
             dbg.onDebugMessage = None
             
+        dbg.enabled = enable
+            
     enabled = property(isEnabled, setEnabled)
         
     def onDebugMessage(self, msg):
         if self.onMessage:
             self.onMessage(msg)
             
-    def onDebugEvent(self, type, evt):
+    def onDebugEvent(self, type, evt):        
         if type == _PyV8.JSDebugEvent.Break:
-            if self.onBreak:
-                self.onBreak(evt)
+            if self.onBreak: self.onBreak(JSDebug.BreakEvent(evt))
         elif type == _PyV8.JSDebugEvent.Exception:
-            if self.onException:
-                self.onException(evt)
+            if self.onException: self.onException(JSDebug.ExceptionEvent(evt))
         elif type == _PyV8.JSDebugEvent.NewFunction:
-            if self.onNewFunction:
-                self.onNewFunction(evt)
+            if self.onNewFunction: self.onNewFunction(JSDebug.NewFunctionEvent(evt))
         elif type == _PyV8.JSDebugEvent.BeforeCompile:
-            if self.onBeforeCompile:
-                self.onBeforeCompile(evt)
+            if self.onBeforeCompile: self.onBeforeCompile(JSDebug.BeforeCompileEvent(evt))
         elif type == _PyV8.JSDebugEvent.AfterCompile:
-            if self.onAfterCompile:
-                self.onAfterCompile(evt)    
+            if self.onAfterCompile: self.onAfterCompile(JSDebug.AfterCompileEvent(evt))
         
 debugger = JSDebug()
 
@@ -204,7 +241,7 @@ class TestEngine(unittest.TestCase):
             
             ret = engine.eval("this.hasOwnProperty(\"nonexistent\")")
             
-            self.assertEquals("false", str(ret.valueOf(ret)))
+            self.assertEquals("false", str(ret.valueOf()))
         finally:
             del engine
             
@@ -215,14 +252,34 @@ class TestDebug(unittest.TestCase):
     def tearDown(self):
         del self.engine        
         
-    def testEventDispatch(self):
+    def testEventDispatch(self):        
         global debugger
         
         self.assert_(not debugger.enabled)
         
+        events = []        
+        
+        debugger.onBreak = lambda evt: events.append(repr(evt))
+        debugger.onException = lambda evt: events.append(repr(evt))
+        debugger.onNewFunction = lambda evt: events.append(repr(evt))
+        debugger.onBeforeCompile = lambda evt: events.append(repr(evt))
+        debugger.onAfterCompile = lambda evt: events.append(repr(evt))
+        
         debugger.enabled = True
         
-        self.assert_(debugger.enabled)                
+        engine = JSEngine()
+        
+        try:
+            engine.eval("eval(\"1+2\")")
+            
+            for evt in events:
+                print evt           
+        finally:
+            del engine
+            
+            debugger.enabled = False
+            
+        self.assert_(not debugger.enabled)                
         
 if __name__ == '__main__':
     unittest.main()

@@ -20,7 +20,6 @@ public:
   CEngine(py::object global = py::object()) 
     : m_context(CContext::Create(global))
   {
-
   }
   CEngine(CContextPtr context) 
     : m_context(context)

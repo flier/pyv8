@@ -65,7 +65,7 @@
 				OutputFile="$(OutDir)\_$(ProjectName).pyd"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\lib\v8\lib;..\lib\boost\lib;..\lib\python\lib"
-				IgnoreDefaultLibraryNames=""
+				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"

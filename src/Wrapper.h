@@ -62,6 +62,7 @@ public:
 
 class CJavascriptObject : public CWrapper
 {
+protected:
   v8::Persistent<v8::Object> m_obj;
 
   void CheckAttr(v8::Handle<v8::String> name) const;
@@ -84,9 +85,25 @@ public:
   
   operator long() const;
   operator double() const;
-  operator bool() const;
-
-  CJavascriptObjectPtr Invoke(py::object self, py::list args, py::dict kwds);
+  operator bool() const;  
   
   void dump(std::ostream& os) const;  
+};
+
+class CJavascriptFunction : public CJavascriptObject
+{
+  v8::Persistent<v8::Object> m_self;
+public:
+  CJavascriptFunction(v8::Handle<v8::Context> context, 
+    v8::Handle<v8::Object> self, v8::Handle<v8::Function> func)
+    : CJavascriptObject(context, func), m_self(v8::Persistent<v8::Object>::New(self))
+  {
+  }
+
+  ~CJavascriptFunction()
+  {
+    m_self.Dispose();
+  }
+
+  CJavascriptObjectPtr Invoke(py::list args, py::dict kwds);
 };
