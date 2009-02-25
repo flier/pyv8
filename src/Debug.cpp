@@ -8,13 +8,9 @@ void CDebug::Init(void)
   v8::HandleScope scope;
 
   v8::Handle<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
+
   m_global_context = v8::Context::New(NULL, global_template);
   m_global_context->SetSecurityToken(v8::Undefined());
-
-  v8::Handle<v8::External> data = v8::External::New(this);
-
-  v8::Debug::SetDebugEventListener(OnDebugEvent, data);
-  v8::Debug::SetMessageHandler(OnDebugMessage, this);
 }
 
 void CDebug::SetEnable(bool enable)
@@ -22,6 +18,25 @@ void CDebug::SetEnable(bool enable)
   if (m_enabled == enable) return;
 
   m_enabled = enable;
+
+  v8::HandleScope scope;
+
+  v8::Context::Scope context_scope(m_global_context);
+
+  if (enable)
+  {
+    v8::Handle<v8::External> data = v8::External::New(this);
+
+    v8::Debug::SetDebugEventListener(OnDebugEvent, data);
+    v8::Debug::SetMessageHandler(OnDebugMessage, this);
+  }
+#if TODO_FIX_HANG_ISSUE
+  else
+  {
+    v8::Debug::SetDebugEventListener(v8::Null()->ToObject());
+    v8::Debug::SetMessageHandler(NULL);
+  }
+#endif
 }
 
 void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 

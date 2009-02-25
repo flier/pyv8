@@ -267,18 +267,20 @@ class TestDebug(unittest.TestCase):
         debugger.onBeforeCompile = lambda evt: events.append(repr(evt))
         debugger.onAfterCompile = lambda evt: events.append(repr(evt))
         
-        debugger.enabled = True
-        
         engine = JSEngine()
         
         try:
-            engine.eval("eval(\"1+2\")") 
+            debugger.enabled = True
+            
+            self.assertEquals(3, int(engine.eval("eval(\"1+2\")")))
+            
+            debugger.enabled = False            
+            
+            self.assertRaises(UserWarning, JSEngine.eval, engine, "throw 1")
+            
+            self.assert_(not debugger.enabled)                
         finally:
             del engine
-            
-            debugger.enabled = False
-            
-        self.assert_(not debugger.enabled)                
         
 if __name__ == '__main__':
     unittest.main()
