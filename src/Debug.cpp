@@ -10,27 +10,16 @@ void CDebug::Init(void)
   v8::Handle<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
   m_global_context = v8::Context::New(NULL, global_template);
   m_global_context->SetSecurityToken(v8::Undefined());
+
+  v8::Handle<v8::External> data = v8::External::New(this);
+
+  v8::Debug::SetDebugEventListener(OnDebugEvent, data);
+  v8::Debug::SetMessageHandler(OnDebugMessage, this);
 }
 
 void CDebug::SetEnable(bool enable)
 {
   if (m_enabled == enable) return;
-
-  v8::HandleScope scope;
-  v8::Context::Scope context_scope(m_global_context);
-
-  if (enable)
-  {
-    v8::Handle<v8::External> data = v8::External::New(this);
-
-    v8::Debug::SetDebugEventListener(OnDebugEvent, data);
-    v8::Debug::SetMessageHandler(OnDebugMessage, this);
-  }
-  else
-  {
-    v8::Debug::SetDebugEventListener(NULL);
-    v8::Debug::SetMessageHandler(NULL);
-  }
 
   m_enabled = enable;
 }
@@ -41,6 +30,8 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
   v8::HandleScope scope;
   
   CDebug *pThis = static_cast<CDebug *>(v8::Handle<v8::External>::Cast(data)->Value());
+
+  if (!pThis->m_enabled) return;
 
   if (pThis->m_onDebugEvent.ptr() == Py_None) return;
 
@@ -54,6 +45,8 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 void CDebug::OnDebugMessage(const uint16_t* message, int length, void* data)
 {
   CDebug *pThis = static_cast<CDebug *>(data);
+
+  if (!pThis->m_enabled) return;
 
   if (pThis->m_onDebugMessage.ptr() == Py_None) return;
   
