@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import sys
+import StringIO
+
 import _PyV8
 
 class JSClass(object):    
@@ -49,25 +51,180 @@ class JSClass(object):
         "Return the function bound as a setter to the specified property."
         return self.name.fset
 
-class JSDebug(object):        
+class JSDebug(object):
+    class FrameData(object):
+        def __init__(self, frame, count, name, value):
+            self.frame = frame
+            self.count = count
+            self.name = name
+            self.value = value
+            
+        def __len__(self):
+            return self.count(self.frame)
+        
+        def __iter__(self):
+            for i in xrange(self.count(self.frame)):
+                yield (self.name(self.frame, i), self.value(self.frame, i))
+        
+    class Frame(object):
+        def __init__(self, frame):
+            self.frame = frame
+            
+        @property
+        def index(self):
+            return int(self.frame.index())
+            
+        @property
+        def function(self):
+            return self.frame.func()
+            
+        @property
+        def receiver(self):
+            return self.frame.receiver()
+            
+        @property
+        def isConstructCall(self):
+            return bool(self.frame.isConstructCall())
+            
+        @property
+        def isDebuggerFrame(self):
+            return bool(self.frame.isDebuggerFrame())
+            
+        @property
+        def argumentCount(self):
+            return int(self.frame.argumentCount())
+                    
+        def argumentName(self, idx):
+            return str(self.frame.argumentName(idx))
+                    
+        def argumentValue(self, idx):
+            return self.frame.argumentValue(idx)
+            
+        @property
+        def arguments(self):
+            return FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
+            
+        @property
+        def localCount(self, idx):
+            return int(self.frame.localCount())
+                    
+        def localName(self, idx):
+            return str(self.frame.localName(idx))
+                    
+        def localValue(self, idx):
+            return self.frame.localValue(idx)
+            
+        @property
+        def locals(self):
+            return FrameData(self, self.localCount, self.localName, self.localValue)
+            
+        @property
+        def sourcePosition(self):
+            return self.frame.sourcePosition()
+            
+        @property
+        def sourceLine(self):
+            return int(self.frame.sourceLine())
+            
+        @property
+        def sourceColumn(self):
+            return int(self.frame.sourceColumn())
+            
+        @property
+        def sourceLineText(self):
+            return str(self.frame.sourceLineText())
+                    
+        def evaluate(self, source, disable_break = True):
+            return self.frame.evaluate(source, disable_break)
+            
+        @property
+        def invocationText(self):
+            return str(self.frame.invocationText())
+            
+        @property
+        def sourceAndPositionText(self):
+            return str(self.frame.sourceAndPositionText())
+            
+        @property
+        def localsText(self):
+            return str(self.frame.localsText())
+            
+        def __str__(self):
+            return str(self.frame.toText())
+
+    class Frames(object):
+        def __init__(self, state):
+            self.state = state
+            
+        def __len__(self):
+            return self.state.frameCount
+            
+        def __iter__(self):
+            for i in xrange(self.state.frameCount):                
+                yield self.state.frame(i)
+    
+    class State(object):
+        def __init__(self, state):            
+            self.state = state
+            
+        @property
+        def frameCount(self):
+            return int(self.state.frameCount())
+            
+        def frame(self, idx = None):
+            return JSDebug.Frame(self.state.frame([idx]))
+        
+        @property    
+        def selectedFrame(self):
+            return int(self.state.selectedFrame())
+        
+        @property
+        def frames(self):
+            return JSDebug.Frames(self)
+        
+        def __str__(self):
+            s = StringIO.StringIO()
+            
+            try:
+                for frame in self.frames:
+                    s.write(str(frame))
+                    
+                return s.getvalue()
+            finally:
+                s.close()
+                
     class DebugEvent(object):
-        def __init__(self, type, event):            
-            self.type = type
+        pass
+            
+    class StateEvent(DebugEvent):
+        __state = None
+
+        @property
+        def state(self):
+            if not self.__state:
+                self.__state = JSDebug.State(self.event.executionState())
+            
+            return self.__state
+        
+    class BreakEvent(StateEvent):
+        type = _PyV8.JSDebugEvent.Break
+        
+        def __init__(self, event):
             self.event = event
-            
-    class BreakEvent(DebugEvent):
+        
+    class ExceptionEvent(StateEvent):
+        type = _PyV8.JSDebugEvent.Exception
+        
         def __init__(self, event):
-            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.Break, event)
-            
-    class ExceptionEvent(DebugEvent):
-        def __init__(self, event):
-            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.Exception, event)
+            self.event = event
 
     class NewFunctionEvent(DebugEvent):
+        type = _PyV8.JSDebugEvent.NewFunction
+        
         def __init__(self, event):
-            JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.NewFunction, event)
+            self.event = event
             
-    class JSScript(object):
+    class Script(object):
         Native = 0
         Extension = 1
         Normal = 2
@@ -84,11 +241,11 @@ class JSDebug(object):
             return str(self.script.name()) if hasattr(self.script, "name") else None
             
         @property
-        def line(self):
+        def lineOffset(self):
             return int(self.script.line_offset().value()) if hasattr(self.script, "line_offset") else -1;
         
         @property    
-        def column(self):
+        def columnOffset(self):
             return int(self.script.column_offset().value()) if hasattr(self.script, "column_offset") else -1;
             
         @property
@@ -98,28 +255,25 @@ class JSDebug(object):
         @property
         def typename(self):
             NAMES = {
-                JSDebug.JSScript.Native : "native",
-                JSDebug.JSScript.Extension : "extension",
-                JSDebug.JSScript.Normal : "normal"
+                JSDebug.Script.Native : "native",
+                JSDebug.Script.Extension : "extension",
+                JSDebug.Script.Normal : "normal"
             }
 
             return NAMES[self.type]
             
         def __str__(self):
-            return "<%s script %s @ %d:%d> : %s" % (self.typename, self.name,
-                                                    self.line, self.column,
+            return "<%s script %s @ %d:%d> : '%s'" % (self.typename, self.name,
+                                                    self.lineOffset, self.columnOffset,
                                                     self.source)
             
-    class CompileEvent(DebugEvent):
-        def __init__(self, type, event):
-            JSDebug.DebugEvent.__init__(self, type, event)
-
+    class CompileEvent(StateEvent):
         __script = None
 
         @property
         def script(self):
             if not self.__script:
-                self.__script = JSDebug.JSScript(self.event.script())
+                self.__script = JSDebug.Script(self.event.script())
             
             return self.__script
         
@@ -127,18 +281,22 @@ class JSDebug(object):
             return str(self.script)
             
     class BeforeCompileEvent(CompileEvent):
+        type = _PyV8.JSDebugEvent.BeforeCompile
+        
         def __init__(self, event):
-            JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.BeforeCompile, event)
+            self.event = event
         
         def __repr__(self):
-            return "before compile script: " + str(self.script)
+            return "before compile script: %s\n%s" % (str(self.script), str(self.state))
     
     class AfterCompileEvent(CompileEvent):
+        type = _PyV8.JSDebugEvent.AfterCompile
+        
         def __init__(self, event):
-            JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.AfterCompile, event)
+            self.event = event
 
         def __repr__(self):
-            return "after compile script: " + str(self.script)
+            return "after compile script: %s\n%s" % (str(self.script), str(self.state))
 
     onMessage = None
     onBreak = None
@@ -303,7 +461,7 @@ class TestDebug(unittest.TestCase):
     def tearDown(self):
         del self.engine
         
-    events = []
+    events = []    
         
     def processDebugEvent(self, event):
         try:
@@ -329,7 +487,7 @@ class TestDebug(unittest.TestCase):
         try:
             debugger.enabled = True
             
-            self.assertEquals(3, int(engine.eval("eval(\"1+2\")")))
+            self.assertEquals(3, int(engine.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
             
             debugger.enabled = False            
             
