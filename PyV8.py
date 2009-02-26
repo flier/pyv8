@@ -237,16 +237,25 @@ class JSDebug(object):
             return str(self.script.source())
             
         @property
-        def name(self):            
-            return str(self.script.name()) if hasattr(self.script, "name") else None
+        def name(self):
+            if hasattr(self.script, "name"):
+                return str(self.script.name())
+            else:
+                return None
             
         @property
         def lineOffset(self):
-            return int(self.script.line_offset().value()) if hasattr(self.script, "line_offset") else -1;
+            if hasattr(self.script, "line_offset"):
+                return int(self.script.line_offset().value())
+            else:
+                return -1;
         
         @property    
         def columnOffset(self):
-            return int(self.script.column_offset().value()) if hasattr(self.script, "column_offset") else -1;
+            if hasattr(self.script, "column_offset"):
+                return int(self.script.column_offset().value())
+            else:
+                return -1;
             
         @property
         def type(self):
@@ -500,7 +509,11 @@ class TestDebug(unittest.TestCase):
         self.assertEquals(4, len(self.events))
         
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
-                        format='%(asctime)s %(levelname)s %(message)s')
+    if "-v" in sys.argv:
+        level = logging.DEBUG
+    else:
+        level = logging.WARN
+    
+    logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
     unittest.main()
