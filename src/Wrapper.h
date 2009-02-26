@@ -91,6 +91,9 @@ public:
   bool Unequals(CJavascriptObjectPtr other) const { return !Equals(other); }
   
   void Dump(std::ostream& os) const;  
+
+  CJavascriptObjectPtr Wrap(v8::Handle<v8::Value> obj, 
+    v8::Handle<v8::Object> self = v8::Handle<v8::Object>()) const;
 };
 
 class CJavascriptFunction : public CJavascriptObject
@@ -111,5 +114,5 @@ public:
   CJavascriptObjectPtr Invoke(py::list args, py::dict kwds);
 
   const std::string GetName(void) const;
-  CJavascriptObjectPtr GetOwner(void) const;
+  CJavascriptObjectPtr GetOwner(void) const { return Wrap(m_self); }
 };

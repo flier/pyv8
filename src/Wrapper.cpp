@@ -238,17 +238,9 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_obj = m_obj->Get(attr_name);
 
-  if (attr_obj.IsEmpty() || try_catch.HasCaught()) 
-    throw CEngineException(try_catch);
+  if (try_catch.HasCaught()) throw CEngineException(try_catch);
 
-  if (attr_obj->IsFunction())
-  {
-    v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(attr_obj);
-
-    return CJavascriptObjectPtr(new CJavascriptFunction(m_context, m_obj, func));
-  }
-
-  return CJavascriptObjectPtr(new CJavascriptObject(m_context, attr_obj->ToObject()));
+  return Wrap(attr_obj, m_obj);
 }
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
@@ -299,7 +291,9 @@ void CJavascriptObject::Dump(std::ostream& os) const
 
   v8::Context::Scope context_scope(m_context);
 
-  if (m_obj->IsInt32())
+  if (m_obj.IsEmpty())
+    os << "None";
+  else if (m_obj->IsInt32())
     os << m_obj->Int32Value();
   else if (m_obj->IsNumber())
     os << m_obj->NumberValue();
@@ -341,6 +335,22 @@ CJavascriptObject::operator bool() const
   return m_obj->BooleanValue();
 }
 
+CJavascriptObjectPtr CJavascriptObject::Wrap(
+  v8::Handle<v8::Value> obj, v8::Handle<v8::Object> self) const
+{
+  if (obj.IsEmpty()) obj = v8::Null();
+
+  if (obj->IsFunction())
+  {
+    v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(obj);
+
+    return CJavascriptObjectPtr(new CJavascriptFunction(m_context, 
+      self.IsEmpty() ? m_context->Global() : self, func));
+  }  
+
+  return CJavascriptObjectPtr(new CJavascriptObject(m_context, obj->ToObject()));
+}
+
 CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
@@ -363,7 +373,7 @@ CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 
   if (try_catch.HasCaught()) throw CEngineException(try_catch);
 
-  return CJavascriptObjectPtr(new CJavascriptObject(m_context, result->ToObject()));
+  return Wrap(result);
 }
 
 const std::string CJavascriptFunction::GetName(void) const
@@ -377,9 +387,4 @@ const std::string CJavascriptFunction::GetName(void) const
   v8::String::AsciiValue name(v8::Handle<v8::String>::Cast(func->GetName()));
 
   return std::string(*name, name.length());
-}
-
-CJavascriptObjectPtr CJavascriptFunction::GetOwner(void) const
-{
-  return CJavascriptObjectPtr(new CJavascriptObject(m_context, m_self));
 }
