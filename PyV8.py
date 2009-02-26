@@ -66,31 +66,79 @@ class JSDebug(object):
     class NewFunctionEvent(DebugEvent):
         def __init__(self, event):
             JSDebug.DebugEvent.__init__(self, _PyV8.JSDebugEvent.NewFunction, event)
-    
-    class CompileEvent(DebugEvent):
-        def __init__(self, type, event):
-            JSDebug.DebugEvent.__init__(self, type, event)
+            
+    class JSScript(object):
+        Native = 0
+        Extension = 1
+        Normal = 2
+        
+        def __init__(self, script):            
+            self.script = script
             
         @property
         def source(self):
-            return str(self.event.script())
+            return str(self.script.source())
+            
+        @property
+        def name(self):            
+            return str(self.script.name()) if hasattr(self.script, "name") else None
+            
+        @property
+        def line(self):
+            return int(self.script.line_offset().value()) if hasattr(self.script, "line_offset") else -1;
+        
+        @property    
+        def column(self):
+            return int(self.script.column_offset().value()) if hasattr(self.script, "column_offset") else -1;
+            
+        @property
+        def type(self):
+            return int(self.script.type())
+            
+        @property
+        def typename(self):
+            NAMES = {
+                JSDebug.JSScript.Native : "native",
+                JSDebug.JSScript.Extension : "extension",
+                JSDebug.JSScript.Normal : "normal"
+            }
+
+            return NAMES[self.type]
             
         def __str__(self):
-            return self.source
+            return "<%s script %s @ %d:%d> : %s" % (self.typename, self.name,
+                                                    self.line, self.column,
+                                                    self.source)
+            
+    class CompileEvent(DebugEvent):
+        def __init__(self, type, event):
+            JSDebug.DebugEvent.__init__(self, type, event)
+
+        __script = None
+
+        @property
+        def script(self):
+            if not self.__script:
+                self.__script = JSDebug.JSScript(self.event.script())
+            
+            return self.__script
+        
+        def __str__(self):
+            return str(self.script)
             
     class BeforeCompileEvent(CompileEvent):
         def __init__(self, event):
             JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.BeforeCompile, event)
         
         def __repr__(self):
-            return "before compile script: " + self.source
+            return "before compile script: " + str(self.script)
     
     class AfterCompileEvent(CompileEvent):
         def __init__(self, event):
             JSDebug.CompileEvent.__init__(self, _PyV8.JSDebugEvent.AfterCompile, event)
 
         def __repr__(self):
-            return "after compile script: " + self.source
+            return "after compile script: " + str(self.script)
 
     onMessage = None
     onBreak = None
@@ -137,6 +185,7 @@ debugger = JSDebug()
 JSEngine = _PyV8.JSEngine
 
 import unittest
+import logging
 
 class TestWrapper(unittest.TestCase):
     def setUp(self):
@@ -252,20 +301,28 @@ class TestDebug(unittest.TestCase):
         self.engine = JSEngine()
         
     def tearDown(self):
-        del self.engine        
+        del self.engine
+        
+    events = []
+        
+    def processDebugEvent(self, event):
+        try:
+            logging.debug("receive debug event: %s", repr(event))
+            
+            self.events.append(repr(event))
+        except:
+            logging.error(sys.exc_info())
         
     def testEventDispatch(self):        
         global debugger
         
         self.assert_(not debugger.enabled)
         
-        events = []        
-        
-        debugger.onBreak = lambda evt: events.append(repr(evt))
-        debugger.onException = lambda evt: events.append(repr(evt))
-        debugger.onNewFunction = lambda evt: events.append(repr(evt))
-        debugger.onBeforeCompile = lambda evt: events.append(repr(evt))
-        debugger.onAfterCompile = lambda evt: events.append(repr(evt))
+        debugger.onBreak = lambda evt: self.processDebugEvent(evt)
+        debugger.onException = lambda evt: self.processDebugEvent(evt)
+        debugger.onNewFunction = lambda evt: self.processDebugEvent(evt)
+        debugger.onBeforeCompile = lambda evt: self.processDebugEvent(evt)
+        debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
         
         engine = JSEngine()
         
@@ -281,6 +338,11 @@ class TestDebug(unittest.TestCase):
             self.assert_(not debugger.enabled)                
         finally:
             del engine
+            
+        self.assertEquals(4, len(self.events))
         
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
+                        format='%(asctime)s %(levelname)s %(message)s')
+
     unittest.main()
