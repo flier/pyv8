@@ -8,6 +8,7 @@ void CEngine::Expose(void)
 
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::no_init)
     .def(py::init< py::optional<py::object> >(py::args("global")))
+    .def(py::init< py::optional<CContextPtr> >(py::args("context")))
 
     .add_static_property("version", &CEngine::GetVersion)
 

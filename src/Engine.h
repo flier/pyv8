@@ -18,7 +18,7 @@ protected:
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);  
 public:
   CEngine(py::object global = py::object()) 
-    : m_context(CContext::Create(global))
+    : m_context(new CContext(global))
   {
   }
   CEngine(CContextPtr context) 

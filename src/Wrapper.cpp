@@ -339,7 +339,7 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 
   if (attr_obj.IsEmpty()) CWrapperException::Throw(try_catch);
 
-  return Wrap(attr_obj, m_obj);
+  return CJavascriptObject::Wrap(m_context, attr_obj->ToObject(), m_obj);
 }
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
@@ -432,20 +432,26 @@ CJavascriptObject::operator bool() const
   return m_obj->BooleanValue();
 }
 
-CJavascriptObjectPtr CJavascriptObject::Wrap(
-  v8::Handle<v8::Value> obj, v8::Handle<v8::Object> self) const
+CJavascriptObjectPtr CJavascriptObject::Wrap(v8::Handle<v8::Context> context,
+  v8::Handle<v8::Object> obj, v8::Handle<v8::Object> self) 
 {
-  if (obj.IsEmpty()) obj = v8::Null();
+  v8::HandleScope handle_scope;
 
-  if (obj->IsFunction())
+  v8::Context::Scope context_scope(context); 
+
+  if (obj.IsEmpty()) 
+  {
+    obj = v8::Null()->ToObject();
+  }
+  else if (obj->IsFunction())
   {
     v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(obj);
 
-    return CJavascriptObjectPtr(new CJavascriptFunction(m_context, 
-      self.IsEmpty() ? m_context->Global() : self, func));
+    return CJavascriptObjectPtr(new CJavascriptFunction(context, 
+      self.IsEmpty() ? context->Global() : self, func));
   }  
 
-  return CJavascriptObjectPtr(new CJavascriptObject(m_context, obj->ToObject()));
+  return CJavascriptObjectPtr(new CJavascriptObject(context, obj));
 }
 
 CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
@@ -470,7 +476,7 @@ CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 
   if (result.IsEmpty()) CWrapperException::Throw(try_catch);
 
-  return Wrap(result);
+  return CJavascriptObject::Wrap(m_context, result->ToObject());
 }
 
 const std::string CJavascriptFunction::GetName(void) const

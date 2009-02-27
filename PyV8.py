@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import with_statement
+
 import sys
 import StringIO
 
@@ -351,8 +353,49 @@ debugger = JSDebug()
 
 JSEngine = _PyV8.JSEngine
 
+class JSContext(_PyV8.JSContext):
+    def __enter__(self):
+        self.enter()
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.leave()
+
 import unittest
 import logging
+
+class TestContext(unittest.TestCase):
+    def testWith(self):
+        self.assert_(not bool(JSContext.inContext))
+        self.assert_(not bool(JSContext.entered))
+        
+        class Global(object):
+            name = "global"
+            
+        g = Global()
+        
+        with JSContext(g) as ctxt:
+            self.assert_(bool(JSContext.inContext))
+            self.assertEquals(g.name, str(JSContext.entered.locals.name))
+            self.assertEquals(g.name, str(JSContext.current.locals.name))
+            
+            class Local(object):
+                name = "local"
+                
+            l = Local()
+            
+            with JSContext(l):
+                self.assert_(bool(JSContext.inContext))
+                self.assertEquals(l.name, str(JSContext.entered.locals.name))
+                self.assertEquals(l.name, str(JSContext.current.locals.name))
+            
+            self.assert_(bool(JSContext.inContext))
+            self.assertEquals(g.name, str(JSContext.entered.locals.name))
+            self.assertEquals(g.name, str(JSContext.current.locals.name))
+            
+        self.assert_(not bool(JSContext.entered))
+        self.assert_(not bool(JSContext.inContext))
 
 class TestWrapper(unittest.TestCase):
     def setUp(self):
@@ -369,21 +412,23 @@ class TestWrapper(unittest.TestCase):
             var_b = true;
         """)
         
-        var_i = self.engine.context.var_i
+        vars = self.engine.context.locals 
+        
+        var_i = vars.var_i
         
         self.assert_(var_i)
         self.assertEquals(1, int(var_i))
         
-        var_f = self.engine.context.var_f
+        var_f = vars.var_f
         
         self.assert_(var_f)
-        self.assertEquals(1.0, float(self.engine.context.var_f))
+        self.assertEquals(1.0, float(vars.var_f))
         
-        var_s = self.engine.context.var_s
+        var_s = vars.var_s
         self.assert_(var_s)
-        self.assertEquals("test", str(self.engine.context.var_s))
+        self.assertEquals("test", str(vars.var_s))
         
-        var_b = self.engine.context.var_b
+        var_b = vars.var_b
         self.assert_(var_b)
         self.assert_(bool(var_b))
         
@@ -417,8 +462,10 @@ class TestEngine(unittest.TestCase):
         engine = JSEngine(Global())
         
         try:
+            vars = engine.context.locals
+            
             # getter
-            self.assertEquals(Global.version, str(engine.context.version))            
+            self.assertEquals(Global.version, str(vars.version))            
             self.assertEquals(Global.version, str(engine.eval("version")))
                         
             self.assertRaises(UserWarning, JSEngine.eval, engine, "nonexists")
@@ -426,7 +473,7 @@ class TestEngine(unittest.TestCase):
             # setter
             self.assertEquals(2.0, float(engine.eval("version = 2.0")))
             
-            self.assertEquals(2.0, float(engine.context.version))       
+            self.assertEquals(2.0, float(vars.version))       
         finally:
             del engine
             
