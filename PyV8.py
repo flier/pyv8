@@ -386,7 +386,7 @@ class TestWrapper(unittest.TestCase):
         var_b = self.engine.context.var_b
         self.assert_(var_b)
         self.assert_(bool(var_b))
-
+        
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         self.assertEquals("1.0.1", JSEngine.version)
@@ -462,6 +462,23 @@ class TestEngine(unittest.TestCase):
             self.assertEquals("false", str(ret.valueOf()))
         finally:
             del engine
+            
+    def testPythonWrapper(self):
+        class Global(JSClass):
+            s = [1, 2, 3]
+            
+        g = Global()
+        e = JSEngine(g)
+        
+        try:
+            e.eval("""
+                s[2] = s[1] + 2;
+                s[0] = s[1];
+                delete s[1];
+            """)
+            self.assertEquals([2, 4], g.s)
+        finally:
+            del e
             
 class TestDebug(unittest.TestCase):
     def setUp(self):

@@ -34,11 +34,24 @@ public:
 
 class CPythonWrapper : public CWrapper
 {
-  static v8::Handle<v8::Value> Getter(v8::Local<v8::String> prop, 
-                                      const v8::AccessorInfo& info);
-  static v8::Handle<v8::Value> Setter(v8::Local<v8::String> prop, 
-                                      v8::Local<v8::Value> value, 
-                                      const v8::AccessorInfo& info);
+  static v8::Handle<v8::Value> NamedGetter(
+    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Value> NamedSetter(
+    v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Boolean> NamedQuery(
+    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Boolean> NamedDeleter(
+    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
+
+  static v8::Handle<v8::Value> IndexedGetter(
+    uint32_t index, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Value> IndexedSetter(
+    uint32_t index, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Boolean> IndexedQuery(
+    uint32_t index, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Boolean> IndexedDeleter(
+    uint32_t index, const v8::AccessorInfo& info);
+
   static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
 protected:
   v8::Persistent<v8::ObjectTemplate> m_template;

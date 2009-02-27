@@ -8,6 +8,7 @@
 #ifdef _WIN32
 # pragma warning( push )
 # pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
+# pragma warning( disable : 4127 ) // conditional expression is constant
 # pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
 # pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
 #endif
@@ -41,7 +42,27 @@ public:
   static void Expose(void);
 };
 
-class CWrapperException : public CPythonException
+template <typename T>
+struct CExceptionThrower
+{
+  static void Throw(v8::TryCatch& try_catch)
+  {
+    if (try_catch.HasCaught())
+    {
+      assert(v8::Context::InContext());
+
+      v8::HandleScope handle_scope;
+
+      v8::String::AsciiValue exception(try_catch.Exception());
+
+      throw T(*exception);
+    }
+  }
+};
+
+class CWrapperException 
+  : public CPythonException, 
+    public CExceptionThrower<CWrapperException>
 {
 public:
   CWrapperException(const std::string& msg, PyObject *exc = ::PyExc_UserWarning) 
@@ -51,20 +72,11 @@ public:
   }
 };
 
-class CEngineException : public CPythonException
+class CEngineException 
+  : public CPythonException,
+    public CExceptionThrower<CEngineException>
 {
-  const std::string generate(v8::TryCatch& try_catch)
-  {
-    v8::String::AsciiValue exception(try_catch.Exception());
-
-    return *exception;
-  }
 public:
-  CEngineException(v8::TryCatch& try_catch, PyObject *exc = ::PyExc_UserWarning) 
-    : CPythonException(generate(try_catch), exc)
-  {
-  }
-
   CEngineException(const std::string& msg, PyObject *exc = ::PyExc_UserWarning)
     : CPythonException(msg, exc)
   {
