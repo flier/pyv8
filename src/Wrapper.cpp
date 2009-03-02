@@ -31,7 +31,12 @@ void CWrapper::Expose(void)
 
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject> >("JSFunction", py::no_init)
     .def("__call__", &CJavascriptFunction::Invoke, 
-         (py::arg("args") = py::list(), py::arg("kwds") = py::dict()))
+         (py::arg("args") = py::list(), 
+          py::arg("kwds") = py::dict()))
+    .def("apply", &CJavascriptFunction::Apply, 
+         (py::arg("self"), 
+          py::arg("args") = py::list(), 
+          py::arg("kwds") = py::dict()))
     .add_property("func_name", &CJavascriptFunction::GetName)
     .add_property("func_owner", &CJavascriptFunction::GetOwner)
     ;
@@ -454,7 +459,7 @@ CJavascriptObjectPtr CJavascriptObject::Wrap(v8::Handle<v8::Context> context,
   return CJavascriptObjectPtr(new CJavascriptObject(context, obj));
 }
 
-CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
+CJavascriptObjectPtr CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
 
@@ -471,12 +476,25 @@ CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
     params[i] = Cast(args[i]);
   }
 
-  v8::Handle<v8::Value> result = func->Call(m_self,
+  v8::Handle<v8::Value> result = func->Call(self,
     params.size(), params.empty() ? NULL : &params[0]);
 
   if (result.IsEmpty()) CWrapperException::Throw(try_catch);
 
   return CJavascriptObject::Wrap(m_context, result->ToObject());
+}
+CJavascriptObjectPtr CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
+{
+  v8::HandleScope handle_scope;
+
+  return Call(self.get() ? self->Object() : v8::Context::GetCurrent()->Global(), args, kwds);
+}
+
+CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds) 
+{ 
+  v8::HandleScope handle_scope;
+
+  return Call(m_self, args, kwds); 
 }
 
 const std::string CJavascriptFunction::GetName(void) const

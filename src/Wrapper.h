@@ -90,6 +90,7 @@ public:
     m_obj.Dispose();
   }
 
+  v8::Handle<v8::Object> Object(void) { return m_obj; }
   long Native(void) { return reinterpret_cast<long>(*m_obj); }
 
   CJavascriptObjectPtr GetAttr(const std::string& name);
@@ -112,6 +113,8 @@ public:
 class CJavascriptFunction : public CJavascriptObject
 {
   v8::Persistent<v8::Object> m_self;
+
+  CJavascriptObjectPtr Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds);
 public:
   CJavascriptFunction(v8::Handle<v8::Context> context, 
     v8::Handle<v8::Object> self, v8::Handle<v8::Function> func)
@@ -123,7 +126,8 @@ public:
   {
     m_self.Dispose();
   }
-
+  
+  CJavascriptObjectPtr Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds);
   CJavascriptObjectPtr Invoke(py::list args, py::dict kwds);
 
   const std::string GetName(void) const;
