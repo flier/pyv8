@@ -97,8 +97,6 @@ v8::Handle<v8::Value> CPythonWrapper::NamedGetter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Context::Scope context_scope(pThis->m_context);
-
   py::object obj = pThis->Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
@@ -118,8 +116,6 @@ v8::Handle<v8::Value> CPythonWrapper::NamedSetter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Context::Scope context_scope(pThis->m_context);
-
   py::object obj = pThis->Unwrap(info.Holder());
 
   v8::String::AsciiValue name(prop), data(value);
@@ -135,8 +131,6 @@ v8::Handle<v8::Boolean> CPythonWrapper::NamedQuery(
   v8::HandleScope handle_scope;
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  v8::Context::Scope context_scope(pThis->m_context);
 
   py::object obj = pThis->Unwrap(info.Holder());  
 
@@ -154,8 +148,6 @@ v8::Handle<v8::Boolean> CPythonWrapper::NamedDeleter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Context::Scope context_scope(pThis->m_context);
-
   py::object obj = pThis->Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
@@ -172,8 +164,6 @@ v8::Handle<v8::Value> CPythonWrapper::IndexedGetter(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Context::Scope context_scope(pThis->m_context);
-
   py::object obj = pThis->Unwrap(info.Holder());  
 
   py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
@@ -186,8 +176,6 @@ v8::Handle<v8::Value> CPythonWrapper::IndexedSetter(
   v8::HandleScope handle_scope;
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  v8::Context::Scope context_scope(pThis->m_context);
 
   py::object obj = pThis->Unwrap(info.Holder());  
 
@@ -204,8 +192,6 @@ v8::Handle<v8::Boolean> CPythonWrapper::IndexedQuery(
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  v8::Context::Scope context_scope(pThis->m_context);
-
   py::object obj = pThis->Unwrap(info.Holder());  
 
   return v8::Boolean::New(index < ::PySequence_Size(obj.ptr()));
@@ -216,8 +202,6 @@ v8::Handle<v8::Boolean> CPythonWrapper::IndexedDeleter(
   v8::HandleScope handle_scope;
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  v8::Context::Scope context_scope(pThis->m_context);
 
   py::object obj = pThis->Unwrap(info.Holder());  
 
@@ -231,8 +215,6 @@ v8::Handle<v8::Value> CPythonWrapper::Caller(const v8::Arguments& args)
   v8::HandleScope handle_scope;
 
   CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(args.Data())->Value());
-
-  v8::Handle<v8::Context> context(pThis->m_context);
 
   py::object self = pThis->Unwrap(args.This());
 
@@ -332,8 +314,6 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 {
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context); 
-
   v8::TryCatch try_catch;
 
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
@@ -344,30 +324,33 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 
   if (attr_obj.IsEmpty()) CWrapperException::Throw(try_catch);
 
-  return CJavascriptObject::Wrap(m_context, attr_obj->ToObject(), m_obj);
+  return CJavascriptObject::Wrap(attr_obj->ToObject(), m_obj);
 }
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 {
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context);
-
   v8::TryCatch try_catch;
 
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
-
-  CheckAttr(attr_name);
-
   v8::Handle<v8::Value> attr_obj = Cast(value);
+
+  if (attr_obj->IsUndefined())
+  {
+    py::extract<CJavascriptObject&> extractor(value);
+
+    if (extractor.check())
+    {
+      attr_obj = extractor().m_obj;
+    }
+  }
 
   if (!m_obj->Set(attr_name, attr_obj)) CWrapperException::Throw(try_catch);
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
   v8::HandleScope handle_scope;
-
-  v8::Context::Scope context_scope(m_context);
 
   v8::TryCatch try_catch;
 
@@ -382,16 +365,12 @@ bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
 {
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context);
-
   return m_obj->Equals(other->m_obj);
 }
 
 void CJavascriptObject::Dump(std::ostream& os) const
 {
   v8::HandleScope handle_scope;
-
-  v8::Context::Scope context_scope(m_context);
 
   if (m_obj.IsEmpty())
     os << "None";
@@ -415,16 +394,18 @@ CJavascriptObject::operator long() const
 { 
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context); 
-  
+  if (m_obj.IsEmpty())
+    throw CWrapperException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
+
   return m_obj->Int32Value(); 
 }
 CJavascriptObject::operator double() const 
 { 
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context); 
-  
+  if (m_obj.IsEmpty())
+    throw CWrapperException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
+
   return m_obj->NumberValue(); 
 }
 
@@ -432,17 +413,14 @@ CJavascriptObject::operator bool() const
 {
   v8::HandleScope handle_scope;
 
-  v8::Context::Scope context_scope(m_context); 
+  if (m_obj.IsEmpty()) return false;
 
   return m_obj->BooleanValue();
 }
 
-CJavascriptObjectPtr CJavascriptObject::Wrap(v8::Handle<v8::Context> context,
-  v8::Handle<v8::Object> obj, v8::Handle<v8::Object> self) 
+CJavascriptObjectPtr CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Object> self) 
 {
   v8::HandleScope handle_scope;
-
-  v8::Context::Scope context_scope(context); 
 
   if (obj.IsEmpty()) 
   {
@@ -452,18 +430,15 @@ CJavascriptObjectPtr CJavascriptObject::Wrap(v8::Handle<v8::Context> context,
   {
     v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(obj);
 
-    return CJavascriptObjectPtr(new CJavascriptFunction(context, 
-      self.IsEmpty() ? context->Global() : self, func));
+    return CJavascriptObjectPtr(new CJavascriptFunction(self, func));
   }  
 
-  return CJavascriptObjectPtr(new CJavascriptObject(context, obj));
+  return CJavascriptObjectPtr(new CJavascriptObject(obj));
 }
 
 CJavascriptObjectPtr CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
-
-  v8::Context::Scope context_scope(m_context);
 
   v8::TryCatch try_catch;
 
@@ -481,7 +456,7 @@ CJavascriptObjectPtr CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::
 
   if (result.IsEmpty()) CWrapperException::Throw(try_catch);
 
-  return CJavascriptObject::Wrap(m_context, result->ToObject());
+  return CJavascriptObject::Wrap(result->ToObject());
 }
 CJavascriptObjectPtr CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
 {
@@ -500,8 +475,6 @@ CJavascriptObjectPtr CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 const std::string CJavascriptFunction::GetName(void) const
 {
   v8::HandleScope handle_scope;
-
-  v8::Context::Scope context_scope(m_context);
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
 

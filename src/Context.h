@@ -39,11 +39,11 @@ public:
   void Enter(void) { m_context->Enter(); }
   void Leave(void) { m_context->Exit(); }
 
+  CJavascriptObjectPtr Evaluate(const std::string& src);
+
   static CContextPtr GetEntered(void);
   static CContextPtr GetCurrent(void);
   static bool InContext(void) { return v8::Context::InContext(); }
-
-  static CPythonWrapper *GetWrapper(v8::Handle<v8::Context> context);
 
   static void Expose(void);
 };

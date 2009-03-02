@@ -6,16 +6,10 @@ void CEngine::Expose(void)
   v8::V8::SetFatalErrorHandler(ReportFatalError);
   v8::V8::AddMessageListener(ReportMessage);
 
-  py::class_<CEngine, boost::noncopyable>("JSEngine", py::no_init)
-    .def(py::init< py::optional<py::object> >(py::args("global")))
-    .def(py::init< py::optional<CContextPtr> >(py::args("context")))
-
+  py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
 
-    .def_readonly("context", &CEngine::GetContext)
-
-    .def("compile", &CEngine::Compile)
-    .def("eval", &CEngine::Execute)
+    .def("compile", &CEngine::Compile)    
     ;
 
   py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
@@ -53,9 +47,9 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
 
 boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
 {
-  v8::HandleScope handle_scope;
+  assert(v8::Context::InContext());
 
-  v8::Context::Scope context_scope(m_context->Handle());
+  v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
 
@@ -70,23 +64,23 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
   return boost::shared_ptr<CScript>(new CScript(*this, src, v8::Persistent<v8::Script>::New(script)));
 }
 
-CJavascriptObjectPtr CEngine::Execute(const std::string& src) 
-{ 
-  return Compile(src)->Run(); 
-}
-
 CJavascriptObjectPtr CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
 {    
-  v8::HandleScope handle_scope;
+  assert(v8::Context::InContext());
 
-  v8::Context::Scope context_scope(m_context->Handle());
+  v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
 
   v8::Handle<v8::Value> result = script->Run();
 
-  if (result.IsEmpty()) 
-    CWrapperException::Throw(try_catch);
+  if (result.IsEmpty())
+  {
+    if (try_catch.HasCaught())
+      CWrapperException::Throw(try_catch);
 
-  return CJavascriptObjectPtr(new CJavascriptObject(m_context->Handle(), result->ToObject()));
+    result = v8::Null();
+  }
+
+  return CJavascriptObjectPtr(new CJavascriptObject(result->ToObject()));
 }

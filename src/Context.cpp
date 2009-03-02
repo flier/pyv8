@@ -1,6 +1,7 @@
 #include "Context.h"
 
 #include "Wrapper.h"
+#include "Engine.h"
 
 void CContext::Expose(void)
 {
@@ -18,6 +19,8 @@ void CContext::Expose(void)
                          "Returns the context that is on the top of the stack.")
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
+
+    .def("eval", &CContext::Evaluate)
 
     .def("enter", &CContext::Enter, "Enter this context. "
          "After entering a context, all code compiled and "
@@ -42,19 +45,16 @@ CContext::CContext(py::object global)
 
   v8::Context::Scope context_scope(m_context);
 
-  std::auto_ptr<CPythonWrapper> wrapper(new CPythonWrapper(m_context));
-
   if (global.ptr() != Py_None)
-    m_context->Global()->Set(v8::String::NewSymbol("__proto__"), wrapper->Wrap(global));  
-
-  m_context->Global()->Set(v8::String::NewSymbol("__wrapper__"), v8::External::New(wrapper.release()));    
+    m_context->Global()->Set(v8::String::NewSymbol("__proto__"),
+    CPythonWrapper::GetInstance().Wrap(global));  
 }
 
 CJavascriptObjectPtr CContext::GetGlobal(void) 
 { 
   v8::HandleScope handle_scope;
 
-  return CJavascriptObject::Wrap(m_context, m_context->Global()); 
+  return CJavascriptObject::Wrap(m_context->Global()); 
 }
 
 py::str CContext::GetSecurityToken(void)
@@ -81,17 +81,6 @@ void CContext::SetSecurityToken(py::str token)
   }
 }
 
-CPythonWrapper *CContext::GetWrapper(v8::Handle<v8::Context> context) 
-{    
-  assert(v8::Context::InContext());
-
-  v8::HandleScope handle_scope;
-
-  v8::Handle<v8::Value> wrapper = context->Global()->Get(v8::String::NewSymbol("__wrapper__"));
-
-  return static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(wrapper)->Value());
-}
-
 CContextPtr CContext::GetEntered(void) 
 { 
   v8::HandleScope handle_scope;
@@ -103,4 +92,9 @@ CContextPtr CContext::GetCurrent(void)
   v8::HandleScope handle_scope;
 
   return CContextPtr(new CContext(v8::Context::GetCurrent())); 
+}
+
+CJavascriptObjectPtr CContext::Evaluate(const std::string& src) 
+{ 
+  return CEngine().Compile(src)->Run(); 
 }

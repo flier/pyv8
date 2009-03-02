@@ -402,48 +402,46 @@ class TestContext(unittest.TestCase):
         self.assert_(not bool(JSContext.entered))
         self.assert_(not bool(JSContext.inContext))
         
-    def testMultiContext(self):
+    def _testMultiContext(self):
         # Create an environment
         with JSContext() as ctxt0:
             ctxt0.securityToken = "password"
             
-            with JSEngine(ctxt0) as e:
-                e.eval("custom = 1234")
+            global0 = ctxt0.locals            
+            global0.custom = 1234
                 
-            self.assertEquals(1234, int(ctxt0.locals.custom))
+            self.assertEquals(1234, int(global0.custom))
             
             # Create an independent environment
             with JSContext() as ctxt1:
-                ctxt1.securityToken = "password"
+                ctxt1.securityToken = "password"                                
+                 
+                global1 = ctxt1.locals
+                global1.custom = 1234
                 
-                self.assertNotEqual(ctxt0.locals, ctxt1.locals)
-                
-                with JSEngine(ctxt1) as e:
-                    e.eval("custom = 1234")
-                    
-                self.assertEquals(1234, int(ctxt1.locals.custom))
+                self.assertEquals(1234, int(global0.custom))    
+                self.assertEquals(1234, int(global1.custom))
                 
                 # Now create a new context with the old global
-                with JSContext(ctxt1.locals) as ctxt2:
+                with JSContext(global1) as ctxt2:
                     ctxt2.securityToken = "password"
 
-                    self.assertEquals(1234, int(ctxt1.locals.custom))
-                    
+                    self.assertRaises(AttributeError, int, global1.custom)
+                    self.assertRaises(AttributeError, int, global2.custom)
+            
     def testSecurityChecks(self):
         with JSContext() as env1:
             env1.securityToken = "foo"
             
             # Create a function in env1.
-            with JSEngine(env1) as e:
-                e.eval("spy=function(){return spy;}")                
+            env1.eval("spy=function(){return spy;}")                
 
             spy = env1.locals.spy
             
             self.assert_(isinstance(spy, _PyV8.JSFunction))
             
             # Create another function accessing global objects.
-            with JSEngine(env1) as e:
-                e.eval("spy2=function(){return new this.Array();}")
+            env1.eval("spy2=function(){return new this.Array();}")
             
             spy2 = env1.locals.spy2
 
@@ -464,136 +462,139 @@ class TestContext(unittest.TestCase):
             # Call cross_domain_call, it should throw an exception
             with env2:
                 self.assertRaises(UserWarning, spy2.apply, env2.locals)
+                
+    def _testCrossDomainDelete(self):
+        with JSContext() as env1:
+            env2 = JSContext()
+            
+            # Set to the same domain.
+            env1.securityToken = "foo"
+            env2.securityToken = "foo"
+            
+            env1.locals.prop = 3
+            env2.locals.env1 = env1.locals
+            env2.locals.test = 4
+            
+            # Change env2 to a different domain and delete env1.prop.
+            #env2.securityToken = "bar"
+            
+            with env2:
+                with JSEngine(env2) as e:
+                    r = e.eval("env1.prop")
+                    
+                    print r
+                    
+                    self.assertEquals(3, int(r))
+                    
+                    r = e.eval("delete env1.prop")
+                    
+                    self.assertEquals("false", str(r))
+            
+            # Check that env1.prop still exists.
+            self.assertEquals(3, int(env1.locals.prop))            
 
-class TestWrapper(unittest.TestCase):
-    def setUp(self):
-        self.engine = JSEngine()
-        
-    def tearDown(self):
-        del self.engine        
-        
+class TestWrapper(unittest.TestCase):    
     def testConverter(self):
-        self.engine.eval("""
-            var_i = 1;
-            var_f = 1.0;
-            var_s = "test";
-            var_b = true;
-        """)
-        
-        vars = self.engine.context.locals 
-        
-        var_i = vars.var_i
-        
-        self.assert_(var_i)
-        self.assertEquals(1, int(var_i))
-        
-        var_f = vars.var_f
-        
-        self.assert_(var_f)
-        self.assertEquals(1.0, float(vars.var_f))
-        
-        var_s = vars.var_s
-        self.assert_(var_s)
-        self.assertEquals("test", str(vars.var_s))
-        
-        var_b = vars.var_b
-        self.assert_(var_b)
-        self.assert_(bool(var_b))
+        with JSContext() as ctxt:
+            ctxt.eval("""
+                var_i = 1;
+                var_f = 1.0;
+                var_s = "test";
+                var_b = true;
+            """)
+            
+            vars = ctxt.locals 
+            
+            var_i = vars.var_i
+            
+            self.assert_(var_i)
+            self.assertEquals(1, int(var_i))
+            
+            var_f = vars.var_f
+            
+            self.assert_(var_f)
+            self.assertEquals(1.0, float(vars.var_f))
+            
+            var_s = vars.var_s
+            self.assert_(var_s)
+            self.assertEquals("test", str(vars.var_s))
+            
+            var_b = vars.var_b
+            self.assert_(var_b)
+            self.assert_(bool(var_b))
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         self.assertEquals("1.0.3", JSEngine.version)
         
     def testCompile(self):
-        engine = JSEngine()
-        
-        try:
-            s = engine.compile("1+2")
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                s = engine.compile("1+2")
+                
+                self.assertEquals("1+2", s.source)
+                self.assertEquals(3, int(s.run()))
             
-            self.assertEquals("1+2", s.source)
-            self.assertEquals(3, int(s.run()))
-        finally:
-            del engine
-            
-    def testExec(self):
-        engine = JSEngine()
-        
-        try:
-            self.assertEquals(3, int(engine.eval("1+2")))
-        finally:
-            del engine
+    def testEval(self):
+        with JSContext() as ctxt:
+            self.assertEquals(3, int(ctxt.eval("1+2")))        
             
     def testGlobal(self):
         class Global(object):
             version = "1.0"
             
-        engine = JSEngine(Global())
-        
-        try:
-            vars = engine.context.locals
+        with JSContext(Global()) as ctxt:            
+            vars = ctxt.locals
             
             # getter
             self.assertEquals(Global.version, str(vars.version))            
-            self.assertEquals(Global.version, str(engine.eval("version")))
+            self.assertEquals(Global.version, str(ctxt.eval("version")))
                         
-            self.assertRaises(UserWarning, JSEngine.eval, engine, "nonexists")
+            self.assertRaises(UserWarning, JSContext.eval, ctxt, "nonexists")
             
             # setter
-            self.assertEquals(2.0, float(engine.eval("version = 2.0")))
+            self.assertEquals(2.0, float(ctxt.eval("version = 2.0")))
             
             self.assertEquals(2.0, float(vars.version))       
-        finally:
-            del engine
             
     def testThis(self):
         class Global(object): 
             version = 1.0
-        
-        engine = JSEngine(Global())
-        
-        try:        
-            self.assertEquals("[object global]", str(engine.eval("this")))
+                
+        with JSContext(Global()) as ctxt:            
+            self.assertEquals("[object global]", str(ctxt.eval("this")))
             
-            self.assertEquals(1.0, float(engine.eval("this.version")))
-        finally:
-            del engine
+            self.assertEquals(1.0, float(ctxt.eval("this.version")))
         
     def testObjectBuildInMethods(self):
         class Global(JSClass):
             version = 1.0
         
-        engine = JSEngine(Global())
-        
-        try:
-            self.assertEquals("[object Global]", str(engine.eval("this.toString()")))
-            self.assertEquals("[object Global]", str(engine.eval("this.toLocaleString()")))
-            self.assertEquals(Global.version, float(engine.eval("this.valueOf()").version))
-            self.assert_(bool(engine.eval("this.hasOwnProperty(\"version\")")))
+        with JSContext(Global()) as ctxt:            
+            self.assertEquals("[object Global]", str(ctxt.eval("this.toString()")))
+            self.assertEquals("[object Global]", str(ctxt.eval("this.toLocaleString()")))
+            self.assertEquals(Global.version, float(ctxt.eval("this.valueOf()").version))
+            self.assert_(bool(ctxt.eval("this.hasOwnProperty(\"version\")")))
             
-            ret = engine.eval("this.hasOwnProperty(\"nonexistent\")")
+            ret = ctxt.eval("this.hasOwnProperty(\"nonexistent\")")
             
             self.assertEquals("valueOf", ret.valueOf.func_name)
             self.assertEquals(ret, ret.valueOf.func_owner)
             self.assertEquals("false", str(ret.valueOf()))
-        finally:
-            del engine
             
     def testPythonWrapper(self):
         class Global(JSClass):
             s = [1, 2, 3]
             
         g = Global()
-        e = JSEngine(g)
         
-        try:
-            e.eval("""
+        with JSContext(g) as ctxt:            
+            ctxt.eval("""
                 s[2] = s[1] + 2;
                 s[0] = s[1];
                 delete s[1];
             """)
             self.assertEquals([2, 4], g.s)
-        finally:
-            del e
             
 class TestDebug(unittest.TestCase):
     def setUp(self):
@@ -623,20 +624,16 @@ class TestDebug(unittest.TestCase):
         debugger.onBeforeCompile = lambda evt: self.processDebugEvent(evt)
         debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
         
-        engine = JSEngine()
-        
-        try:
+        with JSContext() as ctxt:            
             debugger.enabled = True
             
-            self.assertEquals(3, int(engine.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
+            self.assertEquals(3, int(ctxt.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
             
             debugger.enabled = False            
             
-            self.assertRaises(UserWarning, JSEngine.eval, engine, "throw 1")
+            self.assertRaises(UserWarning, JSContext.eval, ctxt, "throw 1")
             
             self.assert_(not debugger.enabled)                
-        finally:
-            del engine
             
         self.assertEquals(4, len(self.events))
         

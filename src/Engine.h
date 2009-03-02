@@ -12,28 +12,15 @@ typedef boost::shared_ptr<CScript> CScriptPtr;
 
 class CEngine
 {  
-  CContextPtr m_context;
 protected:
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);  
 public:
-  CEngine(py::object global = py::object()) 
-    : m_context(new CContext(global))
-  {
-  }
-  CEngine(CContextPtr context) 
-    : m_context(context)
-  {
-
-  }
-
-  CContextPtr GetContext(void) { return m_context; }
-
   CScriptPtr Compile(const std::string& src);
   CJavascriptObjectPtr Execute(const std::string& src);
 
   void RaiseError(v8::TryCatch& try_catch);
-public:
+public:  
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }

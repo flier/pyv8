@@ -21,8 +21,6 @@ void CDebug::SetEnable(bool enable)
 
   v8::HandleScope scope;
 
-  v8::Context::Scope context_scope(m_global_context);
-
   if (enable)
   {
     v8::Handle<v8::External> data = v8::External::New(this);
@@ -52,7 +50,7 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 
   v8::Context::Scope context_scope(pThis->m_global_context);
 
-  CJavascriptObjectPtr event_obj(new CJavascriptObject(pThis->m_global_context, event_data));
+  CJavascriptObjectPtr event_obj(new CJavascriptObject(event_data));
 
   py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
 }
