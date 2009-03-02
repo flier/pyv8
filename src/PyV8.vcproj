@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Winmm.lib"
+				AdditionalDependencies="Winmm.lib Ws2_32.lib"
 				OutputFile="$(OutDir)\_$(ProjectName).pyd"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\lib\v8\lib;..\lib\boost\lib;..\lib\python\lib"
@@ -96,7 +96,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(SolutionDir)PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py&#x0D;&#x0A;"
+				CommandLine="copy $(SolutionDir)PyV8.py $(OutDir)&#x0D;&#x0A;$(OutDir)\PyV8.py -v&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -144,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Winmm.lib"
+				AdditionalDependencies="Winmm.lib Ws2_32.lib"
 				OutputFile="$(OutDir)\_$(ProjectName).pyd"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\lib\v8\lib;..\lib\boost\lib;..\lib\python\lib"
