@@ -32,6 +32,9 @@ public:
 
   CJavascriptObjectPtr GetGlobal(void);
 
+  py::str GetSecurityToken(void);
+  void SetSecurityToken(py::str token);
+
   bool IsEntered(void) { return !m_context.IsEmpty(); }
   void Enter(void) { m_context->Enter(); }
   void Leave(void) { m_context->Exit(); }

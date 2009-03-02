@@ -8,13 +8,15 @@ void CContext::Expose(void)
     .def(py::init<py::object>(py::arg("global") = py::object(), 
                               "create a new context base on global object"))
                   
+    .add_property("securityToken", &CContext::GetSecurityToken, &CContext::SetSecurityToken)
+
     .def_readonly("locals", &CContext::GetGlobal, "Local variables within context")
 
-    .add_static_property("entered", CContext::GetEntered, 
+    .add_static_property("entered", &CContext::GetEntered, 
                          "Returns the last entered context.")
-    .add_static_property("current", CContext::GetCurrent, 
+    .add_static_property("current", &CContext::GetCurrent, 
                          "Returns the context that is on the top of the stack.")
-    .add_static_property("inContext", CContext::InContext,
+    .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
 
     .def("enter", &CContext::Enter, "Enter this context. "
@@ -36,7 +38,7 @@ CContext::CContext(py::object global)
 {
   v8::HandleScope handle_scope;
 
-  m_context = v8::Context::New(NULL, v8::ObjectTemplate::New());
+  m_context = v8::Context::New();
 
   v8::Context::Scope context_scope(m_context);
 
@@ -53,6 +55,30 @@ CJavascriptObjectPtr CContext::GetGlobal(void)
   v8::HandleScope handle_scope;
 
   return CJavascriptObject::Wrap(m_context, m_context->Global()); 
+}
+
+py::str CContext::GetSecurityToken(void)
+{
+  v8::HandleScope handle_scope;
+ 
+  v8::Handle<v8::Value> token = m_context->GetSecurityToken();
+
+  return token.IsEmpty() ? py::str(py::handle<>(Py_None)) : 
+    py::str(*v8::String::AsciiValue(token->ToString()));
+}
+
+void CContext::SetSecurityToken(py::str token)
+{
+  v8::HandleScope handle_scope;
+
+  if (token.ptr() == Py_None) 
+  {
+    m_context->UseDefaultSecurityToken();
+  }
+  else
+  {    
+    m_context->SetSecurityToken(v8::String::New(py::extract<char *>(token)));  
+  }
 }
 
 CPythonWrapper *CContext::GetWrapper(v8::Handle<v8::Context> context) 

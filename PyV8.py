@@ -351,7 +351,12 @@ class JSDebug(object):
         
 debugger = JSDebug()
 
-JSEngine = _PyV8.JSEngine
+class JSEngine(_PyV8.JSEngine):
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        del self
 
 class JSContext(_PyV8.JSContext):
     def __enter__(self):
@@ -366,7 +371,7 @@ import unittest
 import logging
 
 class TestContext(unittest.TestCase):
-    def testWith(self):
+    def testMultiNamespace(self):
         self.assert_(not bool(JSContext.inContext))
         self.assert_(not bool(JSContext.entered))
         
@@ -393,9 +398,72 @@ class TestContext(unittest.TestCase):
             self.assert_(bool(JSContext.inContext))
             self.assertEquals(g.name, str(JSContext.entered.locals.name))
             self.assertEquals(g.name, str(JSContext.current.locals.name))
-            
+
         self.assert_(not bool(JSContext.entered))
         self.assert_(not bool(JSContext.inContext))
+        
+    def testMultiContext(self):
+        # Create an environment
+        with JSContext() as ctxt0:
+            ctxt0.securityToken = "password"
+            
+            with JSEngine(ctxt0) as e:
+                e.eval("custom = 1234")
+                
+            self.assertEquals(1234, int(ctxt0.locals.custom))
+            
+            # Create an independent environment
+            with JSContext() as ctxt1:
+                ctxt1.securityToken = "password"
+                
+                self.assertNotEqual(ctxt0.locals, ctxt1.locals)
+                
+                with JSEngine(ctxt1) as e:
+                    e.eval("custom = 1234")
+                    
+                self.assertEquals(1234, int(ctxt1.locals.custom))
+                
+                # Now create a new context with the old global
+                with JSContext(ctxt1.locals) as ctxt2:
+                    ctxt2.securityToken = "password"
+
+                    self.assertEquals(1234, int(ctxt1.locals.custom))
+                    
+    def testSecurityChecks(self):
+        with JSContext() as env1:
+            env1.securityToken = "foo"
+            
+            # Create a function in env1.
+            with JSEngine(env1) as e:
+                e.eval("spy=function(){return spy;}")                
+
+            spy = env1.locals.spy
+            
+            self.assert_(isinstance(spy, _PyV8.JSFunction))
+            
+            # Create another function accessing global objects.
+            with JSEngine(env1) as e:
+                e.eval("spy2=function(){return new this.Array();}")
+            
+            spy2 = env1.locals.spy2
+
+            self.assert_(isinstance(spy2, _PyV8.JSFunction))
+            
+            # Switch to env2 in the same domain and invoke spy on env2.            
+            env2 = JSContext()
+            
+            env2.securityToken = "foo"
+            
+            with env2:
+                result = spy.apply(env2.locals)
+                
+                self.assert_(isinstance(result, _PyV8.JSFunction))
+                
+            env2.securityToken = "bar"
+            
+            # Call cross_domain_call, it should throw an exception
+            with env2:
+                self.assertRaises(UserWarning, spy2.apply, env2.locals)
 
 class TestWrapper(unittest.TestCase):
     def setUp(self):
@@ -434,7 +502,7 @@ class TestWrapper(unittest.TestCase):
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
-        self.assertEquals("1.0.1", JSEngine.version)
+        self.assertEquals("1.0.3", JSEngine.version)
         
     def testCompile(self):
         engine = JSEngine()
