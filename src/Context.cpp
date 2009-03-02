@@ -46,8 +46,7 @@ CContext::CContext(py::object global)
   v8::Context::Scope context_scope(m_context);
 
   if (global.ptr() != Py_None)
-    m_context->Global()->Set(v8::String::NewSymbol("__proto__"),
-    CPythonWrapper::GetInstance().Wrap(global));  
+    m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));  
 }
 
 CJavascriptObjectPtr CContext::GetGlobal(void) 

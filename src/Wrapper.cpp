@@ -90,14 +90,12 @@ v8::Handle<v8::Value> CWrapper::Cast(py::object obj)
   return v8::Undefined();
 }
 
-v8::Handle<v8::Value> CPythonWrapper::NamedGetter(
+v8::Handle<v8::Value> CPythonObject::NamedGetter(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  py::object obj = pThis->Unwrap(info.Holder());  
+  py::object obj = Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
 
@@ -106,17 +104,15 @@ v8::Handle<v8::Value> CPythonWrapper::NamedGetter(
   if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
     return v8::Local<v8::Value>();
 
-  return handle_scope.Close(pThis->Wrap(obj.attr(*name)));
+  return handle_scope.Close(Wrap(obj.attr(*name)));
 }
 
-v8::Handle<v8::Value> CPythonWrapper::NamedSetter(
+v8::Handle<v8::Value> CPythonObject::NamedSetter(
   v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  py::object obj = pThis->Unwrap(info.Holder());
+  py::object obj = Unwrap(info.Holder());
 
   v8::String::AsciiValue name(prop), data(value);
 
@@ -125,14 +121,12 @@ v8::Handle<v8::Value> CPythonWrapper::NamedSetter(
   return value;
 }
 
-v8::Handle<v8::Boolean> CPythonWrapper::NamedQuery(
+v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  py::object obj = pThis->Unwrap(info.Holder());  
+  py::object obj = Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
 
@@ -141,14 +135,14 @@ v8::Handle<v8::Boolean> CPythonWrapper::NamedQuery(
   return v8::Boolean::New(::PyObject_HasAttr(obj.ptr(), attr_name.ptr()));
 }
 
-v8::Handle<v8::Boolean> CPythonWrapper::NamedDeleter(
+v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
+  CPythonObject *pThis = static_cast<CPythonObject *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
 
-  py::object obj = pThis->Unwrap(info.Holder());  
+  py::object obj = Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
 
@@ -157,108 +151,96 @@ v8::Handle<v8::Boolean> CPythonWrapper::NamedDeleter(
   return v8::Boolean::New(::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
 }
 
-v8::Handle<v8::Value> CPythonWrapper::IndexedGetter(
+v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   uint32_t index, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  py::object obj = pThis->Unwrap(info.Holder());  
+  py::object obj = Unwrap(info.Holder());  
 
   py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
-  return handle_scope.Close(pThis->Wrap(ret));  
+  return handle_scope.Close(Wrap(ret));  
 }
-v8::Handle<v8::Value> CPythonWrapper::IndexedSetter(
+v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   uint32_t index, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
+  py::object obj = Unwrap(info.Holder());  
 
-  py::object obj = pThis->Unwrap(info.Holder());  
-
-  int ret = ::PySequence_SetItem(obj.ptr(), index, pThis->Unwrap(value).ptr());
+  int ret = ::PySequence_SetItem(obj.ptr(), index, Unwrap(value).ptr());
 
   if (ret < 0) throw CWrapperException("fail to set indexed value");
 
   return value;
 }
-v8::Handle<v8::Boolean> CPythonWrapper::IndexedQuery(
+v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
   uint32_t index, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
-  py::object obj = pThis->Unwrap(info.Holder());  
+  py::object obj = Unwrap(info.Holder());  
 
   return v8::Boolean::New(index < ::PySequence_Size(obj.ptr()));
 }
-v8::Handle<v8::Boolean> CPythonWrapper::IndexedDeleter(
+v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   uint32_t index, const v8::AccessorInfo& info)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
+  py::object obj = Unwrap(info.Holder());  
 
-  py::object obj = pThis->Unwrap(info.Holder());  
-
-  v8::Handle<v8::Value> value = pThis->IndexedGetter(index, info);
+  v8::Handle<v8::Value> value = IndexedGetter(index, info);
 
   return v8::Boolean::New(0 <= ::PySequence_DelItem(obj.ptr(), index));
 }
 
-v8::Handle<v8::Value> CPythonWrapper::Caller(const v8::Arguments& args)
+v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 {
   v8::HandleScope handle_scope;
 
-  CPythonWrapper *pThis = static_cast<CPythonWrapper *>(v8::Handle<v8::External>::Cast(args.Data())->Value());
-
-  py::object self = pThis->Unwrap(args.This());
+  py::object self = Unwrap(args.This());
 
   py::object result;
 
   switch (args.Length())
   {
   case 0: result = self(); break;
-  case 1: result = self(pThis->Unwrap(args[0])); break;
-  case 2: result = self(pThis->Unwrap(args[0]), pThis->Unwrap(args[1])); break;
-  case 3: result = self(pThis->Unwrap(args[0]), pThis->Unwrap(args[1]), 
-                        pThis->Unwrap(args[2])); break;
-  case 4: result = self(pThis->Unwrap(args[0]), pThis->Unwrap(args[1]), 
-                        pThis->Unwrap(args[2]), pThis->Unwrap(args[3])); break;
-  case 5: result = self(pThis->Unwrap(args[0]), pThis->Unwrap(args[1]), 
-                        pThis->Unwrap(args[2]), pThis->Unwrap(args[3]),
-                        pThis->Unwrap(args[4])); break;
-  case 6: result = self(pThis->Unwrap(args[0]), pThis->Unwrap(args[1]), 
-                        pThis->Unwrap(args[2]), pThis->Unwrap(args[3]),
-                        pThis->Unwrap(args[4]), pThis->Unwrap(args[5])); break;
+  case 1: result = self(Unwrap(args[0])); break;
+  case 2: result = self(Unwrap(args[0]), Unwrap(args[1])); break;
+  case 3: result = self(Unwrap(args[0]), Unwrap(args[1]), 
+                        Unwrap(args[2])); break;
+  case 4: result = self(Unwrap(args[0]), Unwrap(args[1]), 
+                        Unwrap(args[2]), Unwrap(args[3])); break;
+  case 5: result = self(Unwrap(args[0]), Unwrap(args[1]), 
+                        Unwrap(args[2]), Unwrap(args[3]),
+                        Unwrap(args[4])); break;
+  case 6: result = self(Unwrap(args[0]), Unwrap(args[1]), 
+                        Unwrap(args[2]), Unwrap(args[3]),
+                        Unwrap(args[4]), Unwrap(args[5])); break;
   default:
     throw CWrapperException("too many arguments");
   }
 
-  return pThis->Wrap(result);
+  return Wrap(result);
 }
 
-v8::Persistent<v8::ObjectTemplate> CPythonWrapper::SetupTemplate(void)
+v8::Persistent<v8::ObjectTemplate> CPythonObject::SetupTemplate(void)
 {
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::ObjectTemplate> clazz = v8::ObjectTemplate::New();
- 
-  v8::Handle<v8::External> cookie = v8::External::New(this);
 
   clazz->SetInternalFieldCount(1);
-  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter, 0, cookie);
-  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter, 0, cookie);
-  clazz->SetCallAsFunctionHandler(Caller, cookie);
+  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter);
+  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter);
+  clazz->SetCallAsFunctionHandler(Caller);
 
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
-v8::Handle<v8::Value> CPythonWrapper::Wrap(py::object obj)
+v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 {
   assert(v8::Context::InContext());
 
@@ -268,14 +250,16 @@ v8::Handle<v8::Value> CPythonWrapper::Wrap(py::object obj)
 
   if (!result->IsUndefined()) return handle_scope.Close(result);
 
-  v8::Handle<v8::Object> instance = m_template->NewInstance();
+  static v8::Persistent<v8::ObjectTemplate> s_template = SetupTemplate();
+
+  v8::Handle<v8::Object> instance = s_template->NewInstance();
   v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
 
   instance->SetInternalField(0, payload);
 
   return handle_scope.Close(instance);
 }
-py::object CPythonWrapper::Unwrap(v8::Handle<v8::Value> obj)
+py::object CPythonObject::Unwrap(v8::Handle<v8::Value> obj)
 {
   assert(v8::Context::InContext());
 

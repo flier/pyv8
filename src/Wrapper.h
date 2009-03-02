@@ -13,13 +13,13 @@ typedef boost::shared_ptr<CJavascriptObject> CJavascriptObjectPtr;
 class CWrapper
 {  
 protected:
-  py::object Cast(v8::Handle<v8::Value> obj);
-  v8::Handle<v8::Value> Cast(py::object obj);
+  static py::object Cast(v8::Handle<v8::Value> obj);
+  static v8::Handle<v8::Value> Cast(py::object obj);
 public:
   static void Expose(void);
 };
 
-class CPythonWrapper : public CWrapper
+class CPythonObject : public CWrapper
 {
   static v8::Handle<v8::Value> NamedGetter(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
@@ -41,30 +41,10 @@ class CPythonWrapper : public CWrapper
 
   static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
 protected:
-  v8::Persistent<v8::ObjectTemplate> m_template;
-
-  v8::Persistent<v8::ObjectTemplate> SetupTemplate(void);
-
-  CPythonWrapper() 
-    : m_template(SetupTemplate())
-  {
-
-  }
+  static v8::Persistent<v8::ObjectTemplate> SetupTemplate(void);
 public:
-  ~CPythonWrapper(void)
-  {
-    m_template.Dispose();
-  }
-
-  static CPythonWrapper& GetInstance(void)
-  {
-    static CPythonWrapper s_instance;
-
-    return s_instance;
-  }
-
-  v8::Handle<v8::Value> Wrap(py::object obj);
-  py::object Unwrap(v8::Handle<v8::Value> obj);
+  static v8::Handle<v8::Value> Wrap(py::object obj);
+  static py::object Unwrap(v8::Handle<v8::Value> obj);
 };
 
 class CJavascriptObject : public CWrapper
