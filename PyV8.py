@@ -592,8 +592,7 @@ class TestEngine(unittest.TestCase):
             """)
             self.assertEquals([2, 4], g.s)
             
-#class TestDebug(unittest.TestCase):
-class TestDebug:
+class TestDebug(unittest.TestCase):
     def setUp(self):
         self.engine = JSEngine()
         
