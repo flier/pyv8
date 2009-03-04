@@ -467,7 +467,7 @@ CJavascriptObjectPtr CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::
 
   for (size_t i=0; i<params.size(); i++)
   {
-    params[i] = Cast(args[i]);
+    params[i] = CPythonObject::Wrap(args[i]);
   }
 
   v8::Handle<v8::Value> result = func->Call(self,
