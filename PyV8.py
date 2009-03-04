@@ -517,8 +517,9 @@ class TestWrapper(unittest.TestCase):
             self.assert_(bool(var_b))
         
 class TestEngine(unittest.TestCase):
-    def testClassProperties(self):        
-        self.assertEquals("1.0.3.1", JSEngine.version)
+    def testClassProperties(self):
+        with JSContext() as ctxt:
+            self.assert_(str(JSEngine.version).startswith("1.0."))
         
     def testCompile(self):
         with JSContext() as ctxt:
