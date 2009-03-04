@@ -140,8 +140,6 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
 {
   v8::HandleScope handle_scope;
 
-  CPythonObject *pThis = static_cast<CPythonObject *>(v8::Handle<v8::External>::Cast(info.Data())->Value());
-
   py::object obj = Unwrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
@@ -200,7 +198,18 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 {
   v8::HandleScope handle_scope;
 
-  py::object self = Unwrap(args.This());
+  py::object self;
+  
+  if (args.Data().IsEmpty())
+  {
+    self = Unwrap(args.This());
+  }
+  else
+  {
+    v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(args.Data());
+
+    self = *static_cast<py::object *>(field->Value());
+  }
 
   py::object result;
 
@@ -223,19 +232,24 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
     throw CWrapperException("too many arguments");
   }
 
-  return Wrap(result);
+  return handle_scope.Close(Wrap(result));
 }
 
-v8::Persistent<v8::ObjectTemplate> CPythonObject::SetupTemplate(void)
+void CPythonObject::SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz)
+{
+  clazz->SetInternalFieldCount(1);
+  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter);
+  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter);
+  clazz->SetCallAsFunctionHandler(Caller);
+}
+
+v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
 {
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::ObjectTemplate> clazz = v8::ObjectTemplate::New();
 
-  clazz->SetInternalFieldCount(1);
-  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter);
-  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter);
-  clazz->SetCallAsFunctionHandler(Caller);
+  SetupObjectTemplate(clazz);
 
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
@@ -250,12 +264,26 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   if (!result->IsUndefined()) return handle_scope.Close(result);
 
-  static v8::Persistent<v8::ObjectTemplate> s_template = SetupTemplate();
+  v8::Handle<v8::Object> instance;
 
-  v8::Handle<v8::Object> instance = s_template->NewInstance();
-  v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+  if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()))
+  {
+    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
 
-  instance->SetInternalField(0, payload);
+    func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
+    
+    instance = func_tmpl->GetFunction();
+  }
+  else
+  {
+    static v8::Persistent<v8::ObjectTemplate> s_template = CreateObjectTemplate();
+
+    instance = s_template->NewInstance();
+
+    v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+
+    instance->SetInternalField(0, payload);
+  }
 
   return handle_scope.Close(instance);
 }
@@ -272,6 +300,13 @@ py::object CPythonObject::Unwrap(v8::Handle<v8::Value> obj)
   if (obj->IsObject())
   {
     v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->ToObject()->GetInternalField(0));
+
+    return *static_cast<py::object *>(field->Value());
+  }
+  else if (obj->IsFunction())
+  {
+    v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(obj);
+    v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(func->GetInternalField(0));
 
     return *static_cast<py::object *>(field->Value());
   }

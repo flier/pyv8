@@ -14,12 +14,7 @@ class CContext
 {
   v8::Persistent<v8::Context> m_context;
 public:
-  CContext(v8::Handle<v8::Context> context) 
-  {
-    v8::HandleScope handle_scope;
-
-    m_context = v8::Persistent<v8::Context>::New(context);
-  }
+  CContext(v8::Handle<v8::Context> context, bool weak = false);
 
   CContext(py::object global);
 

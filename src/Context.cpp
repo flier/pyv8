@@ -12,7 +12,7 @@ void CContext::Expose(void)
     .add_property("securityToken", &CContext::GetSecurityToken, &CContext::SetSecurityToken)
 
     .def_readonly("locals", &CContext::GetGlobal, "Local variables within context")
-
+    
     .add_static_property("entered", &CContext::GetEntered, 
                          "Returns the last entered context.")
     .add_static_property("current", &CContext::GetCurrent, 
@@ -37,6 +37,13 @@ void CContext::Expose(void)
     py::objects::pointer_holder<boost::shared_ptr<CContext>,CContext> > >();
 }
 
+CContext::CContext(v8::Handle<v8::Context> context)
+{
+  v8::HandleScope handle_scope;
+
+  m_context = v8::Persistent<v8::Context>::New(context);
+}
+
 CContext::CContext(py::object global)
 {
   v8::HandleScope handle_scope;
@@ -46,7 +53,9 @@ CContext::CContext(py::object global)
   v8::Context::Scope context_scope(m_context);
 
   if (global.ptr() != Py_None)
+  {    
     m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));  
+  }
 }
 
 CJavascriptObjectPtr CContext::GetGlobal(void) 
@@ -62,8 +71,16 @@ py::str CContext::GetSecurityToken(void)
  
   v8::Handle<v8::Value> token = m_context->GetSecurityToken();
 
-  return token.IsEmpty() ? py::str(py::handle<>(Py_None)) : 
-    py::str(*v8::String::AsciiValue(token->ToString()));
+  if (token.IsEmpty())
+  {
+    return py::str(py::handle<>(Py_None));
+  }
+  else
+  {
+    v8::String::AsciiValue str(token->ToString());
+
+    return py::str(*str, str.length());
+  }  
 }
 
 void CContext::SetSecurityToken(py::str token)
@@ -76,7 +93,7 @@ void CContext::SetSecurityToken(py::str token)
   }
   else
   {    
-    m_context->SetSecurityToken(v8::String::New(py::extract<char *>(token)));  
+    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)));  
   }
 }
 
@@ -84,16 +101,20 @@ CContextPtr CContext::GetEntered(void)
 { 
   v8::HandleScope handle_scope;
 
-  return CContextPtr(new CContext(v8::Context::GetEntered())); 
+  return CContextPtr(new CContext(v8::Context::GetEntered(), true)); 
 }
 CContextPtr CContext::GetCurrent(void) 
 { 
   v8::HandleScope handle_scope;
 
-  return CContextPtr(new CContext(v8::Context::GetCurrent())); 
+  return CContextPtr(new CContext(v8::Context::GetCurrent(), true)); 
 }
 
 CJavascriptObjectPtr CContext::Evaluate(const std::string& src) 
 { 
-  return CEngine().Compile(src)->Run(); 
+  CEngine engine;
+
+  CScriptPtr script = engine.Compile(src);
+
+  return script->Run(); 
 }

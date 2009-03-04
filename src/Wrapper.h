@@ -41,7 +41,8 @@ class CPythonObject : public CWrapper
 
   static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
 protected:
-  static v8::Persistent<v8::ObjectTemplate> SetupTemplate(void);
+  static void SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz);
+  static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);
 public:
   static v8::Handle<v8::Value> Wrap(py::object obj);
   static py::object Unwrap(v8::Handle<v8::Value> obj);

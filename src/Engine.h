@@ -25,7 +25,7 @@ public:
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
 
-  CJavascriptObjectPtr ExecuteScript(v8::Persistent<v8::Script>& m_script);
+  CJavascriptObjectPtr ExecuteScript(v8::Handle<v8::Script> script);
 };
 
 class CScript
@@ -35,8 +35,9 @@ class CScript
 
   v8::Persistent<v8::Script> m_script;  
 public:
-  CScript(CEngine& engine, const std::string& source, const v8::Persistent<v8::Script>& script) 
-    : m_engine(engine), m_source(source), m_script(script)
+  CScript(CEngine& engine, const std::string& source, v8::Handle<v8::Script> script) 
+    : m_engine(engine), m_source(source), 
+      m_script(v8::Persistent<v8::Script>::New(script))
   {
 
   }
@@ -47,5 +48,5 @@ public:
 
   const std::string GetSource(void) const { return m_source; }
 
-  CJavascriptObjectPtr Run(void) { return m_engine.ExecuteScript(m_script); }
+  CJavascriptObjectPtr Run(void);
 };

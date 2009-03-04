@@ -366,6 +366,8 @@ class JSContext(_PyV8.JSContext):
     
     def __exit__(self, exc_type, exc_value, traceback):
         self.leave()
+        
+        del self
 
 import unittest
 import logging
@@ -402,19 +404,19 @@ class TestContext(unittest.TestCase):
         self.assert_(not bool(JSContext.entered))
         self.assert_(not bool(JSContext.inContext))
         
-    def _testMultiContext(self):
+    def testMultiContext(self):
         # Create an environment
         with JSContext() as ctxt0:
             ctxt0.securityToken = "password"
             
-            global0 = ctxt0.locals            
+            global0 = ctxt0.locals
             global0.custom = 1234
                 
             self.assertEquals(1234, int(global0.custom))
             
             # Create an independent environment
             with JSContext() as ctxt1:
-                ctxt1.securityToken = "password"                                
+                ctxt1.securityToken = ctxt0.securityToken
                  
                 global1 = ctxt1.locals
                 global1.custom = 1234
@@ -424,7 +426,7 @@ class TestContext(unittest.TestCase):
                 
                 # Now create a new context with the old global
                 with JSContext(global1) as ctxt2:
-                    ctxt2.securityToken = "password"
+                    ctxt2.securityToken = ctxt1.securityToken
 
                     self.assertRaises(AttributeError, int, global1.custom)
                     self.assertRaises(AttributeError, int, global2.custom)
@@ -463,7 +465,7 @@ class TestContext(unittest.TestCase):
             with env2:
                 self.assertRaises(UserWarning, spy2.apply, env2.locals)
                 
-    def _testCrossDomainDelete(self):
+    def testCrossDomainDelete(self):
         with JSContext() as env1:
             env2 = JSContext()
             
@@ -473,22 +475,13 @@ class TestContext(unittest.TestCase):
             
             env1.locals.prop = 3
             env2.locals.env1 = env1.locals
-            env2.locals.test = 4
             
             # Change env2 to a different domain and delete env1.prop.
             #env2.securityToken = "bar"
             
             with env2:
-                with JSEngine(env2) as e:
-                    r = e.eval("env1.prop")
-                    
-                    print r
-                    
-                    self.assertEquals(3, int(r))
-                    
-                    r = e.eval("delete env1.prop")
-                    
-                    self.assertEquals("false", str(r))
+                self.assertEquals(3, int(env2.eval("env1.prop")))                
+                self.assertEquals("false", str(e.eval("delete env1.prop")))
             
             # Check that env1.prop still exists.
             self.assertEquals(3, int(env1.locals.prop))            
@@ -524,13 +517,15 @@ class TestWrapper(unittest.TestCase):
             self.assert_(bool(var_b))
         
 class TestEngine(unittest.TestCase):
-    def testClassProperties(self):
-        self.assertEquals("1.0.3", JSEngine.version)
+    def testClassProperties(self):        
+        self.assertEquals("1.0.3.1", JSEngine.version)
         
     def testCompile(self):
         with JSContext() as ctxt:
             with JSEngine() as engine:
                 s = engine.compile("1+2")
+                
+                self.assert_(isinstance(s, _PyV8.JSScript))
                 
                 self.assertEquals("1+2", s.source)
                 self.assertEquals(3, int(s.run()))
@@ -540,7 +535,7 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(3, int(ctxt.eval("1+2")))        
             
     def testGlobal(self):
-        class Global(object):
+        class Global(JSClass):
             version = "1.0"
             
         with JSContext(Global()) as ctxt:            
@@ -558,22 +553,23 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(2.0, float(vars.version))       
             
     def testThis(self):
-        class Global(object): 
-            version = 1.0
+        class Global(JSClass): 
+            version = 1.0            
                 
-        with JSContext(Global()) as ctxt:            
-            self.assertEquals("[object global]", str(ctxt.eval("this")))
+        with JSContext(Global()) as ctxt:
+            self.assertEquals("[object Global]", str(ctxt.eval("this")))
             
-            self.assertEquals(1.0, float(ctxt.eval("this.version")))
+            self.assertEquals(1.0, float(ctxt.eval("this.version")))            
         
     def testObjectBuildInMethods(self):
         class Global(JSClass):
             version = 1.0
-        
+            
         with JSContext(Global()) as ctxt:            
             self.assertEquals("[object Global]", str(ctxt.eval("this.toString()")))
-            self.assertEquals("[object Global]", str(ctxt.eval("this.toLocaleString()")))
+            self.assertEquals("[object Global]", str(ctxt.eval("this.toLocaleString()")))            
             self.assertEquals(Global.version, float(ctxt.eval("this.valueOf()").version))
+            
             self.assert_(bool(ctxt.eval("this.hasOwnProperty(\"version\")")))
             
             ret = ctxt.eval("this.hasOwnProperty(\"nonexistent\")")
@@ -596,7 +592,8 @@ class TestEngine(unittest.TestCase):
             """)
             self.assertEquals([2, 4], g.s)
             
-class TestDebug(unittest.TestCase):
+#class TestDebug(unittest.TestCase):
+class TestDebug:
     def setUp(self):
         self.engine = JSEngine()
         
@@ -644,5 +641,7 @@ if __name__ == '__main__':
         level = logging.WARN
     
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
+    
+    logging.info("testing PyV8 module with V8 v%s", JSEngine.version)
 
     unittest.main()

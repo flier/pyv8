@@ -61,10 +61,10 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
   if (script.IsEmpty())
     CWrapperException::Throw(try_catch);
 
-  return boost::shared_ptr<CScript>(new CScript(*this, src, v8::Persistent<v8::Script>::New(script)));
+  return boost::shared_ptr<CScript>(new CScript(*this, src, script));
 }
 
-CJavascriptObjectPtr CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
+CJavascriptObjectPtr CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 {    
   assert(v8::Context::InContext());
 
@@ -83,4 +83,11 @@ CJavascriptObjectPtr CEngine::ExecuteScript(v8::Persistent<v8::Script>& script)
   }
 
   return CJavascriptObjectPtr(new CJavascriptObject(result->ToObject()));
+}
+
+CJavascriptObjectPtr CScript::Run(void) 
+{ 
+  v8::HandleScope handle_scope;
+
+  return m_engine.ExecuteScript(m_script); 
 }
