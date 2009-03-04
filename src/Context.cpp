@@ -101,13 +101,13 @@ CContextPtr CContext::GetEntered(void)
 { 
   v8::HandleScope handle_scope;
 
-  return CContextPtr(new CContext(v8::Context::GetEntered(), true)); 
+  return CContextPtr(new CContext(v8::Context::GetEntered())); 
 }
 CContextPtr CContext::GetCurrent(void) 
 { 
   v8::HandleScope handle_scope;
 
-  return CContextPtr(new CContext(v8::Context::GetCurrent(), true)); 
+  return CContextPtr(new CContext(v8::Context::GetCurrent())); 
 }
 
 CJavascriptObjectPtr CContext::Evaluate(const std::string& src) 
