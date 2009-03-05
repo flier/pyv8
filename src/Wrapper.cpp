@@ -13,7 +13,7 @@ std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 
 void CWrapper::Expose(void)
 {
-  py::class_<CJavascriptObject>("JSObject", py::no_init)
+  py::class_<CJavascriptObject, boost::noncopyable>("JSObject", py::no_init)
     .def_readonly("__js__", &CJavascriptObject::Native)
 
     .def("__getattr__", &CJavascriptObject::GetAttr)
@@ -29,7 +29,7 @@ void CWrapper::Expose(void)
     .def("__ne__", &CJavascriptObject::Unequals)
     ;
 
-  py::class_<CJavascriptFunction, py::bases<CJavascriptObject> >("JSFunction", py::no_init)
+  py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)
     .def("__call__", &CJavascriptFunction::Invoke, 
          (py::arg("args") = py::list(), 
           py::arg("kwds") = py::dict()))

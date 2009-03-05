@@ -5,7 +5,7 @@
 
 void CContext::Expose(void)
 {
-  py::class_<CContext>("JSContext", py::no_init)
+  py::class_<CContext, boost::noncopyable>("JSContext", py::no_init)
     .def(py::init<py::object>(py::arg("global") = py::object(), 
                               "create a new context base on global object"))
                   
