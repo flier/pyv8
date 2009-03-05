@@ -29,17 +29,20 @@ CExceptionExtractor::CExceptionExtractor(v8::TryCatch& try_catch)
 
   if (!message.IsEmpty())
   {
-    if (!message->GetScriptResourceName().IsEmpty())
+    oss << " ( ";
+
+    if (!message->GetScriptResourceName().IsEmpty() &&
+        !message->GetScriptResourceName()->IsUndefined())
     {
       v8::String::AsciiValue name(message->GetScriptResourceName());
 
       oss << std::string(*name, name.length());
     }
 
-    oss << " @ " << message->GetLineNumber() << " : " << message->GetStartColumn()
-        << " - " << message->GetEndColumn();
+    oss << " @ " << message->GetLineNumber() << " : " << message->GetStartColumn() << " ) ";
     
-    if (!message->GetSourceLine().IsEmpty())
+    if (!message->GetSourceLine().IsEmpty() &&
+        !message->GetSourceLine()->IsUndefined())
     {
       v8::String::AsciiValue line(message->GetSourceLine());
 

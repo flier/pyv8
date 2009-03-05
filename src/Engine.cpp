@@ -9,7 +9,7 @@ void CEngine::Expose(void)
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
 
-    .def("compile", &CEngine::Compile)    
+    .def("compile", &CEngine::Compile, (py::arg("source"), py::arg("name") = std::string()))    
     ;
 
   py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
@@ -45,7 +45,7 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
   throw CEngineException(oss.str());
 }
 
-boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
+boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, const std::string name)
 {
   assert(v8::Context::InContext());
 
@@ -53,10 +53,10 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src)
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::String> source = v8::String::New(src.c_str());
-  v8::Handle<v8::Value> name = v8::Undefined();
+  v8::Handle<v8::String> script_source = v8::String::New(src.c_str());
+  v8::Handle<v8::Value> script_name = name.empty() ? v8::Undefined() : v8::String::New(name.c_str());
 
-  v8::Handle<v8::Script> script = v8::Script::Compile(source, name);
+  v8::Handle<v8::Script> script = v8::Script::Compile(script_source, script_name);
 
   if (script.IsEmpty())
     CWrapperException::Throw(try_catch);
