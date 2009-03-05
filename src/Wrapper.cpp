@@ -266,13 +266,20 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   v8::Handle<v8::Object> instance;
 
-  if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()))
+  if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
   {
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
 
     func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
     
     instance = func_tmpl->GetFunction();
+
+    if (PyType_Check(obj.ptr()))
+    {
+      v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__")));
+
+      func_tmpl->SetClassName(cls_name);
+    }
   }
   else
   {
