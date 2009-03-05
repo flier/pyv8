@@ -6,6 +6,8 @@ import StringIO
 
 import _PyV8
 
+__all__ = ["JSClass", "JSEngine", "JSContext", "debugger"]
+
 class JSClass(object):    
     def toString(self):
         "Returns a string representation of an object."
