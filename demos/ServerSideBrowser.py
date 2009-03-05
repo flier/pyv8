@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 
-import sys, os, os.path
+import sys, traceback, os, os.path
 import logging
 
 import PyV8
@@ -80,42 +80,42 @@ class Browser(object):
         
         with open(filename) as f:
             PyV8.JSEngine().compile(f.read()).run()
+
+    COMMANDS = (
+        {
+            "names" : ["javascript", "js"],                
+            "help" : "switch to the javascript mode",
+            "handler" : lambda self, line: self.switchMode("javascript"),
+        },
+        {
+            "names" : ["python", "py"],                
+            "help" : "switch to the python mode",
+            "handler" : lambda self, line: self.switchMode("python"),
+        },
+        {
+            "names" : ["shell", "sh"],
+            "help" : "switch to the shell mode",
+            "handler" : lambda self, line: self.switchMode("shell"),
+        },
+        {
+            "names" : ["exit", "quit", "q"],                
+            "help" : "exit the shell",
+            "handler" : lambda self, line: self.terminate(),
+        },
+        {
+            "names" : ["help", "?"],
+            "help" : "show the help screen"
+        },
         
+        {
+            "names" : ["load", "l"],                    
+            "help" : "load javascript file",
+            "handler" : lambda self, line: self.loadJSFile(line),
+        }
+    )
+    
     def runCommand(self, line):
-        commands = (
-            {
-                "names" : ["javascript", "js"],                
-                "help" : "switch to the javascript mode",
-                "handler" : lambda self, line: self.switchMode("javascript"),
-            },
-            {
-                "names" : ["python", "py"],                
-                "help" : "switch to the python mode",
-                "handler" : lambda self, line: self.switchMode("python"),
-            },
-            {
-                "names" : ["shell", "sh"],
-                "help" : "switch to the shell mode",
-                "handler" : lambda self, line: self.switchMode("shell"),
-            },
-            {
-                "names" : ["exit", "quit", "q"],                
-                "help" : "exit the shell",
-                "handler" : lambda self, line: self.terminate(),
-            },
-            {
-                "names" : ["help", "?"],
-                "help" : "show the help screen"
-            },
-            
-            {
-                "names" : ["load", "l"],                    
-                "help" : "load javascript file",
-                "handler" : lambda self, line: self.loadJSFile(line),
-            }
-        )
-        
-        for command in commands:
+        for command in self.COMMANDS:
             for name in command["names"]:
                 if line.startswith(name):
                     if command.has_key("handler"):
@@ -127,25 +127,35 @@ class Browser(object):
                     else:
                         break
                 
-        for command in commands:
+        for command in self.COMMANDS:
             print "%s    %s" % (", ".join(command["names"]).rjust(15), command["help"])
     
-    def runJavascript(self, context, source):
+    def runJavascript(self, source):
         try:
-            result = context.eval(source)
+            result = PyV8.JSEngine().compile(source).run()
             
             if result:
                 print str(result)
         except:
-            print sys.exc_info()
+            traceback.print_exc()
             
     def runShellCommand(self, line):
         try:
-            args = line.split()
-            
-            os.execv(args[0], args[1:])
+            os.system(line)
         except:
-            print sys.exc_info()
+            traceback.print_exc()
+
+    MODES = {
+        "python" : {
+            "abbr" : "py"
+        },
+        "javascript" : {
+            "abbr" : "js"
+        },
+        "shell" : {
+            "abbr" : "sh"
+        },
+    }
 
     def runShell(self):
         import code
@@ -165,38 +175,26 @@ class Browser(object):
             
             self.terminated = False
             
-            while not self.terminated:           
-                if self.mode == "python":
-                    line = console.raw_input("py>")
-                    
-                    if line[0] == '~':
-                        self.runCommand(line[1:])
-                    elif line[0] == '?':
-                        self.runJavascript(ctxt, line[1:])
-                    elif line[0] == '!':
-                        self.runShellCommand(line[1:])
-                    else:
+            while not self.terminated:
+                line = console.raw_input(self.MODES[self.mode]["abbr"] + ">").strip()
+                
+                if len(line) == 0: continue
+                                
+                if line[0] == '~':                    
+                    self.runCommand(line[1:])
+                elif line[0] == '?':
+                    self.runJavascript(ctxt, line[1:])
+                elif line[0] == '!':
+                    self.runShellCommand(line[1:])
+                else:
+                    if self.mode == "python":
                         console.runsource(line)
-                elif self.mode == "javascript":
-                    line = console.raw_input("js>")
-                    
-                    if line[0] == '~':
-                        self.runCommand(line[1:])
-                    elif line[0] == '?':
-                        console.runsource(line[1:])
-                    elif line[0] == '!':
-                        self.runShellCommand(line[1:])
+                    elif self.mode == "javascript":
+                        self.runJavascript(line)
+                    elif self.mode == "shell":
+                        self.runShellCommand(line)
                     else:
-                        self.runJavascript(ctxt, line)
-                elif self.mode == "shell":
-                    line = console.raw_input("sh>")
-                    
-                    if line[0] == '~':
-                        self.runCommand(line[1:])
-                    elif line[0] == '?':
-                        console.runsource(line[1:])
-                    else:
-                        self.runShellCommand(line[1:])
+                        print "unknown mode - " + self.mode
 
 if __name__ == "__main__":
     with Browser() as browser:    
