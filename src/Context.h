@@ -25,7 +25,7 @@ public:
 
   v8::Handle<v8::Context> Handle(void) { return m_context; }
 
-  CJavascriptObjectPtr GetGlobal(void);
+  py::object GetGlobal(void);
 
   py::str GetSecurityToken(void);
   void SetSecurityToken(py::str token);
@@ -34,7 +34,7 @@ public:
   void Enter(void) { m_context->Enter(); }
   void Leave(void) { m_context->Exit(); }
 
-  CJavascriptObjectPtr Evaluate(const std::string& src);
+  py::object Evaluate(const std::string& src);
 
   static CContextPtr GetEntered(void);
   static CContextPtr GetCurrent(void);

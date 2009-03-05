@@ -10,12 +10,8 @@ class CJavascriptObject;
 
 typedef boost::shared_ptr<CJavascriptObject> CJavascriptObjectPtr;
 
-class CWrapper
+struct CWrapper
 {  
-protected:
-  static py::object Cast(v8::Handle<v8::Value> obj);
-  static v8::Handle<v8::Value> Cast(py::object obj);
-public:
   static void Expose(void);
 };
 
@@ -45,7 +41,6 @@ protected:
   static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);
 public:
   static v8::Handle<v8::Value> Wrap(py::object obj);
-  static py::object Unwrap(v8::Handle<v8::Value> obj);
 };
 
 class CJavascriptObject : public CWrapper
@@ -54,6 +49,8 @@ protected:
   v8::Persistent<v8::Object> m_obj;
 
   void CheckAttr(v8::Handle<v8::String> name) const;
+
+  static py::object Wrap(CJavascriptObject *obj);
 public:
   CJavascriptObject(v8::Handle<v8::Object> obj)
     : m_obj(v8::Persistent<v8::Object>::New(obj))
@@ -81,7 +78,9 @@ public:
   
   void Dump(std::ostream& os) const;  
 
-  static CJavascriptObjectPtr Wrap(v8::Handle<v8::Object> obj, 
+  static py::object Wrap(v8::Handle<v8::Value> value,
+    v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
+  static py::object Wrap(v8::Handle<v8::Object> obj, 
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
 };
 
@@ -89,7 +88,7 @@ class CJavascriptFunction : public CJavascriptObject
 {
   v8::Persistent<v8::Object> m_self;
 
-  CJavascriptObjectPtr Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds);
+  py::object Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds);
 public:
   CJavascriptFunction(v8::Handle<v8::Object> self, v8::Handle<v8::Function> func)
     : CJavascriptObject(func), m_self(v8::Persistent<v8::Object>::New(self))
@@ -101,9 +100,9 @@ public:
     m_self.Dispose();
   }
   
-  CJavascriptObjectPtr Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds);
-  CJavascriptObjectPtr Invoke(py::list args, py::dict kwds);
+  py::object Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds);
+  py::object Invoke(py::list args, py::dict kwds);
 
   const std::string GetName(void) const;
-  CJavascriptObjectPtr GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
+  py::object GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
 };

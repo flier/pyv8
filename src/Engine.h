@@ -25,7 +25,7 @@ public:
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
 
-  CJavascriptObjectPtr ExecuteScript(v8::Handle<v8::Script> script);
+  py::object ExecuteScript(v8::Handle<v8::Script> script);
 };
 
 class CScript
@@ -48,5 +48,5 @@ public:
 
   const std::string GetSource(void) const { return m_source; }
 
-  CJavascriptObjectPtr Run(void);
+  py::object Run(void);
 };

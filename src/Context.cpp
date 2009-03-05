@@ -58,7 +58,7 @@ CContext::CContext(py::object global)
   }
 }
 
-CJavascriptObjectPtr CContext::GetGlobal(void) 
+py::object CContext::GetGlobal(void) 
 { 
   v8::HandleScope handle_scope;
 
@@ -110,7 +110,7 @@ CContextPtr CContext::GetCurrent(void)
   return CContextPtr(new CContext(v8::Context::GetCurrent())); 
 }
 
-CJavascriptObjectPtr CContext::Evaluate(const std::string& src) 
+py::object CContext::Evaluate(const std::string& src) 
 { 
   CEngine engine;
 
