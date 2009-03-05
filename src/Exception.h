@@ -34,12 +34,16 @@ protected:
     assert(exc);
   }
 public:
-  static void translator(CPythonException const& ex) 
-  {
-    ::PyErr_SetString(ex.m_exc, ex.what());
-  }
+  static void translator(CPythonException const& ex);
 
   static void Expose(void);
+};
+
+struct CExceptionExtractor
+{
+  std::string m_msg;
+
+  CExceptionExtractor(v8::TryCatch& try_catch);
 };
 
 template <typename T>
@@ -49,13 +53,9 @@ struct CExceptionThrower
   {
     if (try_catch.HasCaught())
     {
-      assert(v8::Context::InContext());
+      CExceptionExtractor extractor(try_catch);
 
-      v8::HandleScope handle_scope;
-
-      v8::String::AsciiValue exception(try_catch.Exception());
-
-      throw T(*exception);
+      throw T(extractor.m_msg);
     }
   }
 };
