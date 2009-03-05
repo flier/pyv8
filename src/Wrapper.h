@@ -68,7 +68,7 @@ public:
   v8::Handle<v8::Object> Object(void) { return m_obj; }
   long Native(void) { return reinterpret_cast<long>(*m_obj); }
 
-  CJavascriptObjectPtr GetAttr(const std::string& name);
+  py::object GetAttr(const std::string& name);
   void SetAttr(const std::string& name, py::object value);
   void DelAttr(const std::string& name);
   

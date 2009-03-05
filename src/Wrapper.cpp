@@ -304,11 +304,24 @@ py::object CPythonObject::Unwrap(v8::Handle<v8::Value> obj)
 
   if (result) return result;
 
-  if (obj->IsObject())
+  if (obj->IsNull() || obj->IsUndefined())
   {
-    v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->ToObject()->GetInternalField(0));
+    return py::object();
+  }
+  else if (obj->IsObject())
+  {
+    v8::Handle<v8::Object> jsobj = obj->ToObject();
 
-    return *static_cast<py::object *>(field->Value());
+    if (jsobj->InternalFieldCount() == 1)
+    {
+      v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(jsobj->GetInternalField(0));
+
+      return *static_cast<py::object *>(field->Value());
+    }
+    else
+    {
+      return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObject::Wrap(jsobj))));
+    }
   }
   else if (obj->IsFunction())
   {
@@ -336,7 +349,7 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
   }
 }
 
-CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
+py::object CJavascriptObject::GetAttr(const std::string& name)
 {
   v8::HandleScope handle_scope;
 
@@ -346,11 +359,15 @@ CJavascriptObjectPtr CJavascriptObject::GetAttr(const std::string& name)
 
   CheckAttr(attr_name);
 
-  v8::Handle<v8::Value> attr_obj = m_obj->Get(attr_name);
+  v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
 
-  if (attr_obj.IsEmpty()) CWrapperException::Throw(try_catch);
+  if (attr_value.IsEmpty()) CWrapperException::Throw(try_catch);
 
-  return CJavascriptObject::Wrap(attr_obj->ToObject(), m_obj);
+  py::object result = Cast(attr_value);
+
+  if (result) return result;
+
+  return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObject::Wrap(attr_value->ToObject(), m_obj))));
 }
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
