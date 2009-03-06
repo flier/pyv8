@@ -93,7 +93,7 @@ void CContext::SetSecurityToken(py::str token)
   }
   else
   {    
-    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)));  
+    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));  
   }
 }
 
