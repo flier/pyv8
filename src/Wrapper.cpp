@@ -70,9 +70,11 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
-  v8::String::AsciiValue name(prop), data(value);
+  v8::String::AsciiValue name(prop);
 
-  obj.attr(*name) = *data;
+  py::str attr_name(*name, name.length());
+
+  obj.attr(*name) = CJavascriptObject::Wrap(value);
 
   return value;
 }
@@ -101,7 +103,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   v8::String::AsciiValue name(prop);
 
   py::str attr_name(*name, name.length());
-
+  
   return v8::Boolean::New(::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
 }
 
@@ -247,7 +249,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
     if (PyType_Check(obj.ptr()))
     {
-      v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__")));
+      v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__"))());
 
       func_tmpl->SetClassName(cls_name);
     }
