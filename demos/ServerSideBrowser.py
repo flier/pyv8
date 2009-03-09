@@ -2,6 +2,7 @@
 from __future__ import with_statement
 
 import sys, traceback, os, os.path
+import xml.dom.minidom
 import logging
 
 import PyV8
@@ -9,16 +10,36 @@ import PyV8
 class JavaLibrary(PyV8.JSClass):
     class LangLibrary(PyV8.JSClass):
         def Runnable(self, args):
-            logging.info("new java.lang.Runnable(%s)" % args)
+            logging.debug("new java.lang.Runnable(%s)" % args)
             
         def Thread(self, runnable):
-            logging.info("new java.lang.Thread(%s)" % runnable)
+            logging.debug("new java.lang.Thread(%s)" % runnable)
             
     lang = LangLibrary()
     
+    class UtilLibrary(PyV8.JSClass):
+        def HashMap(self):
+            logging.debug("new java.util.HashMap()")
+            
+            class HashMapWrapper(PyV8.JSClass):
+                map = {}
+                
+                def get(self, key):
+                    return self.map[key]
+                
+                def put(self, key, value):
+                    self.map[key] = value
+                    
+                def containsKey(self, key):
+                    return self.map.has_key(key)
+                    
+            return HashMapWrapper()
+    
+    util = UtilLibrary()
+    
     class IoLibrary(PyV8.JSClass):
         def File(self, filename):
-            logging.info("new java.io.File(%s)" % filename)
+            logging.debug("new java.io.File(%s)" % filename)
             
             class FileWrapper(PyV8.JSClass):
                 def __init__(self, filename):
@@ -33,12 +54,73 @@ class JavaLibrary(PyV8.JSClass):
     
     class NetLibrary(PyV8.JSClass):
         def URL(self, location, url):
-            logging.info("new java.net.URL(%s, %s)" % (location, url))
+            logging.debug("new java.net.URL(%s, %s)" % (location, url))
         
-    net = NetLibrary()
+    net = NetLibrary()    
 
+class HtmlStyle(PyV8.JSClass):
+    def __init__(self, node):
+        self._node = node
+        self._attrs = self.parse(node.getAttribute("style"))        
+        
+    def parse(self, style):
+        attrs = {}
+                
+        try:
+            for attr in style.split(';'):
+                if attr == '': continue
+                
+                strs = attr.split(':')
+                
+                if len(strs) == 2:
+                    attrs[strs[0]] = strs[1]
+                else:
+                    attrs[attr] = None
+        except:
+            logging.warn("fail to parse the style attribute: %s", sys.exc_info()[1])            
+        
+        return attrs
+    
+    def __getattr__(self, name):
+        try:
+            try:            
+                return object.__getattribute__(self, name)
+            except AttributeError:            
+                return object.__getattribute__(self, "_attrs")[name]
+        except:
+            logging.error(sys.exc_info())                
+        
+    def __setattr__(self, name, value):
+        try:
+            if name[0] == '_':
+                return object.__setattr__(self, name, value)
+            else:
+                node = object.__getattribute__(self, "_node")
+                attrs = object.__getattribute__(self, "_attrs")
+                style = ";".join(["%s:%s" % (k, v) if v else k for k, v in attrs.items()])
+                
+                if node.hasAttribute("style") and len(style) == 0:
+                    node.removeAttribute("style")
+                elif len(style) > 0:
+                    node.setAttribute("style", style)
+        except:
+            logging.error(sys.exc_info())
+            
 class HtmlWindow(PyV8.JSClass):
-    pass
+    def style(self):
+        return HtmlStyle(self)
+            
+    def __init__(self):
+        import new
+        
+        setattr(xml.dom.minidom.Element, "style", property(self.style.im_func))        
+        
+    @property
+    def window(self):
+        return self
+        
+    def eval(self, code):
+        PyV8.JSEngine().compile(code).run()
 
 class Browser(object):
     def __enter__(self):
@@ -80,6 +162,29 @@ class Browser(object):
         
         with open(filename) as f:
             PyV8.JSEngine().compile(f.read()).run()
+            
+    @property
+    def window(self):
+        return self.console.locals["window"]
+        
+    def getdom(self):
+        return self.console.locals["dom"]
+        
+    def setdom(self, dom):
+        self.console.locals["dom"] = dom
+        
+    dom = property(getdom, setdom)
+            
+    def openPage(self, url):
+        import urllib2, BeautifulSoup
+        
+        html = urllib2.urlopen(url).read()
+        
+        logging.debug("load page (%d bytes) from %s", len(html), url)
+        
+        self.dom = BeautifulSoup.BeautifulSoup(html)
+        self.window.location = url
+        self.window.document = xml.dom.minidom.parseString(html)
 
     COMMANDS = (
         {
@@ -111,6 +216,11 @@ class Browser(object):
             "names" : ["load", "l"],                    
             "help" : "load javascript file",
             "handler" : lambda self, line: self.loadJSFile(line),
+        },
+        {
+            "names" : ["open", "o"],
+            "help" : "open a HTML page",
+            "handler" : lambda self, line: self.openPage(line)
         }
     )
     
@@ -122,7 +232,7 @@ class Browser(object):
                         try:
                             return command["handler"](self, line[len(name):].strip())
                         except:
-                            print sys.exc_info()
+                            traceback.print_exc()
                             break
                     else:
                         break
@@ -171,12 +281,12 @@ class Browser(object):
         self.mode = "python"
                 
         with PyV8.JSContext(window) as ctxt:
-            console = code.InteractiveConsole({"window" : window})
+            self.console = code.InteractiveConsole({"window" : window})
             
             self.terminated = False
             
             while not self.terminated:
-                line = console.raw_input(self.MODES[self.mode]["abbr"] + ">").strip()
+                line = self.console.raw_input(self.MODES[self.mode]["abbr"] + ">").strip()
                 
                 if len(line) == 0: continue
                                 
@@ -188,7 +298,7 @@ class Browser(object):
                     self.runShellCommand(line[1:])
                 else:
                     if self.mode == "python":
-                        console.runsource(line)
+                        self.console.runsource(line)
                     elif self.mode == "javascript":
                         self.runJavascript(line)
                     elif self.mode == "shell":
