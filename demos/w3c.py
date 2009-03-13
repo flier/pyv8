@@ -137,27 +137,27 @@ class NodeList(object):
         return len(self.nodes)
 
 class NamedNodeMap(object):
-    def __init__(self, nodes):        
-        self.nodes = nodes
+    def __init__(self, parent):        
+        self.parent = parent
         
     def getNamedItem(self, name):
-        return self.nodes.get(name)
+        return self.parent.getAttributeNode(name)
     
-    def setNamedItem(self, node):
-        self.nodes[node.nodeName] = node
+    def setNamedItem(self, attr):
+        self.parent.tag[attr.name] = attr.value
+        
+        attr.parent = self.parent
     
     def removeNamedItem(self, name):
-        if not self.nodes.has_key(name):
-            raise DOMException(DOMException.NOT_FOUND_ERR)
-            
-        del self.nodes[name]
+        self.parent.removeAttribute(name)
     
     def item(self, index):
-        return self.nodes.get(self.nodes.keys()[index])
+        names = self.parent.tag.attrMap.keys()
+        return self.parent.getAttributeNode(names[index]) if 0 <= index and index < len(names) else None
     
     @property
-    def length(self):
-        return len(self.nodes)
+    def length(self):        
+        return len(self.parent.tag._getAttrMap()) 
         
 class Attr(Node):
     def __init__(self, parent, attr):
@@ -228,6 +228,11 @@ class Element(Node):
     def nodeValue(self):
         return None
     
+    @property
+    def attributes(self):
+        return NamedNodeMap(self)    
+    
+    @property
     def childNodes(self):
         return NodeList(self.doc, self.tag.contents)
         
@@ -412,6 +417,10 @@ class Document(Node):
         return None
     
     @property
+    def childNodes(self):
+        return NodeList(self.doc, self.doc.contents)
+        
+    @property
     def doctype(self):
         for tag in self.doc:
             if isinstance(tag, BeautifulSoup.Declaration) and tag.startswith("DOCTYPE"):
@@ -421,7 +430,7 @@ class Document(Node):
     
     @property
     def implementation(self):
-        pass
+        return self
     
     @property
     def documentElement(self):
@@ -446,13 +455,13 @@ class Document(Node):
         return ProcessingInstruction(self, target, data)
     
     def createAttribute(self, name):
-        pass
+        return Attr(None, name)
     
     def createEntityReference(self, name):
         return EntityReference(self, name)
     
     def getElementsByTagName(self, tagname):
-        pass
+        return NodeList(self.doc, self.doc.findAll(tagname))
     
 class DOMImplementation(Document):
     def hasFeature(feature, version):
@@ -522,8 +531,21 @@ class DocumentTest(unittest.TestCase):
         self.assertEquals("xmlns", attr.nodeName)
         self.assertEquals("http://www.w3.org/1999/xhtml", attr.nodeValue)
         
+    def testNodeList(self):
+        nodes = self.doc.getElementsByTagName("body")
+        
+        self.assertEquals(1, nodes.length)
+        
+        self.assert_(nodes.item(0))
+        self.failIf(nodes.item(-1))
+        self.failIf(nodes.item(1))
+
     def testDocument(self):
-        pass
+        nodes = self.doc.getElementsByTagName("body")
+        
+        body = nodes.item(0)
+        
+        self.assertEquals("body", body.tagName)   
     
     def testDocumentType(self):
         doctype = self.doc.doctype
@@ -539,6 +561,13 @@ class DocumentTest(unittest.TestCase):
         self.assertEquals("http://www.w3.org/1999/xhtml", html.getAttribute("xmlns"))
         self.assert_(html.getAttributeNode("xmlns"))
         
+        nodes = html.getElementsByTagName("body")
+        
+        self.assertEquals(1, nodes.length)
+        
+        body = nodes.item(0)
+        
+        self.assertEquals("body", body.tagName)    
         
     def testAttr(self):
         html = self.doc.documentElement
@@ -578,6 +607,23 @@ class DocumentTest(unittest.TestCase):
         
         self.assert_(onload)
         self.assert_(onunload)
+
+    def testNamedNodeMap(self):
+        attrs = self.doc.getElementsByTagName("body").item(0).attributes
+        
+        self.assert_(attrs)
+        
+        self.assertEquals(2, attrs.length)
+        
+        self.assert_(attrs.getNamedItem("onload"))
+        self.assert_(attrs.getNamedItem("onunload"))
+        self.failIf(attrs.getNamedItem("nonexists"))
+        
+        self.failIf(attrs.item(-1))
+        self.failIf(attrs.item(attrs.length))
+        
+        for i in xrange(attrs.length):
+            self.assert_(attrs.item(i))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
