@@ -144,9 +144,16 @@ class NamedNodeMap(object):
         return self.parent.getAttributeNode(name)
     
     def setNamedItem(self, attr):
-        self.parent.tag[attr.name] = attr.value
+        oldattr = self.parent.getAttributeNode(attr.name)
         
         attr.parent = self.parent
+        
+        self.parent.tag[attr.name] = attr.value
+        
+        if oldattr:
+            oldattr.parent = None
+        
+        return oldattr
     
     def removeNamedItem(self, name):
         self.parent.removeAttribute(name)
@@ -160,9 +167,20 @@ class NamedNodeMap(object):
         return len(self.parent.tag._getAttrMap()) 
         
 class Attr(Node):
+    _value = ""
+    
     def __init__(self, parent, attr):
         self.parent = parent
         self.attr = attr
+        
+        self._value = self.getValue()
+        
+    def __repr__(self):
+        return "<Attr object %s%s at 0x%08X>" % ("%s." % self.parent.tagName if self.parent else "", self.attr, id(self))
+        
+    def __eq__(self, other):
+        return hasattr(other, "parent") and self.parent == other.parent and \
+               hasattr(other, "attr") and self.attr == other.attr
         
     @property
     def nodeType(self):
@@ -200,10 +218,17 @@ class Attr(Node):
         return self.parent.has_key(self.attr)
     
     def getValue(self):
-        return self.parent.tag[self.attr] if self.parent.tag.has_key(self.attr) else ""
+        if self.parent:
+            if self.parent.tag.has_key(self.attr):
+                return self.parent.tag[self.attr]
+            
+        return self._value 
         
     def setValue(self, value):
-        self.parent.tag[self.attr] = value
+        self._value = value
+        
+        if self.parent:
+            self.parent.tag[self.attr] = value
         
     value = property(getValue, setValue)
     
@@ -212,6 +237,9 @@ class Element(Node):
         Node.__init__(self, doc)
         
         self.tag = tag
+        
+    def __repr__(self):
+        return "<Element %s>" % (self.tag.name)
         
     def __eq__(self, other):
         return Node.__eq__(self, other) and hasattr(other, "tag") and self.tag == other.tag
@@ -615,8 +643,18 @@ class DocumentTest(unittest.TestCase):
         
         self.assertEquals(2, attrs.length)
         
-        self.assert_(attrs.getNamedItem("onload"))
-        self.assert_(attrs.getNamedItem("onunload"))
+        attr = attrs.getNamedItem("onload")
+        
+        self.assert_(attr)        
+        self.assertEquals("onload", attr.name)
+        self.assertEquals("load()", attr.value)
+        
+        attr = attrs.getNamedItem("onunload")
+        
+        self.assert_(attr)        
+        self.assertEquals("onunload", attr.name)
+        self.assertEquals("unload()", attr.value)
+        
         self.failIf(attrs.getNamedItem("nonexists"))
         
         self.failIf(attrs.item(-1))
@@ -624,6 +662,39 @@ class DocumentTest(unittest.TestCase):
         
         for i in xrange(attrs.length):
             self.assert_(attrs.item(i))
+            
+        attr = self.doc.createAttribute("hello")
+        attr.value = "world"
+        
+        self.assert_(attr)
+        
+        self.failIf(attrs.setNamedItem(attr))
+        self.assertEquals("world", attrs.getNamedItem("hello").value)
+        
+        attr.value = "flier"
+        
+        self.assertEquals("flier", attrs.getNamedItem("hello").value)
+        
+        attrs.getNamedItem("hello").value = "world"
+        
+        self.assertEquals("world", attr.value)
+        
+        old = attrs.setNamedItem(self.doc.createAttribute("hello"))
+        
+        self.assert_(old)
+        self.assertEquals(old.name, attr.name)
+        self.assertEquals(old.value, attr.value)
+        
+        self.assertNotEquals(old, attr)
+        
+        self.assertEquals(attr, attrs.getNamedItem("hello"))
+        
+        attrs.getNamedItem("hello").value = "flier"
+        
+        self.assertEquals("flier", attrs.getNamedItem("hello").value)
+        self.assertEquals("flier", attr.value)
+        self.assertEquals("world", old.value)
+        self.failIf(old.parent)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
