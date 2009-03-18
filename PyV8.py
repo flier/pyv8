@@ -373,6 +373,7 @@ class JSContext(_PyV8.JSContext):
 
 import unittest
 import logging
+import traceback
 
 class TestContext(unittest.TestCase):
     def testMultiNamespace(self):
@@ -517,11 +518,26 @@ class TestWrapper(unittest.TestCase):
             var_b = vars.var_b
             self.assert_(var_b)
             self.assert_(bool(var_b))
+            
+    def testFunction(self):
+        with JSContext() as ctxt:
+            func = ctxt.eval("""
+function()
+{
+    function a()
+    {
+        return "abc";    
+    }
+
+    return a();    
+};
+""")
+            self.assertEquals("abc", str(func()))
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
-            self.assert_(str(JSEngine.version).startswith("1.0."))
+            self.assert_(str(JSEngine.version).startswith("1."))
         
     def testCompile(self):
         with JSContext() as ctxt:
@@ -610,7 +626,8 @@ class TestDebug(unittest.TestCase):
             
             self.events.append(repr(event))
         except:
-            logging.error(sys.exc_info())
+            logging.error("fail to process debug event")            
+            logging.debug(traceback.extract_stack())
         
     def testEventDispatch(self):        
         global debugger
