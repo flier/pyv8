@@ -49,6 +49,9 @@ class Node(PyV8.JSClass):
     def __init__(self, doc):
         self.doc = doc        
         
+    def __repr__(self):
+        return "<Node %s at 0x%08X>" % (self.nodeName, id(self))
+                
     def __eq__(self, other):
         return hasattr(other, "doc") and self.doc == other.doc
         
@@ -247,7 +250,7 @@ class Element(Node):
         self.tag = tag
         
     def __repr__(self):
-        return "<Element %s>" % (self.tag.name)
+        return "<Element %s at 0x%08X>" % (self.tag.name, id(self))
         
     def __eq__(self, other):
         return Node.__eq__(self, other) and hasattr(other, "tag") and self.tag == other.tag
@@ -499,15 +502,22 @@ class Document(Node):
     @property
     def documentElement(self):
         return Element(self, self.doc.find('html'))
+        
+    onCreateElement = None
     
     def createElement(self, tagname):        
-        return Element(self, BeautifulSoup.Tag(self.doc, tagname))
+        element = Element(self, BeautifulSoup.Tag(self.doc, tagname))        
+        
+        if self.onCreateElement:
+            self.onCreateElement(element)
+        
+        return element
     
     def createDocumentFragment(self):
         return DocumentFragment(self)
     
     def createTextNode(self, data):
-        return Text(self, data)
+        return Text(self, BeautifulSoup.NavigableString(data))
     
     def createComment(self, data):
         return Comment(self, data)
@@ -526,8 +536,46 @@ class Document(Node):
     
     def getElementsByTagName(self, tagname):
         return NodeList(self.doc, self.doc.findAll(tagname))
+        
+class HTMLDocument(Document):
+    def getTitle(self):
+        try:
+            return str(self.doc.find('html').find('head').find('title').string)
+        except:
+            return None
     
-class DOMImplementation(Document):
+    def setTitle(self, text):
+        html = self.doc.find('html')
+        
+        if not html:
+            html = BeautifulSoup.Tag(self.doc, 'html')
+            
+            self.doc.append(html)
+            
+        head = html.find('head')
+        
+        if not head:
+            head = BeautifulSoup.Tag(self.doc, 'head')
+            
+            html.append(head)
+            
+        title = head.find('title')
+        
+        if not title:
+            title = BeautifulSoup.Tag(self.doc, 'title')
+            
+            head.append(title)
+        
+        if title.string:
+            title.contents[0] = BeautifulSoup.NavigableString(text)
+        else:
+            title.append(text)
+            
+        title.string = title.contents[0]
+    
+    title = property(getTitle, setTitle)
+    
+class DOMImplementation(HTMLDocument):
     def hasFeature(feature, version):
         pass    
     
@@ -546,9 +594,7 @@ def parse(file):
     
 import unittest
 
-class DocumentTest(unittest.TestCase):
-    def setUp(self):
-        self.doc = parseString("""
+TEST_HTML = """
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
                       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -571,7 +617,11 @@ class DocumentTest(unittest.TestCase):
     <body onload="load()" onunload="unload()">
         <p1>Hello World!</p1>
     </body>
-</html>""")
+</html>"""
+
+class DocumentTest(unittest.TestCase):
+    def setUp(self):
+        self.doc = parseString(TEST_HTML)
         
         self.assert_(self.doc)
         
@@ -773,6 +823,27 @@ class DocumentTest(unittest.TestCase):
         self.assertEquals("flier", attr.value)
         self.assertEquals("world", old.value)
         self.failIf(old.parent)
+
+class HTMLDocumentTest(unittest.TestCase):
+    def setUp(self):
+        self.doc = parseString(TEST_HTML)
+        
+        self.assert_(self.doc)
+        
+    def testTitle(self):
+        self.assertEquals("this is a test", self.doc.title)
+        
+        self.doc.title = "another title"
+        
+        self.assertEquals("another title", self.doc.title)
+        
+        doc = parseString("<html></html>")
+        
+        self.failIf(doc.title)
+        
+        doc.title = "another title"        
+        
+        self.assertEquals("another title", doc.title)        
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
