@@ -7,6 +7,8 @@ import logging
 
 import BeautifulSoup
 
+import PyV8
+
 class abstractmethod(object):
     def __init__(self, func):
         self.func = func
@@ -14,7 +16,7 @@ class abstractmethod(object):
     def __call__(self, *args, **kwds):
         raise NotImplementedError("method %s is abstract." % self.func.func_name)
 
-class DOMException(object):
+class DOMException(RuntimeError, PyV8.JSClass):
     def __init__(self, code):
         self.code = code
         
@@ -29,7 +31,7 @@ class DOMException(object):
     NOT_SUPPORTED_ERR              = 9  # If the implementation does not support the type of object requested
     INUSE_ATTRIBUTE_ERR            = 10 # If an attempt is made to add an attribute that is already in use elsewhere
     
-class Node(object):
+class Node(PyV8.JSClass):
     # NodeType
     ELEMENT_NODE                   = 1
     ATTRIBUTE_NODE                 = 2
@@ -45,7 +47,7 @@ class Node(object):
     NOTATION_NODE                  = 12
     
     def __init__(self, doc):
-        self.doc = doc
+        self.doc = doc        
         
     def __eq__(self, other):
         return hasattr(other, "doc") and self.doc == other.doc
@@ -124,10 +126,16 @@ class Node(object):
     def cloneNode(self, deep):
         pass
     
-class NodeList(object):
+class NodeList(PyV8.JSClass):
     def __init__(self, doc, nodes):
         self.doc = doc
         self.nodes = nodes
+        
+    def __len__(self):
+        return self.length
+        
+    def __getitem__(self, key):
+        return self.item(int(key))
     
     def item(self, index):        
         return Element(self.doc, self.nodes[index]) if 0 <= index and index < len(self.nodes) else None
@@ -136,7 +144,7 @@ class NodeList(object):
     def length(self):
         return len(self.nodes)
 
-class NamedNodeMap(object):
+class NamedNodeMap(PyV8.JSClass):
     def __init__(self, parent):        
         self.parent = parent
         
@@ -495,8 +503,8 @@ class DOMImplementation(Document):
     def hasFeature(feature, version):
         pass    
     
-def getDOMImplementation():
-    return DOMImplementation()
+def getDOMImplementation(dom = None):
+    return DOMImplementation(dom if dom else BeautifulSoup.BeautifulSoup())
     
 def parseString(html):
     return DOMImplementation(BeautifulSoup.BeautifulSoup(html))
@@ -568,6 +576,12 @@ class DocumentTest(unittest.TestCase):
         self.failIf(nodes.item(-1))
         self.failIf(nodes.item(1))
 
+        self.assertEquals(1, len(nodes))
+
+        self.assert_(nodes[0])
+        self.failIf(nodes[-1])
+        self.failIf(nodes[1])
+
     def testDocument(self):
         nodes = self.doc.getElementsByTagName("body")
         
@@ -605,7 +619,9 @@ class DocumentTest(unittest.TestCase):
         self.assert_(attr)
         
         self.assertEquals(html, attr.parentNode)
-        self.assert_(attr.childNodes)
+        self.failIf(attr.hasChildNodes())        
+        self.assert_(attr.childNodes != None)
+        self.assertEquals(0, attr.childNodes.length)
         self.failIf(attr.firstChild)
         self.failIf(attr.lastChild)
         self.failIf(attr.previousSibling)
