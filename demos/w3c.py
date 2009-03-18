@@ -29,7 +29,7 @@ class DOMException(RuntimeError, PyV8.JSClass):
     NO_MODIFICATION_ALLOWED_ERR    = 7  # If an attempt is made to modify an object where modifications are not allowed
     NOT_FOUND_ERR                  = 8  # If an attempt is made to reference a node in a context where it does not exist
     NOT_SUPPORTED_ERR              = 9  # If the implementation does not support the type of object requested
-    INUSE_ATTRIBUTE_ERR            = 10 # If an attempt is made to add an attribute that is already in use elsewhere
+    INUSE_ATTRIBUTE_ERR            = 10 # If an attempt is made to add an attribute that is already in use elsewhere    
     
 class Node(PyV8.JSClass):
     # NodeType
@@ -272,33 +272,61 @@ class Element(Node):
     def childNodes(self):
         return NodeList(self.doc, self.tag.contents)
         
-    def findChild(child):
+    def checkChild(self, child):
+        if not isinstance(child, Element):
+            raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
+            
+        if child.tag.parser != self.tag.parser:
+            raise DOMException(DOMException.WRONG_DOCUMENT_ERR)        
+        
+    def findChild(self, child):
         try:
-            return self.tag.contents.index(newChild.tag)
+            return self.tag.contents.index(child.tag)
         except ValueError:
             return -1
         
     def insertBefore(self, newChild, refChild):
-        index = self.findChild(newChild)
+        self.checkChild(newChild)
+        self.checkChild(refChild)
         
-        self.tag.insert(index if index >= 0 else len(self.tag.contents), refChild.tag)
+        index = self.findChild(refChild)
+        
+        if index < 0:
+            self.tag.append(newChild.tag)            
+        else:        
+            self.tag.insert(index, newChild.tag)
+        
+        return newChild
 
     def replaceChild(self, newChild, oldChild):
-        index = self.findChild(oldChild.tag)
+        self.checkChild(newChild)
+        self.checkChild(oldChild)
+        
+        index = self.findChild(oldChild)
         
         if index < 0:
             raise DOMException(DOMException.NOT_FOUND_ERR)
             
-        self.tag.contents[index] = oldChild.tag
+        self.tag.contents[index] = newChild.tag
+        
+        return oldChild
     
     def removeChild(self, oldChild):
-        raise DOMException(DOMException.NOT_FOUND_ERR)
+        self.checkChild(oldChild)
+        
+        self.tag.contents.remove(oldChild.tag)
+        
+        return oldChild
     
     def appendChild(self, newChild):
-        raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
+        self.checkChild(newChild)
+        
+        self.tag.append(newChild.tag)
+        
+        return newChild
     
     def hasChildNodes(self):
-        return False
+        return len(self.tag.contents) > 0
     
     @property
     def tagName(self):
@@ -609,7 +637,41 @@ class DocumentTest(unittest.TestCase):
         
         body = nodes.item(0)
         
-        self.assertEquals("body", body.tagName)    
+        self.assertEquals("body", body.tagName)
+        
+        div = self.doc.createElement("div")
+        
+        self.assert_(div)
+        self.failIf(div.hasChildNodes())
+        self.assertEquals(0, len(div.childNodes))
+        
+        a = self.doc.createElement("a")
+        b = self.doc.createElement("b")
+        p = self.doc.createElement("p")
+        
+        self.assert_(a == div.appendChild(a))
+        self.assert_(div.hasChildNodes())
+        self.assertEquals(1, len(div.childNodes))        
+        self.assert_(a == div.childNodes[0])
+        
+        self.assert_(b == div.insertBefore(b, a))
+        self.assertEquals(2, len(div.childNodes))
+        self.assert_(b == div.childNodes[0])
+        self.assert_(a == div.childNodes[1])
+        
+        self.assert_(a == div.replaceChild(p, a))
+        self.assertEquals(2, len(div.childNodes))
+        self.assert_(b == div.childNodes[0])
+        self.assert_(p == div.childNodes[1])
+        
+        self.assert_(b == div.removeChild(b))
+        self.assertEquals(1, len(div.childNodes))        
+        self.assert_(p == div.childNodes[0])
+        
+        self.assertRaises(DOMException, div.appendChild, "hello")
+        self.assertRaises(DOMException, div.insertBefore, "hello", p)
+        self.assertRaises(DOMException, div.replaceChild, "hello", p)
+        self.assertRaises(DOMException, div.removeChild, "hello")
         
     def testAttr(self):
         html = self.doc.documentElement
