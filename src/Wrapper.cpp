@@ -458,7 +458,8 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     params[i] = CPythonObject::Wrap(args[i]);
   }
 
-  v8::Handle<v8::Value> result = func->Call(self,
+  v8::Handle<v8::Value> result = func->Call(
+    self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
 
   if (result.IsEmpty()) CWrapperException::Throw(try_catch);
@@ -469,7 +470,7 @@ py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, 
 {
   v8::HandleScope handle_scope;
 
-  return Call(self.get() ? self->Object() : v8::Context::GetCurrent()->Global(), args, kwds);
+  return Call(self->Object(), args, kwds);
 }
 
 py::object CJavascriptFunction::Invoke(py::list args, py::dict kwds) 
