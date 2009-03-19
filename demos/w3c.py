@@ -141,7 +141,7 @@ class NodeList(PyV8.JSClass):
         return self.item(int(key))
     
     def item(self, index):        
-        return Element(self.doc, self.nodes[index]) if 0 <= index and index < len(self.nodes) else None
+        return DOMImplementation.createHTMLElement(self.doc, self.nodes[index]) if 0 <= index and index < len(self.nodes) else None
     
     @property
     def length(self):
@@ -506,7 +506,7 @@ class Document(Node):
     onCreateElement = None
     
     def createElement(self, tagname):        
-        element = HTMLElement(self, BeautifulSoup.Tag(self.doc, tagname))        
+        element = DOMImplementation.createHTMLElement(self.doc, BeautifulSoup.Tag(self.doc, tagname))
         
         if self.onCreateElement:
             self.onCreateElement(element)
@@ -537,30 +537,250 @@ class Document(Node):
     def getElementsByTagName(self, tagname):
         return NodeList(self.doc, self.doc.findAll(tagname))
         
-def attr_property(name):
+def attr_property(name, attrtype=str, readonly=False):
     def getter(self):
-        return self.tag[name]
+        return attrtype(self.tag[name])
         
     def setter(self, value):
-        self.tag[name] = value
+        self.tag[name] = attrtype(value)
         
-    return property(getter, setter)
+    return property(getter) if readonly else property(getter, setter)
+        
+def text_property(readonly=False):
+    def getter(self):
+        return self.tag.string
+    
+    def setter(self, text):
+        if self.tag.string:
+            self.tag.contents[0] = BeautifulSoup.NavigableString(text)
+        else:
+            self.tag.append(text)
+                    
+        self.tag.string = self.tag.contents[0]
+        
+    return property(getter) if readonly else property(getter, setter)
         
 class HTMLElement(Element):    
     id = attr_property("id")
     title = attr_property("title")
     lang = attr_property("lang")
     dir = attr_property("dir")
-    className = attr_property("class")
+    className = attr_property("class")    
     
-def xpathproperty(xpath):
+class HTMLHtmlElement(HTMLElement):
+    version = attr_property("version")
+    
+class HTMLHeadElement(HTMLElement):
+    profile = attr_property("profile")
+    
+class HTMLLinkElement(HTMLElement):
+    disabled = False
+    
+    charset = attr_property("charset")
+    href = attr_property("href")
+    hreflang = attr_property("hreflang")
+    media = attr_property("media")
+    rel = attr_property("rel")
+    rev = attr_property("rev")
+    target = attr_property("target")
+    type = attr_property("type")
+    
+class HTMLTitleElement(HTMLElement):
+    text = text_property()
+    
+class HTMLMetaElement(HTMLElement):
+    content = attr_property("content")
+    httpEquiv = attr_property("http-equiv")
+    name = attr_property("name")
+    scheme = attr_property("scheme")
+    
+class HTMLBaseElement(HTMLElement):
+    href = attr_property("href")
+    target = attr_property("target")
+    
+class HTMLIsIndexElement(HTMLElement):
+    form = None
+    prompt = attr_property("prompt")
+    
+class HTMLStyleElement(HTMLElement):
+    disabled = False
+    
+    media = attr_property("media")
+    type = attr_property("type")
+    
+class HTMLBodyElement(HTMLElement):
+    background = attr_property("background")
+    bgColor = attr_property("bgcolor")
+    link = attr_property("link")
+    aLink = attr_property("alink")
+    vLink = attr_property("vlink")
+    text = attr_property("text")
+    
+class HTMLFormElement(HTMLElement):
+    @property
+    def elements(self):
+        raise NotImplementedError()
+    
+    @property
+    def length(self):
+        raise NotImplementedError()
+    
+    name = attr_property("name")
+    acceptCharset = attr_property("accept-charset")
+    action = attr_property("action")
+    enctype = attr_property("enctype")
+    method = attr_property("method")
+    target = attr_property("target")
+    
+    def submit(self):
+        raise NotImplementedError()
+    
+    def reset(self):
+        raise NotImplementedError()
+    
+class HTMLSelectElement(HTMLElement):
+    @property
+    def type(self):
+        raise NotImplementedError()
+        
+    selectedIndex = 0
+    value = None
+    
+    @property
+    def length(self):
+        raise NotImplementedError()
+        
+    @property
+    def form(self):
+        raise NotImplementedError()
+        
+    @property
+    def options(self):
+        raise NotImplementedError()
+        
+    disabled = attr_property("disabled", bool)
+    multiple = attr_property("multiple", bool)    
+    name = attr_property("name")
+    size = attr_property("size", long)
+    tabIndex = attr_property("tabindex", long)
+    
+    def add(self, element, before):
+        raise NotImplementedError()
+        
+    def remove(self, index):
+        raise NotImplementedError()
+        
+    def blur(self):
+        raise NotImplementedError()
+
+    def focus(self):
+        raise NotImplementedError()
+        
+class HTMLOptGroupElement(HTMLElement):
+    disabled = attr_property("disabled", bool)    
+    label = attr_property("label")
+    
+class HTMLOptionElement(HTMLElement):
+    @property
+    def form(self):
+        raise NotImplementedError()
+        
+    defaultSelected = attr_property("selected", bool)    
+    text = text_property(readonly=True)    
+    index = attr_property("index", long)
+    disabled = attr_property("disabled", bool)    
+    label = attr_property("label")
+    selected = False
+    value = attr_property("value")
+    
+class HTMLInputElement(HTMLElement):
+    defaultValue = attr_property("value")
+    defaultChecked = attr_property("checked")
+    
+    @property
+    def form(self):
+        raise NotImplementedError()
+    
+    accept = attr_property("accept")
+    accessKey = attr_property("accesskey")
+    align = attr_property("align")
+    alt = attr_property("alt")
+    checked = attr_property("checked", bool)
+    disabled = attr_property("disabled", bool)
+    maxLength = attr_property("maxlength", long)
+    name = attr_property("name")
+    readOnly = attr_property("readonly", bool)
+    size = attr_property("size")
+    src = attr_property("src")
+    tabIndex = attr_property("tabindex", long)
+    type = attr_property("type", readonly=True)
+    useMap = attr_property("usermap")
+    
+    @abstractmethod
+    def getValue(self):
+        pass
+    
+    @abstractmethod
+    def setValue(self, value):
+        pass
+    
+    value = property(getValue, setValue)
+    
+    def blur(self):
+        pass
+    
+    def focus(self):
+        pass
+    
+    def select(self):
+        pass
+    
+    def click(self):
+        pass
+    
+class HTMLScriptElement(HTMLElement):
+    text = text_property()    
+    htmlFor = None
+    event = None
+    charset = attr_property("charset")
+    defer = attr_property("defer", bool)
+    src = attr_property("src")
+    type = attr_property("type")
+    
+class HTMLFrameSetElement(HTMLElement):
+    cols = attr_property("cols")
+    rows = attr_property("rows")
+
+class HTMLFrameElement(HTMLElement):
+    frameBorder = attr_property("frameborder")
+    longDesc = attr_property("longdesc")
+    marginHeight = attr_property("marginheight")
+    marginWidth = attr_property("marginwidth")
+    name = attr_property("name")
+    noResize = attr_property("noresize", bool)
+    scrolling = attr_property("scrolling")
+    src = attr_property("src")
+    
+class HTMLIFrameElement(HTMLElement):
+    align = attr_property("align")
+    frameBorder = attr_property("frameborder")
+    height = attr_property("height")
+    longDesc = attr_property("longdesc")
+    marginHeight = attr_property("marginheight")
+    marginWidth = attr_property("marginwidth")
+    name = attr_property("name")    
+    scrolling = attr_property("scrolling")
+    src = attr_property("src")
+    width = attr_property("width")
+
+def xpath_property(xpath, readonly=False):
     parts = xpath.split('/')    
     
     def getter(self):
         tag = self.doc
         
         try:
-            for part in parts:
+            for part in parts:                
                 if part == '':
                     continue
                 elif part == 'text()':
@@ -568,7 +788,7 @@ def xpathproperty(xpath):
                 else:
                     tag = tag.find(part)
                 
-            return tag
+            return DOMImplementation.createHTMLElement(self.doc, tag)
         except:
             return None
         
@@ -599,10 +819,10 @@ def xpathproperty(xpath):
                 
         tag.append(value)
 
-    return property(getter, setter)
+    return property(getter) if readonly else property(getter, setter) 
         
 class HTMLDocument(Document):
-    title = xpathproperty("/html/head/title/text()")    
+    title = xpath_property("/html/head/title/text()")    
     
     @property
     def referrer(self):
@@ -616,12 +836,7 @@ class HTMLDocument(Document):
     def URL(self):
         raise NotImplementedError()
         
-    @property
-    def body(self):
-        try:
-            return HTMLElement(self, self.doc.find('html').find('body'))
-        except:
-            return None
+    body = xpath_property("/html/body", readonly=True)
     
     @property    
     def images(self):
@@ -642,14 +857,8 @@ class HTMLDocument(Document):
     @property    
     def anchors(self):
         raise NotImplementedError()
-        
-    def getCookie(self):
-        pass
-    
-    def setCookie(self):
-        pass
-    
-    cookie = property(getCookie, setCookie)
+            
+    cookie = ""
     
     def open(self):
         pass
@@ -664,11 +873,40 @@ class HTMLDocument(Document):
         pass
     
     def getElementById(self, elementId):
-        return HTMLElement(self, self.doc.find(id=elementId))
+        tag = self.doc.find(id=elementId)
+        return DOMImplementation.createHTMLElement(self.doc, tag) if tag else None
     
 class DOMImplementation(HTMLDocument):
     def hasFeature(feature, version):
-        pass    
+        pass
+        
+    TAGS = {
+        "html" : HTMLHtmlElement,
+        "head" : HTMLHeadElement,
+        "link" : HTMLLinkElement,
+        "title" : HTMLTitleElement,
+        "meta" : HTMLMetaElement,
+        "base" : HTMLBaseElement,
+        "isindex" : HTMLIsIndexElement,
+        "style" : HTMLStyleElement,
+        "body" : HTMLBodyElement,
+        "form" : HTMLFormElement,
+        "select" : HTMLSelectElement,
+        "optgroup" : HTMLOptGroupElement,
+        "option" : HTMLOptionElement,
+        "input" : HTMLInputElement,
+        "script" : HTMLScriptElement,
+        "frameset" : HTMLFrameSetElement,
+        "frame" : HTMLFrameElement,
+        "iframe" : HTMLIFrameElement,
+    }
+        
+    @staticmethod
+    def createHTMLElement(doc, tag):
+        if DOMImplementation.TAGS.has_key(tag.name.lower()):
+            return DOMImplementation.TAGS[tag.name.lower()](doc, tag)
+        else:
+            return HTMLElement(doc, tag)
     
 def getDOMImplementation(dom = None):
     return DOMImplementation(dom if dom else BeautifulSoup.BeautifulSoup())
@@ -932,7 +1170,7 @@ class HTMLDocumentTest(unittest.TestCase):
         
         self.assertEquals(p, self.doc.getElementById('test'))
         
-    def testTitle(self):
+    def testDocument(self):
         self.assertEquals("this is a test", self.doc.title)
         
         self.doc.title = "another title"
@@ -946,6 +1184,8 @@ class HTMLDocumentTest(unittest.TestCase):
         doc.title = "another title"        
         
         self.assertEquals("another title", doc.title)        
+        
+        self.assertEquals(self.doc.getElementsByTagName('body')[0], self.doc.body)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
