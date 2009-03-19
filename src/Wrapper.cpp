@@ -237,7 +237,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     return handle_scope.Close(extractor().Object());
   }
 
-  v8::Handle<v8::Object> instance;
+  v8::Handle<v8::Value> result;
 
   if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
   {
@@ -245,27 +245,45 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
     func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
     
-    instance = func_tmpl->GetFunction();
-
     if (PyType_Check(obj.ptr()))
     {
       v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__"))());
 
       func_tmpl->SetClassName(cls_name);
     }
+
+    result = func_tmpl->GetFunction();
+  }
+  else if (PyBool_Check(obj.ptr()))
+  {
+    result = v8::Boolean::New(py::extract<bool>(obj));
+  }
+  else if (PyString_Check(obj.ptr()))
+  {
+    result = v8::String::New(PyString_AS_STRING(obj.ptr()));
+  }
+  else if (PyUnicode_Check(obj.ptr()))
+  {
+    result = v8::String::New(PyUnicode_AS_UNICODE(obj.ptr()));
+  }
+  else if (PyNumber_Check(obj.ptr()))
+  {   
+    result = v8::Number::New(py::extract<double>(obj));
   }
   else
   {
     static v8::Persistent<v8::ObjectTemplate> s_template = CreateObjectTemplate();
 
-    instance = s_template->NewInstance();
+    v8::Handle<v8::Object> instance = s_template->NewInstance();
 
     v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
 
     instance->SetInternalField(0, payload);
+
+    result = instance;
   }
 
-  return handle_scope.Close(instance);
+  return handle_scope.Close(result);
 }
 
 void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
