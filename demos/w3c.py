@@ -866,11 +866,18 @@ class HTMLDocument(Document):
     def close(self):
         pass
     
-    def write(self, text):
-        pass
+    onDocumentWrite = None
+    
+    def write(self, html):
+        tag = BeautifulSoup.BeautifulSoup(html)
+        
+        if self.onDocumentWrite:
+            self.onDocumentWrite(DOMImplementation.createHTMLElement(self.doc, tag))
+        
+        self.body.tag.append(tag)
     
     def writeln(self, text):
-        pass
+        self.write(text + "\n")
     
     def getElementById(self, elementId):
         tag = self.doc.find(id=elementId)

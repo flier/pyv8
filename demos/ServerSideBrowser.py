@@ -111,11 +111,15 @@ class HtmlStyle(PyV8.JSClass):
             
 class HtmlLocation(PyV8.JSClass):
     def __init__(self, page):
-        self.parts = urlparse.urlparse(page.url, "http")
+        self.page = page
+        
+    @property
+    def parts(self):
+        return urlparse.urlparse(self.page.url)
     
     @property
     def href(self):
-        return urlparse.urlunparse(self.parts)
+        return self.page.url
         
     @property
     def protocol(self):
@@ -197,17 +201,26 @@ class HtmlWindow(PyV8.JSClass):
     def eval(self, code):
         logging.debug("evalute script: %s...", code[:20])
 
-        return PyV8.JSEngine().compile(str(code)).run()
+        try:
+            return PyV8.JSEngine().compile(str(code)).run()
+        except:
+            logging.warn("fail to evalute script: %s", traceback.format_exc())
             
     def execute(self, func):
         logging.debug("evalute function: %s...", str(func)[:20])
         
-        return func()
+        try:
+            return func()
+        except:
+            logging.warn("fail to evalute script: %s", traceback.format_exc())
         
 class Navigator(PyV8.JSClass):
     @property
     def appCodeName(self):
         return "Mozilla"
+    
+    def javaEnabled(self):
+        return "false"
     
 class InternetExplorer(Navigator):    
     @property
@@ -308,32 +321,38 @@ class WebPage(object):
             return pipeline.evalScript(self, unicode(script.string).encode("utf-8"),
                 lambda child: self.children.append((script, child)))
                     
+    def evalTag(self, pipeline, tag):
+        tasks = []            
+        
+        for iframe in tag.findAll('iframe'):
+            tasks.append(pipeline.openPage(self, iframe["src"],
+                lambda page: self.children.append((iframe, page))))
+        
+        for frame in tag.findAll('frame'):
+            tasks.append(pipeline.openPage(self, frame["src"],
+                lambda page: self.children.append((frame, page))))
+        
+        for link in tag.findAll('link', rel='stylesheet', type='text/css', href=True):
+            tasks.append(pipeline.openCss(self, link["href"],
+                lambda css: self.children.append((link, css))))
+            
+        for style in tag.findAll('style,', type='text/css'):
+            tasks.append(pipeline.evalCss(self, unicode(style.string).encode("utf-8"),
+                lambda css: self.children.append((link, css))))
+
+        for script in tag.findAll('script'):
+            tasks.append(self.evalScript(pipeline, script))
+
+        return tasks
+            
     def eval(self, pipeline):
         with self.window.ctxt:
-            tasks = []            
-            
-            for iframe in self.dom.findAll('iframe'):
-                tasks.append(pipeline.openPage(self, iframe["src"],
-                    lambda page: self.children.append((iframe, page))))
-            
-            for frame in self.dom.findAll('frame'):
-                tasks.append(pipeline.openPage(self, frame["src"],
-                    lambda page: self.children.append((frame, page))))
-            
-            for link in self.dom.findAll('link', rel='stylesheet', type='text/css', href=True):
-                tasks.append(pipeline.openCss(self, link["href"],
-                    lambda css: self.children.append((link, css))))
-                
-            for style in self.dom.findAll('style,', type='text/css'):
-                tasks.append(pipeline.evalCss(self, unicode(style.string).encode("utf-8"),
-                    lambda css: self.children.append((link, css))))
-                
             scripts = []
                 
             self.window.document.onCreateElement = lambda element: scripts.append(element) if element.tagName == "script" else None
+            self.window.document.onDocumentWrite = lambda element: self.evalTag(pipeline, element.tag)
             
-            for script in self.dom.findAll('script'):
-                tasks.append(self.evalScript(pipeline, script))
+            tasks = self.evalTag(pipeline, self.dom)            
                     
             Task.waitAll(tasks)
             
