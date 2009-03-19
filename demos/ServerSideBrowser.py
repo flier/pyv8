@@ -162,7 +162,8 @@ class HtmlWindow(PyV8.JSClass):
     
     def __init__(self, page, dom):
         self.page = page
-        self.doc = w3c.getDOMImplementation(dom)        
+        self.doc = w3c.getDOMImplementation(dom)
+        self.doc.location = self.location
         self.ctxt = PyV8.JSContext(self)
         
     @property
@@ -172,6 +173,10 @@ class HtmlWindow(PyV8.JSClass):
     @property
     def document(self):
         return self.doc
+    
+    @property
+    def navigator(self):
+        return InternetExplorer()
     
     def getLocation(self):
         return HtmlLocation(self.page)
@@ -198,6 +203,26 @@ class HtmlWindow(PyV8.JSClass):
         logging.debug("evalute function: %s...", str(func)[:20])
         
         return func()
+        
+class Navigator(PyV8.JSClass):
+    @property
+    def appCodeName(self):
+        return "Mozilla"
+    
+class InternetExplorer(Navigator):    
+    @property
+    def appName(self):
+        return "Microsoft Internet Explorer"
+    
+    @property
+    def userAgent(self):
+        return "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
+    
+    @property
+    def userLanguage(self):
+        import locale
+        
+        return locale.getdefaultlocale()[0]
         
 class Task(object):
     @staticmethod
@@ -272,10 +297,20 @@ class WebPage(object):
         
     def __repr__(self):
         return "<WebPage at %s>" % self.url
-        
+    
+    def evalScript(self, pipeline, script):
+        if script.has_key("type") and script["type"] != "text/javascript":
+            raise NotImplementedError("not support script type %s", script["type"])
+        elif script.has_key("src"):
+            return pipeline.openScript(self, script["src"],
+                lambda child: self.children.append((script, child)))
+        else:
+            return pipeline.evalScript(self, unicode(script.string).encode("utf-8"),
+                lambda child: self.children.append((script, child)))
+                    
     def eval(self, pipeline):
         with self.window.ctxt:
-            tasks = []
+            tasks = []            
             
             for iframe in self.dom.findAll('iframe'):
                 tasks.append(pipeline.openPage(self, iframe["src"],
@@ -292,16 +327,13 @@ class WebPage(object):
             for style in self.dom.findAll('style,', type='text/css'):
                 tasks.append(pipeline.evalCss(self, unicode(style.string).encode("utf-8"),
                     lambda css: self.children.append((link, css))))
+                
+            scripts = []
+                
+            self.window.document.onCreateElement = lambda element: scripts.append(element) if element.tagName == "script" else None
             
             for script in self.dom.findAll('script'):
-                if script.has_key("type") and script["type"] != "text/javascript":
-                    raise NotImplementedError("not support script type %s", script["type"])
-                elif script.has_key("src"):
-                    tasks.append(pipeline.openScript(self, script["src"],
-                        lambda child: self.children.append((script, child))))
-                else:
-                    tasks.append(pipeline.evalScript(self, unicode(script.string).encode("utf-8"),
-                        lambda child: self.children.append((script, child))))
+                tasks.append(self.evalScript(pipeline, script))
                     
             Task.waitAll(tasks)
             
@@ -309,6 +341,9 @@ class WebPage(object):
                 
             for interval, code in self.window.timers:
                 tasks.append(pipeline.evalScript(self, code))
+                
+            for script in scripts:
+                tasks.append(self.evalScript(pipeline, script.tag))
             
             body = self.dom.find('body')
             
