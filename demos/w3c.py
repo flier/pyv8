@@ -506,7 +506,7 @@ class Document(Node):
     onCreateElement = None
     
     def createElement(self, tagname):        
-        element = Element(self, BeautifulSoup.Tag(self.doc, tagname))        
+        element = HTMLElement(self, BeautifulSoup.Tag(self.doc, tagname))        
         
         if self.onCreateElement:
             self.onCreateElement(element)
@@ -537,43 +537,134 @@ class Document(Node):
     def getElementsByTagName(self, tagname):
         return NodeList(self.doc, self.doc.findAll(tagname))
         
-class HTMLDocument(Document):
-    def getTitle(self):
+def attr_property(name):
+    def getter(self):
+        return self.tag[name]
+        
+    def setter(self, value):
+        self.tag[name] = value
+        
+    return property(getter, setter)
+        
+class HTMLElement(Element):    
+    id = attr_property("id")
+    title = attr_property("title")
+    lang = attr_property("lang")
+    dir = attr_property("dir")
+    className = attr_property("class")
+    
+def xpathproperty(xpath):
+    parts = xpath.split('/')    
+    
+    def getter(self):
+        tag = self.doc
+        
         try:
-            return str(self.doc.find('html').find('head').find('title').string)
+            for part in parts:
+                if part == '':
+                    continue
+                elif part == 'text()':
+                    return tag.string
+                else:
+                    tag = tag.find(part)
+                
+            return tag
+        except:
+            return None
+        
+    def setter(self, value):
+        tag = self.doc
+        
+        for part in parts:
+            if part == '':
+                continue
+            elif part == 'text()':
+                if tag.string:
+                    tag.contents[0] = BeautifulSoup.NavigableString(value)
+                else:
+                    tag.append(value)                    
+                    
+                tag.string = tag.contents[0]
+
+                return
+            else:
+                child = tag.find(part)
+                
+                if not child:
+                    child = BeautifulSoup.Tag(self.doc, part)
+                    
+                    tag.append(child)
+                    
+                tag = child
+                
+        tag.append(value)
+
+    return property(getter, setter)
+        
+class HTMLDocument(Document):
+    title = xpathproperty("/html/head/title/text()")    
+    
+    @property
+    def referrer(self):
+        raise NotImplementedError()
+        
+    @property
+    def domain(self):
+        raise NotImplementedError()
+        
+    @property
+    def URL(self):
+        raise NotImplementedError()
+        
+    @property
+    def body(self):
+        try:
+            return HTMLElement(self, self.doc.find('html').find('body'))
         except:
             return None
     
-    def setTitle(self, text):
-        html = self.doc.find('html')
+    @property    
+    def images(self):
+        raise NotImplementedError()
         
-        if not html:
-            html = BeautifulSoup.Tag(self.doc, 'html')
-            
-            self.doc.append(html)
-            
-        head = html.find('head')
+    @property    
+    def applets(self):
+        raise NotImplementedError()
         
-        if not head:
-            head = BeautifulSoup.Tag(self.doc, 'head')
-            
-            html.append(head)
-            
-        title = head.find('title')
+    @property    
+    def links(self):
+        raise NotImplementedError()
         
-        if not title:
-            title = BeautifulSoup.Tag(self.doc, 'title')
-            
-            head.append(title)
+    @property    
+    def forms(self):
+        raise NotImplementedError()
         
-        if title.string:
-            title.contents[0] = BeautifulSoup.NavigableString(text)
-        else:
-            title.append(text)
-            
-        title.string = title.contents[0]
+    @property    
+    def anchors(self):
+        raise NotImplementedError()
+        
+    def getCookie(self):
+        pass
     
-    title = property(getTitle, setTitle)
+    def setCookie(self):
+        pass
+    
+    cookie = property(getCookie, setCookie)
+    
+    def open(self):
+        pass
+    
+    def close(self):
+        pass
+    
+    def write(self, text):
+        pass
+    
+    def writeln(self, text):
+        pass
+    
+    def getElementById(self, elementId):
+        return HTMLElement(self, self.doc.find(id=elementId))
     
 class DOMImplementation(HTMLDocument):
     def hasFeature(feature, version):
@@ -615,7 +706,7 @@ TEST_HTML = """
         </script>         
     </head>
     <body onload="load()" onunload="unload()">
-        <p1>Hello World!</p1>
+        <p id="hello">Hello World!</p>
     </body>
 </html>"""
 
@@ -829,6 +920,17 @@ class HTMLDocumentTest(unittest.TestCase):
         self.doc = parseString(TEST_HTML)
         
         self.assert_(self.doc)
+        
+    def testHTMLElement(self):
+        p = self.doc.getElementById('hello')
+        
+        self.assert_(p)
+        
+        self.assertEquals('hello', p.id)
+        
+        p.id = 'test'
+        
+        self.assertEquals(p, self.doc.getElementById('test'))
         
     def testTitle(self):
         self.assertEquals("this is a test", self.doc.title)
