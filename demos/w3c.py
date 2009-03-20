@@ -548,9 +548,9 @@ class Document(Node):
     def getElementsByTagName(self, tagname):
         return NodeList(self.doc, self.doc.findAll(tagname.lower()))
         
-def attr_property(name, attrtype=str, readonly=False):
+def attr_property(name, attrtype=str, readonly=False, default=None):
     def getter(self):
-        return attrtype(self.tag[name])
+        return attrtype(self.tag[name]) if self.tag.has_key(name) else default
         
     def setter(self, value):
         self.tag[name] = attrtype(value)
@@ -571,6 +571,36 @@ def text_property(readonly=False):
         
     return property(getter) if readonly else property(getter, setter)
         
+class HTMLCollection(PyV8.JSClass):
+    def __init__(self, doc, nodes):
+        self.doc = doc
+        self.nodes = nodes
+        
+    def __len__(self):
+        return self.length
+        
+    def __getitem__(self, key):        
+        try:
+            return self.item(int(key))
+        except TypeError:
+            return self.namedItem(str(key))        
+        
+    @property
+    def length(self):
+        return len(self.nodes)
+    
+    def item(self, index):
+        node = self.nodes[index]
+                
+        return DOMImplementation.createHTMLElement(self.doc, node) if node else None
+    
+    def namedItem(self, name):
+        for node in self.nodes:
+            if node.nodeName == name:
+                return DOMImplementation.createHTMLElement(self.doc, node) if node else None
+            
+        return None
+
 class HTMLElement(Element):    
     id = attr_property("id")
     title = attr_property("title")
@@ -637,10 +667,10 @@ class HTMLFormElement(HTMLElement):
         raise NotImplementedError()
     
     name = attr_property("name")
-    acceptCharset = attr_property("accept-charset")
+    acceptCharset = attr_property("accept-charset", default="UNKNOWN")
     action = attr_property("action")
-    enctype = attr_property("enctype")
-    method = attr_property("method")
+    enctype = attr_property("enctype", default="application/x-www-form-urlencoded")
+    method = attr_property("method", default="get")
     target = attr_property("target")
     
     def submit(self):
@@ -704,7 +734,7 @@ class HTMLOptionElement(HTMLElement):
     selected = False
     value = attr_property("value")
     
-class HTMLInputElement(HTMLElement):
+class HTMLInputElement(HTMLElement):    
     defaultValue = attr_property("value")
     defaultChecked = attr_property("checked")
     
@@ -718,13 +748,13 @@ class HTMLInputElement(HTMLElement):
     alt = attr_property("alt")
     checked = attr_property("checked", bool)
     disabled = attr_property("disabled", bool)
-    maxLength = attr_property("maxlength", long)
+    maxLength = attr_property("maxlength", long, default=sys.maxint)
     name = attr_property("name")
     readOnly = attr_property("readonly", bool)
     size = attr_property("size")
     src = attr_property("src")
     tabIndex = attr_property("tabindex", long)
-    type = attr_property("type", readonly=True)
+    type = attr_property("type", readonly=True, default="text")
     useMap = attr_property("usermap")
     
     @abstractmethod
@@ -748,6 +778,66 @@ class HTMLInputElement(HTMLElement):
     
     def click(self):
         pass
+    
+class HTMLTextAreaElement(HTMLElement):
+    defaultValue = None
+    
+    @property
+    def form(self):
+        pass
+    
+    accessKey = attr_property("accesskey")
+    cols = attr_property("cols", long)
+    disabled = attr_property("disabled", bool)
+    name = attr_property("name")
+    readOnly = attr_property("readonly", bool)
+    rows = attr_property("rows", long)
+    tabIndex = attr_property("tabindex", long)
+    value = text_property()
+    
+    @property
+    def type(self):
+        return "textarea"
+    
+class HTMLButtonElement(HTMLElement):
+    @property
+    def form(self):
+        pass    
+    
+    accessKey = attr_property("accesskey")
+    disabled = attr_property("disabled", bool)
+    name = attr_property("name")
+    tabIndex = attr_property("tabindex", long)
+    type = attr_property("type")
+    value = attr_property("value")
+    
+class HTMLAppletElement(HTMLElement):
+    align = attr_property("align")
+    alt = attr_property("alt")
+    archive = attr_property("archive")
+    code = attr_property("code")
+    codeBase = attr_property("codebase")
+    height = attr_property("height")
+    hspace = attr_property("hspace")
+    name = attr_property("name")
+    object = attr_property("object")
+    vspace = attr_property("vspace")
+    width = attr_property("width")
+    
+class HTMLImageElement(HTMLElement):
+    align = attr_property("align")
+    alt = attr_property("alt")
+    border = attr_property("border")
+    height = attr_property("height")
+    hspace = attr_property("hspace")
+    isMap = attr_property("ismap")
+    longDesc = attr_property("longdesc")
+    lowSrc = attr_property("lowsrc")
+    name = attr_property("name")
+    src = attr_property("src")
+    useMap = attr_property("usemap")
+    vspace = attr_property("vspace")
+    width = attr_property("width")
     
 class HTMLScriptElement(HTMLElement):
     text = text_property()    
@@ -785,23 +875,55 @@ class HTMLIFrameElement(HTMLElement):
     width = attr_property("width")
 
 def xpath_property(xpath, readonly=False):
-    parts = xpath.split('/')    
+    RE_INDEXED = re.compile("(\w+)\[(\d+)\]")
     
-    def getter(self):
-        tag = self.doc
+    parts = xpath.split('/')
+    
+    def getChildren(tag, parts, recursive=False):
+        if len(parts) == 0:
+            return [tag]
         
-        try:
-            for part in parts:                
-                if part == '':
-                    continue
-                elif part == 'text()':
-                    return tag.string
-                else:
-                    tag = tag.find(part)
+        part = parts[0]
+        
+        if part == '':
+            return getChildren(tag, parts[1:], True)
+            
+        if part == 'text()':
+            return [tag.string]
+        
+        m = RE_INDEXED.match(part)
+        
+        if m:
+            name = m.group(1)
+            idx = int(m.group(2))
+            
+            return [tag.findAll(name, recursive=recursive)[idx-1]]
+        
+        children = []
+        
+        for child in tag.findAll(part, recursive=recursive):
+            children += getChildren(child, parts[1:])
+            
+        return children
+        
+    def getter(self):
+        children = []
+        
+        if xpath.startswith("//"):
+            for child in self.doc.findAll(parts[2]):                
+                children += getChildren(child, parts[3:])
+        elif xpath.startswith("/"):
+            children += getChildren(self.doc, parts[1:])
+        else:
+            children += getChildren(self.doc, parts)
+        
+        if parts[-1] == 'text()':
+            return "".join(children)
+            
+        if RE_INDEXED.match(parts[-1]):
+            return DOMImplementation.createHTMLElement(self.doc, children[0]) if len(children) > 0 else None        
                 
-            return DOMImplementation.createHTMLElement(self.doc, tag)
-        except:
-            return None
+        return HTMLCollection(self.doc, children)
         
     def setter(self, value):
         tag = self.doc
@@ -847,23 +969,12 @@ class HTMLDocument(Document):
     def URL(self):
         raise NotImplementedError()
         
-    body = xpath_property("/html/body", readonly=True)
+    body = xpath_property("/html/body[1]", readonly=True)
     
-    @property    
-    def images(self):
-        raise NotImplementedError()
-        
-    @property    
-    def applets(self):
-        raise NotImplementedError()
-        
-    @property    
-    def links(self):
-        raise NotImplementedError()
-        
-    @property    
-    def forms(self):
-        raise NotImplementedError()
+    images = xpath_property("//img", readonly=True)
+    applets = xpath_property("//applet", readonly=True)
+    links = xpath_property("//a", readonly=True)
+    forms = xpath_property("//form", readonly=True)
         
     @property    
     def anchors(self):
@@ -913,6 +1024,10 @@ class DOMImplementation(HTMLDocument):
         "optgroup" : HTMLOptGroupElement,
         "option" : HTMLOptionElement,
         "input" : HTMLInputElement,
+        "textarea" : HTMLTextAreaElement,
+        "button" : HTMLButtonElement,
+        "applet" : HTMLAppletElement,
+        "img" : HTMLImageElement,
         "script" : HTMLScriptElement,
         "frameset" : HTMLFrameSetElement,
         "frame" : HTMLFrameElement,
@@ -920,8 +1035,8 @@ class DOMImplementation(HTMLDocument):
     }
         
     @staticmethod
-    def createHTMLElement(doc, tag):
-        if DOMImplementation.TAGS.has_key(tag.name.lower()):
+    def createHTMLElement(doc, tag):        
+        if DOMImplementation.TAGS.has_key(tag.name.lower()):            
             return DOMImplementation.TAGS[tag.name.lower()](doc, tag)
         else:
             return HTMLElement(doc, tag)
@@ -963,6 +1078,8 @@ TEST_HTML = """
     </head>
     <body onload="load()" onunload="unload()">
         <p id="hello">Hello World!</p>
+        <form name="first"></form>
+        <form name="second"></form>
     </body>
 </html>"""
 
@@ -1204,6 +1321,15 @@ class HTMLDocumentTest(unittest.TestCase):
         self.assertEquals("another title", doc.title)        
         
         self.assertEquals(self.doc.getElementsByTagName('body')[0], self.doc.body)
+        
+        forms = self.doc.forms
+        
+        self.assert_(forms != None)
+        self.assertEquals(2, len(forms))
+        
+        self.assert_(isinstance(forms[0], HTMLFormElement))
+        self.assertEquals("first", forms[0].name)
+        self.assertEquals("second", forms[1].name)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
