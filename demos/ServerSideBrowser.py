@@ -201,18 +201,12 @@ class HtmlWindow(PyV8.JSClass):
     def eval(self, code):
         logging.debug("evalute script: %s...", code[:20])
 
-        try:
-            return PyV8.JSEngine().compile(str(code)).run()
-        except:
-            logging.warn("fail to evalute script: %s", traceback.format_exc())
-            
+        return PyV8.JSEngine().compile(str(code)).run()
+        
     def execute(self, func):
         logging.debug("evalute function: %s...", str(func)[:20])
         
-        try:
-            return func()
-        except:
-            logging.warn("fail to evalute script: %s", traceback.format_exc())
+        return func()
         
 class Navigator(PyV8.JSClass):
     @property
@@ -249,7 +243,10 @@ class FetchFile(Task):
     def __call__(self):
         logging.debug("fetching from %s", self.url)
         
-        return urllib2.urlopen(self.url)
+        try:
+            return urllib2.urlopen(self.url)
+        except:
+            logging.warn("fail to fetch %s: %s", self.url, traceback.format_exc())
 
 class Evaluator(Task):
     def __init__(self, target):
@@ -258,7 +255,10 @@ class Evaluator(Task):
         self.target = target
         
     def __call__(self):
-        self.target.eval(self.pipeline)
+        try:
+            self.target.eval(self.pipeline)
+        except:
+            logging.warn("fail to evalute %s: %s", self.target, traceback.format_exc())
         
         return self.target
     
