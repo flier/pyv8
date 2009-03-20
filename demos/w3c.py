@@ -140,7 +140,7 @@ class NodeList(PyV8.JSClass):
     def __getitem__(self, key):
         return self.item(int(key))
     
-    def item(self, index):        
+    def item(self, index):
         return DOMImplementation.createHTMLElement(self.doc, self.nodes[index]) if 0 <= index and index < len(self.nodes) else None
     
     @property
@@ -272,6 +272,10 @@ class Element(Node):
         return NamedNodeMap(self)    
     
     @property
+    def parentNode(self):
+        return self.tag.parent
+    
+    @property
     def childNodes(self):
         return NodeList(self.doc, self.tag.contents)
         
@@ -322,10 +326,14 @@ class Element(Node):
         return oldChild
     
     def appendChild(self, newChild):
-        self.checkChild(newChild)
-        
-        self.tag.append(newChild.tag)
-        
+        if newChild:            
+            if isinstance(newChild, Text):            
+                self.tag.append(str(newChild))
+            else:
+                self.checkChild(newChild)
+                
+                self.tag.append(newChild.tag)
+            
         return newChild
     
     def hasChildNodes(self):
@@ -364,6 +372,9 @@ class CharacterData(Node):
         Node.__init__(self, doc)
         
         self.str = str
+        
+    def __str__(self):
+        return self.str
         
     def getData(self):
         return unicode(self.str)
@@ -535,7 +546,7 @@ class Document(Node):
         return EntityReference(self, name)
     
     def getElementsByTagName(self, tagname):
-        return NodeList(self.doc, self.doc.findAll(tagname))
+        return NodeList(self.doc, self.doc.findAll(tagname.lower()))
         
 def attr_property(name, attrtype=str, readonly=False):
     def getter(self):
@@ -884,8 +895,8 @@ class HTMLDocument(Document):
         return DOMImplementation.createHTMLElement(self.doc, tag) if tag else None
     
 class DOMImplementation(HTMLDocument):
-    def hasFeature(feature, version):
-        pass
+    def hasFeature(self, feature, version):
+        return feature == "HTML" and version == "1.0"
         
     TAGS = {
         "html" : HTMLHtmlElement,
