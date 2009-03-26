@@ -20,7 +20,7 @@ if os.name == "nt":
   extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
   extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
 elif os.name == "posix":
-  libraries = ["boost_python", "v8"]
+  libraries = ["boost_python", "v8", "rt"]
 
 pyv8 = Extension(name = "_PyV8",
                  sources = [os.path.join("src", file) for file in source_files],                 
