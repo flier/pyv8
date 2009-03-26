@@ -264,7 +264,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   }
   else if (PyUnicode_Check(obj.ptr()))
   {
-    result = v8::String::New(PyUnicode_AS_UNICODE(obj.ptr()));
+    result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
   }
   else if (PyNumber_Check(obj.ptr()))
   {   
