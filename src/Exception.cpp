@@ -14,28 +14,10 @@ void CJavascriptException::Expose(void)
   py::class_<CJavascriptException>("_JSError", py::no_init)
     .def(str(py::self));
 
-  py::register_exception_translator<CJavascriptException>(CJavascriptException::Translator);
-}
+  py::register_exception_translator<CJavascriptException>(ExceptionTranslator::Translate);
 
-void CJavascriptException::Translator(CJavascriptException const& ex) 
-{
-  if (ex.m_exc)
-  {
-    ::PyErr_SetString(ex.m_exc, ex.what());
-  }
-  else
-  {
-    // Boost::Python doesn't support inherite from Python class,
-    // so, just use some workaround to throw our custom exception
-    //
-    // http://www.language-binding.net/pyplusplus/troubleshooting_guide/exceptions/exceptions.html
-
-    py::object impl(ex);
-    py::object clazz = impl.attr("_jsclass");
-    py::object err = clazz(impl);
-
-    ::PyErr_SetObject(clazz.ptr(), py::incref(err.ptr()));
-  }
+  py::converter::registry::push_back(ExceptionTranslator::Convertible,
+    ExceptionTranslator::Construct, py::type_id<CJavascriptException>());
 }
 
 const std::string ExceptionExtractor::Extract(v8::TryCatch& try_catch)
@@ -76,4 +58,55 @@ const std::string ExceptionExtractor::Extract(v8::TryCatch& try_catch)
   }
 
   return oss.str();
+}
+
+void ExceptionTranslator::Translate(CJavascriptException const& ex) 
+{
+  if (ex.m_exc)
+  {
+    ::PyErr_SetString(ex.m_exc, ex.what());
+  }
+  else
+  {
+    // Boost::Python doesn't support inherite from Python class,
+    // so, just use some workaround to throw our custom exception
+    //
+    // http://www.language-binding.net/pyplusplus/troubleshooting_guide/exceptions/exceptions.html
+
+    py::object impl(ex);
+    py::object clazz = impl.attr("_jsclass");
+    py::object err = clazz(impl);
+
+    ::PyErr_SetObject(clazz.ptr(), py::incref(err.ptr()));
+  }
+}
+
+void *ExceptionTranslator::Convertible(PyObject* obj)
+{
+  if (1 != ::PyObject_IsInstance(obj, ::PyExc_Exception))
+    return NULL;
+
+  if (1 != ::PyObject_HasAttrString(obj, "_impl"))
+    return NULL;
+
+  py::object err(py::handle<>(py::borrowed(obj)));
+  py::object impl = err.attr("_impl");
+  py::extract<CJavascriptException> extractor(impl);
+
+  return extractor.check() ? obj : NULL;
+}
+void ExceptionTranslator::Construct(PyObject* obj, 
+  py::converter::rvalue_from_python_stage1_data* data)
+{
+  py::object err(py::handle<>(py::borrowed(obj)));
+  py::object impl = err.attr("_impl");
+
+  typedef py::converter::rvalue_from_python_storage<CJavascriptException> storage_t;
+
+  storage_t* the_storage = reinterpret_cast<storage_t*>(data);
+  void* memory_chunk = the_storage->storage.bytes;
+  CJavascriptException* cpp_err = 
+    new (memory_chunk) CJavascriptException(py::extract<CJavascriptException>(impl));
+
+  data->convertible = memory_chunk;
 }

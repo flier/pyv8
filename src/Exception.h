@@ -39,11 +39,21 @@ struct ExceptionChecker
   }
 };
 
+class CJavascriptException;
+
+struct ExceptionTranslator
+{
+  static void Translate(CJavascriptException const& ex);
+
+  static void *Convertible(PyObject* obj);
+  static void Construct(PyObject* obj, py::converter::rvalue_from_python_stage1_data* data);
+};
+
 class CJavascriptException : public std::runtime_error
 {
   PyObject *m_exc;
-  
-  static void Translator(CJavascriptException const& ex);
+
+  friend struct ExceptionTranslator;
 public:
   CJavascriptException(const std::string& msg, PyObject *exc = NULL)
     : std::runtime_error(msg), m_exc(exc)
