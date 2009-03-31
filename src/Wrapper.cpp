@@ -127,7 +127,8 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
 
   int ret = ::PySequence_SetItem(obj.ptr(), index, CJavascriptObject::Wrap(value).ptr());
 
-  if (ret < 0) throw CWrapperException("fail to set indexed value");
+  if (ret < 0) 
+    v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set indexed value")));
 
   return value;
 }
@@ -187,7 +188,7 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
                         CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                         CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
   default:
-    throw CWrapperException("too many arguments");
+    v8::ThrowException(v8::Exception::RangeError(v8::String::New("too many arguments")));
   }
 
   return handle_scope.Close(Wrap(result));
@@ -297,7 +298,7 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
     msg << "'" << *v8::String::AsciiValue(m_obj->ObjectProtoToString()) 
         << "' object has no attribute '" << *v8::String::AsciiValue(name) << "'";
 
-    throw CWrapperException(msg.str(), ::PyExc_AttributeError);
+    throw CJavascriptException(msg.str(), ::PyExc_AttributeError);
   }
 }
 
@@ -313,7 +314,8 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
 
-  if (attr_value.IsEmpty()) CWrapperException::Throw(try_catch);
+  if (attr_value.IsEmpty()) 
+    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(attr_value, m_obj);
 }
@@ -327,7 +329,8 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
   v8::Handle<v8::Value> attr_obj = CPythonObject::Wrap(value);
 
-  if (!m_obj->Set(attr_name, attr_obj)) CWrapperException::Throw(try_catch);
+  if (!m_obj->Set(attr_name, attr_obj)) 
+    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
@@ -339,7 +342,8 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   CheckAttr(attr_name);
   
-  if (!m_obj->Delete(attr_name)) CWrapperException::Throw(try_catch);
+  if (!m_obj->Delete(attr_name)) 
+    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
 }
 
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
@@ -376,7 +380,7 @@ CJavascriptObject::operator long() const
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty())
-    throw CWrapperException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
+    throw CJavascriptException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
 
   return m_obj->Int32Value(); 
 }
@@ -385,7 +389,7 @@ CJavascriptObject::operator double() const
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty())
-    throw CWrapperException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
+    throw CJavascriptException("argument must be a string or a number, not 'NoneType'", ::PyExc_TypeError);
 
   return m_obj->NumberValue(); 
 }
@@ -480,7 +484,8 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
 
-  if (result.IsEmpty()) CWrapperException::Throw(try_catch);
+  if (result.IsEmpty()) 
+    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(result->ToObject());
 }

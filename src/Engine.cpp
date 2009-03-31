@@ -59,7 +59,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, const std::s
   v8::Handle<v8::Script> script = v8::Script::Compile(script_source, script_name);
 
   if (script.IsEmpty())
-    CWrapperException::Throw(try_catch);
+    ExceptionChecker<CEngineException>::ThrowIf(try_catch);
 
   return boost::shared_ptr<CScript>(new CScript(*this, src, script));
 }
@@ -77,7 +77,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
   if (result.IsEmpty())
   {
     if (try_catch.HasCaught())
-      CWrapperException::Throw(try_catch);
+      ExceptionChecker<CEngineException>::ThrowIf(try_catch);
 
     result = v8::Null();
   }

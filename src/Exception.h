@@ -22,63 +22,43 @@ namespace py = boost::python;
 # pragma comment( lib, "v8_snapshot.lib" )
 
 # pragma warning( pop )
-#endif
+#endif 
 
-class CPythonException : public std::runtime_error
+struct ExceptionExtractor
+{
+  static const std::string Extract(v8::TryCatch& try_catch);
+};
+
+template <typename E, typename T = ExceptionExtractor>
+struct ExceptionChecker
+{
+  static void ThrowIf(v8::TryCatch& try_catch)
+  {
+    if (try_catch.HasCaught())   
+      throw E(T::Extract(try_catch));    
+  }
+};
+
+class CJavascriptException : public std::runtime_error
 {
   PyObject *m_exc;
-protected:
-  CPythonException(const std::string& msg, PyObject *exc) 
+  
+  static void Translator(CJavascriptException const& ex);
+public:
+  CJavascriptException(const std::string& msg, PyObject *exc = NULL)
     : std::runtime_error(msg), m_exc(exc)
   {
-    assert(exc);
   }
-public:
-  static void translator(CPythonException const& ex);
 
   static void Expose(void);
 };
 
-struct CExceptionExtractor
-{
-  std::string m_msg;
-
-  CExceptionExtractor(v8::TryCatch& try_catch);
-};
-
-template <typename T>
-struct CExceptionThrower
-{
-  static void Throw(v8::TryCatch& try_catch)
-  {
-    if (try_catch.HasCaught())
-    {
-      CExceptionExtractor extractor(try_catch);
-
-      throw T(extractor.m_msg);
-    }
-  }
-};
-
-class CWrapperException 
-  : public CPythonException, 
-    public CExceptionThrower<CWrapperException>
+class CEngineException : public CJavascriptException
 {
 public:
-  CWrapperException(const std::string& msg, PyObject *exc = ::PyExc_UserWarning) 
-    : CPythonException(msg, exc)
+  CEngineException(const std::string& msg) 
+    : CJavascriptException(msg)
   {
 
-  }
-};
-
-class CEngineException 
-  : public CPythonException,
-    public CExceptionThrower<CEngineException>
-{
-public:
-  CEngineException(const std::string& msg, PyObject *exc = ::PyExc_UserWarning)
-    : CPythonException(msg, exc)
-  {
   }
 };

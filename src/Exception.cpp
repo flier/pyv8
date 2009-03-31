@@ -2,18 +2,43 @@
 
 #include <sstream>
 
-void CPythonException::Expose(void)
+std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
 {
-  py::register_exception_translator<CEngineException>(CPythonException::translator);
-  py::register_exception_translator<CWrapperException>(CPythonException::translator);
+  os << "JSError: " << ex.what();
+
+  return os;
 }
 
-void CPythonException::translator(CPythonException const& ex) 
+void CJavascriptException::Expose(void)
 {
-  ::PyErr_SetString(ex.m_exc, ex.what());
+  py::class_<CJavascriptException>("_JSError", py::no_init)
+    .def(str(py::self));
+
+  py::register_exception_translator<CJavascriptException>(CJavascriptException::Translator);
 }
 
-CExceptionExtractor::CExceptionExtractor(v8::TryCatch& try_catch)
+void CJavascriptException::Translator(CJavascriptException const& ex) 
+{
+  if (ex.m_exc)
+  {
+    ::PyErr_SetString(ex.m_exc, ex.what());
+  }
+  else
+  {
+    // Boost::Python doesn't support inherite from Python class,
+    // so, just use some workaround to throw our custom exception
+    //
+    // http://www.language-binding.net/pyplusplus/troubleshooting_guide/exceptions/exceptions.html
+
+    py::object impl(ex);
+    py::object clazz = impl.attr("_jsclass");
+    py::object err = clazz(impl);
+
+    ::PyErr_SetObject(clazz.ptr(), py::incref(err.ptr()));
+  }
+}
+
+const std::string ExceptionExtractor::Extract(v8::TryCatch& try_catch)
 {
   assert(v8::Context::InContext());
 
@@ -50,5 +75,5 @@ CExceptionExtractor::CExceptionExtractor(v8::TryCatch& try_catch)
     }
   }
 
-  m_msg = oss.str();
+  return oss.str();
 }

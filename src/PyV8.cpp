@@ -5,7 +5,7 @@
 
 BOOST_PYTHON_MODULE(_PyV8)
 {
-  CPythonException::Expose();
+  CJavascriptException::Expose();
   CWrapper::Expose(); 
   CContext::Expose();
   CEngine::Expose();

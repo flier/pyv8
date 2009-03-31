@@ -6,7 +6,27 @@ import StringIO
 
 import _PyV8
 
-__all__ = ["JSClass", "JSEngine", "JSContext", "debugger"]
+__all__ = ["JSError", "JSClass", "JSEngine", "JSContext", "debugger"]
+
+class JSError(Exception):
+    def __init__(self, impl):
+        Exception.__init__(self)
+        
+        self._impl = impl
+        
+    def __str__(self):
+        return str(self._impl)
+        
+    def __getattribute__(self, attr):
+        impl = super(JSError, self).__getattribute__("_impl")
+        
+        try:
+            return getattr(impl, attr)
+        except AttributeError:
+            return super(JSError, self).__getattribute__(attr)
+            
+_PyV8.JSError = JSError
+_PyV8._JSError._jsclass = JSError
 
 class JSClass(object):    
     def toString(self):
@@ -446,7 +466,7 @@ class TestContext(unittest.TestCase):
             self.assert_(isinstance(spy, _PyV8.JSFunction))
             
             # Create another function accessing global objects.
-            env1.eval("spy2=function(){return new this.Array();}")
+            env1.eval("spy2=function(){return 123;}")
             
             spy2 = env1.locals.spy2
 
@@ -466,7 +486,7 @@ class TestContext(unittest.TestCase):
             
             # Call cross_domain_call, it should throw an exception
             with env2:
-                self.assertRaises(UserWarning, spy2.apply, env2.locals)
+                self.assertRaises(JSError, spy2.apply, env2.locals)
                 
     def testCrossDomainDelete(self):
         with JSContext() as env1:
@@ -534,6 +554,13 @@ function()
 """)
             self.assertEquals("abc", str(func()))
         
+    def testExceptionTranslator(self):
+        with JSContext() as ctxt:
+            try:
+                ctxt.eval('throw "test"')
+            except:
+                self.assert_(JSError, sys.exc_type)
+        
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
@@ -564,7 +591,7 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(Global.version, str(vars.version))            
             self.assertEquals(Global.version, str(ctxt.eval("version")))
                         
-            self.assertRaises(UserWarning, JSContext.eval, ctxt, "nonexists")
+            self.assertRaises(JSError, JSContext.eval, ctxt, "nonexists")
             
             # setter
             self.assertEquals(2.0, float(ctxt.eval("version = 2.0")))
@@ -647,7 +674,7 @@ class TestDebug(unittest.TestCase):
             
             debugger.enabled = False            
             
-            self.assertRaises(UserWarning, JSContext.eval, ctxt, "throw 1")
+            self.assertRaises(JSError, JSContext.eval, ctxt, "throw 1")
             
             self.assert_(not debugger.enabled)                
             
