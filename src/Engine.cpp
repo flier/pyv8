@@ -29,7 +29,7 @@ void CEngine::ReportFatalError(const char* location, const char* message)
 
   oss << "<" << location << "> " << message;
 
-  throw CEngineException(oss.str());
+  throw CJavascriptException(oss.str());
 }
 
 void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data)
@@ -42,7 +42,7 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
 
   oss << *filename << ":" << lineno << " -> " << *sourceline;
 
-  throw CEngineException(oss.str());
+  throw CJavascriptException(oss.str());
 }
 
 boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, const std::string name)
@@ -58,8 +58,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, const std::s
 
   v8::Handle<v8::Script> script = v8::Script::Compile(script_source, script_name);
 
-  if (script.IsEmpty())
-    ExceptionChecker<CEngineException>::ThrowIf(try_catch);
+  if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return boost::shared_ptr<CScript>(new CScript(*this, src, script));
 }
@@ -76,13 +75,12 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
   if (result.IsEmpty())
   {
-    if (try_catch.HasCaught())
-      ExceptionChecker<CEngineException>::ThrowIf(try_catch);
+    if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
     result = v8::Null();
   }
 
-  return CJavascriptObject::Wrap(result->ToObject());
+  return CJavascriptObject::Wrap(result);
 }
 
 py::object CScript::Run(void) 

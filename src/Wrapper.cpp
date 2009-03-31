@@ -46,21 +46,49 @@ void CWrapper::Expose(void)
     py::objects::pointer_holder<boost::shared_ptr<CJavascriptObject>,CJavascriptObject> > >();
 }
 
-v8::Handle<v8::Value> CPythonObject::NamedGetter(
-  v8::Local<v8::String> prop, const v8::AccessorInfo& info)
+v8::Handle<v8::Value> CPythonObject::ThrowIf(void)
 {
   v8::HandleScope handle_scope;
 
-  py::object obj = CJavascriptObject::Wrap(info.Holder());  
+  py::object ex(py::handle<>(py::borrowed(::PyErr_Occurred())));
 
-  v8::String::AsciiValue name(prop);
+  const std::string msg = py::extract<const std::string>(ex);
 
-  py::str attr_name(*name, name.length());
+  ::PyErr_Clear();
+  
+  return v8::ThrowException(v8::Exception::Error(v8::String::New(msg.c_str(), msg.size())));
+}
 
-  if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
-    return v8::Local<v8::Value>();
+v8::Handle<v8::Value> CPythonObject::NamedGetter(
+  v8::Local<v8::String> prop, const v8::AccessorInfo& info)
+{
+  try
+  {
+    v8::HandleScope handle_scope;
 
-  return handle_scope.Close(Wrap(obj.attr(*name)));
+    py::object obj = CJavascriptObject::Wrap(info.Holder());  
+
+    v8::String::AsciiValue name(prop);
+
+    py::str attr_name(*name, name.length());
+
+    if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
+      return v8::Local<v8::Value>();
+
+    v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
+
+    if (::PyErr_Occurred()) return ThrowIf();
+
+    return handle_scope.Close(result);
+  }
+  catch (const std::exception& ex)
+  {
+    return v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what())));
+  }
+  catch (...)
+  {
+    return ThrowIf();
+  }
 }
 
 v8::Handle<v8::Value> CPythonObject::NamedSetter(
@@ -314,8 +342,7 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
 
-  if (attr_value.IsEmpty()) 
-    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
+  if (attr_value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(attr_value, m_obj);
 }
@@ -329,8 +356,7 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
   v8::Handle<v8::Value> attr_obj = CPythonObject::Wrap(value);
 
-  if (!m_obj->Set(attr_name, attr_obj)) 
-    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
+  if (!m_obj->Set(attr_name, attr_obj)) CJavascriptException::ThrowIf(try_catch);
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
@@ -342,8 +368,7 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   CheckAttr(attr_name);
   
-  if (!m_obj->Delete(attr_name)) 
-    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
+  if (!m_obj->Delete(attr_name)) CJavascriptException::ThrowIf(try_catch);
 }
 
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
@@ -409,7 +434,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
   v8::HandleScope handle_scope;
 
-  if (value->IsNull()) return py::object();
+  if (value.IsEmpty() || value->IsNull()) return py::object(py::handle<>(Py_None));
   if (value->IsTrue()) return py::object(py::handle<>(Py_True));
   if (value->IsFalse()) return py::object(py::handle<>(Py_False));
 
@@ -430,9 +455,9 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 {
   v8::HandleScope handle_scope;
 
-  if (obj.IsEmpty()) 
+  if (obj.IsEmpty())
   {
-    obj = v8::Null()->ToObject();
+    return py::object(py::handle<>(Py_None));
   }
   else if (obj->IsFunction())
   {
@@ -447,14 +472,11 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 
     return Wrap(new CJavascriptFunction(self, func));
   }
-  else if (obj->IsObject())
+  else if (obj->IsObject() && obj->InternalFieldCount() == 1)
   {
-    if (obj->InternalFieldCount() == 1)
-    {
-      v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
+    v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
 
-      return *static_cast<py::object *>(field->Value());
-    }
+    return *static_cast<py::object *>(field->Value());   
   }
 
   return Wrap(new CJavascriptObject(obj));
@@ -484,8 +506,7 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
 
-  if (result.IsEmpty()) 
-    ExceptionChecker<CJavascriptException>::ThrowIf(try_catch);
+  if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(result->ToObject());
 }

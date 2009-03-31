@@ -17,6 +17,8 @@ struct CWrapper
 
 class CPythonObject : public CWrapper
 {
+  static v8::Handle<v8::Value> ThrowIf(void);
+
   static v8::Handle<v8::Value> NamedGetter(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> NamedSetter(

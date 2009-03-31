@@ -12,15 +12,113 @@ std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
 void CJavascriptException::Expose(void)
 {
   py::class_<CJavascriptException>("_JSError", py::no_init)
-    .def(str(py::self));
+    .def(str(py::self))
+
+    .def_readonly("name", &CJavascriptException::GetName)
+    .def_readonly("message", &CJavascriptException::GetMessage)
+    .def_readonly("scriptName", &CJavascriptException::GetScriptName)
+    .def_readonly("lineNum", &CJavascriptException::GetLineNumber)
+    .def_readonly("startPos", &CJavascriptException::GetStartPosition)
+    .def_readonly("endPos", &CJavascriptException::GetEndPosition)
+    .def_readonly("startCol", &CJavascriptException::GetStartColumn)
+    .def_readonly("endCol", &CJavascriptException::GetEndColumn)
+    .def_readonly("sourceLine", &CJavascriptException::GetSourceLine);
 
   py::register_exception_translator<CJavascriptException>(ExceptionTranslator::Translate);
 
   py::converter::registry::push_back(ExceptionTranslator::Convertible,
     ExceptionTranslator::Construct, py::type_id<CJavascriptException>());
 }
+const std::string CJavascriptException::GetName(void) 
+{
+  if (m_exc.IsEmpty()) return std::string();
 
-const std::string ExceptionExtractor::Extract(v8::TryCatch& try_catch)
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  v8::String::AsciiValue msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("name"))));
+
+  return std::string(*msg, msg.length());
+}
+const std::string CJavascriptException::GetMessage(void) 
+{
+  if (m_exc.IsEmpty()) return std::string();
+
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  v8::String::AsciiValue msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("message"))));
+
+  return std::string(*msg, msg.length());
+}
+const std::string CJavascriptException::GetScriptName(void) 
+{
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  if (!m_msg.IsEmpty() && !m_msg->GetScriptResourceName().IsEmpty() &&
+      !m_msg->GetScriptResourceName()->IsUndefined())
+  {
+    v8::String::AsciiValue name(m_msg->GetScriptResourceName());
+
+    return std::string(*name, name.length());
+  }
+
+  return std::string();
+}
+int CJavascriptException::GetLineNumber(void) 
+{
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  return m_msg.IsEmpty() ? 1 : m_msg->GetLineNumber();
+}
+int CJavascriptException::GetStartPosition(void) 
+{
+  assert(v8::Context::InContext());
+
+  return m_msg.IsEmpty() ? 1 : m_msg->GetStartPosition();
+}
+int CJavascriptException::GetEndPosition(void)
+{
+  assert(v8::Context::InContext());
+
+  return m_msg.IsEmpty() ? 1 : m_msg->GetEndPosition();
+}
+int CJavascriptException::GetStartColumn(void) 
+{
+  assert(v8::Context::InContext());
+
+  return m_msg.IsEmpty() ? 1 : m_msg->GetStartColumn();
+}
+int CJavascriptException::GetEndColumn(void) 
+{
+  assert(v8::Context::InContext());
+
+  return m_msg.IsEmpty() ? 1 : m_msg->GetEndColumn();
+}
+const std::string CJavascriptException::GetSourceLine(void) 
+{
+  assert(v8::Context::InContext());
+
+  v8::HandleScope handle_scope;
+
+  if (!m_msg.IsEmpty() && !m_msg->GetSourceLine().IsEmpty() &&
+      !m_msg->GetSourceLine()->IsUndefined())
+  {
+    v8::String::AsciiValue line(m_msg->GetSourceLine());
+
+    return std::string(*line, line.length());
+  }
+
+  return std::string();
+}
+
+const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 {
   assert(v8::Context::InContext());
 
@@ -62,9 +160,9 @@ const std::string ExceptionExtractor::Extract(v8::TryCatch& try_catch)
 
 void ExceptionTranslator::Translate(CJavascriptException const& ex) 
 {
-  if (ex.m_exc)
+  if (ex.m_type)
   {
-    ::PyErr_SetString(ex.m_exc, ex.what());
+    ::PyErr_SetString(ex.m_type, ex.what());
   }
   else
   {
@@ -95,6 +193,7 @@ void *ExceptionTranslator::Convertible(PyObject* obj)
 
   return extractor.check() ? obj : NULL;
 }
+
 void ExceptionTranslator::Construct(PyObject* obj, 
   py::converter::rvalue_from_python_stage1_data* data)
 {

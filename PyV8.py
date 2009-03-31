@@ -560,6 +560,30 @@ function()
                 ctxt.eval('throw "test"')
             except:
                 self.assert_(JSError, sys.exc_type)
+                
+    def testErrorInfo(self):
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                try:
+                    engine.compile("""
+function hello()
+{
+    throw Error("hello world");
+}
+
+hello();""", "test").run()
+                    self.fail()
+                except JSError, e:
+                    self.assertEqual('JSError: Error: hello world ( test @ 4 : 10 )  ->     throw Error("hello world");', str(e))
+                    self.assertEqual("Error", e.name)
+                    self.assertEqual("hello world", e.message)
+                    self.assertEqual("test", e.scriptName)
+                    self.assertEqual(4, e.lineNum)
+                    self.assertEqual(30, e.startPos)
+                    self.assertEqual(31, e.endPos)
+                    self.assertEqual(10, e.startCol)
+                    self.assertEqual(11, e.endCol)
+                    self.assertEqual('    throw Error("hello world");', e.sourceLine)
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
@@ -618,11 +642,7 @@ class TestEngine(unittest.TestCase):
             
             self.assert_(bool(ctxt.eval("this.hasOwnProperty(\"version\")")))
             
-            ret = ctxt.eval("this.hasOwnProperty(\"nonexistent\")")
-            
-            self.assertEquals("valueOf", ret.valueOf.func_name)
-            self.assertEquals(ret, ret.valueOf.func_owner)
-            self.assertEquals("false", str(ret.valueOf()))
+            self.assertFalse(ctxt.eval("this.hasOwnProperty(\"nonexistent\")"))
             
     def testPythonWrapper(self):
         class Global(JSClass):

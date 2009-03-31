@@ -24,21 +24,6 @@ namespace py = boost::python;
 # pragma warning( pop )
 #endif 
 
-struct ExceptionExtractor
-{
-  static const std::string Extract(v8::TryCatch& try_catch);
-};
-
-template <typename E, typename T = ExceptionExtractor>
-struct ExceptionChecker
-{
-  static void ThrowIf(v8::TryCatch& try_catch)
-  {
-    if (try_catch.HasCaught())   
-      throw E(T::Extract(try_catch));    
-  }
-};
-
 class CJavascriptException;
 
 struct ExceptionTranslator
@@ -51,24 +36,48 @@ struct ExceptionTranslator
 
 class CJavascriptException : public std::runtime_error
 {
-  PyObject *m_exc;
+  PyObject *m_type;
+
+  v8::Persistent<v8::Value> m_exc;
+  v8::Persistent<v8::Message> m_msg;
 
   friend struct ExceptionTranslator;
-public:
-  CJavascriptException(const std::string& msg, PyObject *exc = NULL)
-    : std::runtime_error(msg), m_exc(exc)
+
+  static const std::string Extract(v8::TryCatch& try_catch);
+protected:
+  CJavascriptException(v8::TryCatch& try_catch)
+    : std::runtime_error(Extract(try_catch)), m_type(NULL),
+      m_exc(v8::Persistent<v8::Value>::New(try_catch.Exception())),
+      m_msg(v8::Persistent<v8::Message>::New(try_catch.Message()))
   {
+    
+  }
+public:
+  CJavascriptException(const std::string& msg, PyObject *type = NULL)
+    : std::runtime_error(msg), m_type(type)
+  {
+  }
+
+  ~CJavascriptException()
+  {
+    if (!m_exc.IsEmpty()) m_exc.Dispose();
+    if (!m_msg.IsEmpty()) m_msg.Dispose();
+  }
+
+  const std::string GetName(void);
+  const std::string GetMessage(void);
+  const std::string GetScriptName(void);
+  int GetLineNumber(void);
+  int GetStartPosition(void);
+  int GetEndPosition(void);
+  int GetStartColumn(void);
+  int GetEndColumn(void);
+  const std::string GetSourceLine(void);
+
+  static void ThrowIf(v8::TryCatch& try_catch)
+  {
+    if (try_catch.HasCaught()) throw CJavascriptException(try_catch);    
   }
 
   static void Expose(void);
-};
-
-class CEngineException : public CJavascriptException
-{
-public:
-  CEngineException(const std::string& msg) 
-    : CJavascriptException(msg)
-  {
-
-  }
 };
