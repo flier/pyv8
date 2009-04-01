@@ -31,6 +31,14 @@ void CWrapper::Expose(void)
     .def("__ne__", &CJavascriptObject::Unequals)
     ;
 
+  py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)
+    .def("__len__", &CJavascriptArray::Length)
+
+    .def("__getitem__", &CJavascriptArray::GetItem)
+    .def("__setitem__", &CJavascriptArray::SetItem)
+    .def("__delitem__", &CJavascriptArray::DelItem)
+    ;
+
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)
     .def("__call__", &CJavascriptFunction::Invoke, 
          (py::arg("args") = py::list(), 
@@ -410,7 +418,8 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
   v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
 
-  if (attr_value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+  if (attr_value.IsEmpty()) 
+    CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(attr_value, m_obj);
 }
@@ -437,7 +446,8 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   CheckAttr(attr_name);
   
-  if (!m_obj->Delete(attr_name)) CJavascriptException::ThrowIf(try_catch);
+  if (!m_obj->Delete(attr_name)) 
+    CJavascriptException::ThrowIf(try_catch);
 }
 py::list CJavascriptObject::GetAttrList(void)
 {
@@ -547,6 +557,12 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
   {
     return py::object(py::handle<>(Py_None));
   }
+  else if (obj->IsArray())
+  {
+    v8::Handle<v8::Array> array = v8::Handle<v8::Array>::Cast(obj);
+
+    return Wrap(new CJavascriptArray(array));
+  }
   else if (obj->IsFunction())
   {
     v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(obj);
@@ -575,6 +591,63 @@ py::object CJavascriptObject::Wrap(CJavascriptObject *obj)
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObjectPtr(obj))));
 }
 
+size_t CJavascriptArray::Length(void) const
+{
+  v8::HandleScope handle_scope;
+
+  return v8::Handle<v8::Array>::Cast(m_obj)->Length();
+}
+
+py::object CJavascriptArray::GetItem(size_t idx)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  if (!m_obj->Has(idx))
+  {
+    std::ostringstream msg;
+
+    msg << "'" << *v8::String::AsciiValue(m_obj->ObjectProtoToString()) 
+        << "' index out of range";
+
+    throw CJavascriptException(msg.str(), ::PyExc_IndexError);
+  }
+  
+  v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New(idx));
+
+  if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+
+  return CJavascriptObject::Wrap(value, m_obj);
+}
+py::object CJavascriptArray::SetItem(size_t idx, py::object value)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  if (!m_obj->Set(v8::Integer::New(idx), CPythonObject::Wrap(value)))
+    CJavascriptException::ThrowIf(try_catch);
+
+  return value;
+}
+py::object CJavascriptArray::DelItem(size_t idx)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  py::object value;
+
+  if (m_obj->Has(idx))
+    value = CJavascriptObject::Wrap(m_obj->Get(v8::Integer::New(idx)), m_obj);
+  
+  if (!m_obj->Delete(idx))
+    CJavascriptException::ThrowIf(try_catch);
+
+  return value;
+}
+
 py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;
@@ -594,8 +667,7 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
 
-  if (result.IsEmpty() || try_catch.HasCaught()) 
-    CJavascriptException::ThrowIf(try_catch);
+  if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(result->ToObject());
 }

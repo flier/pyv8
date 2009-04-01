@@ -88,6 +88,22 @@ public:
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
 };
 
+class CJavascriptArray : public CJavascriptObject
+{
+public:
+  CJavascriptArray(v8::Handle<v8::Array> array)
+    : CJavascriptObject(array)
+  {
+
+  }
+
+  size_t Length(void) const;
+
+  py::object GetItem(size_t idx);
+  py::object SetItem(size_t idx, py::object value);
+  py::object DelItem(size_t idx);
+};
+
 class CJavascriptFunction : public CJavascriptObject
 {
   v8::Persistent<v8::Object> m_self;

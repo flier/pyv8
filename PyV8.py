@@ -554,16 +554,16 @@ class TestWrapper(unittest.TestCase):
     def testFunction(self):
         with JSContext() as ctxt:
             func = ctxt.eval("""
-function()
-{
-    function a()
-    {
-        return "abc";    
-    }
-
-    return a();    
-};
-""")
+                function()
+                {
+                    function a()
+                    {
+                        return "abc";    
+                    }
+                
+                    return a();    
+                };
+                """)
             self.assertEquals("abc", str(func()))
         
     def testJSError(self):
@@ -579,24 +579,24 @@ function()
             with JSEngine() as engine:
                 try:
                     engine.compile("""
-function hello()
-{
-    throw Error("hello world");
-}
-
-hello();""", "test", 10, 10).run()
+                        function hello()
+                        {
+                            throw Error("hello world");
+                        }
+                        
+                        hello();""", "test", 10, 10).run()
                     self.fail()
                 except JSError, e:
-                    self.assertEqual('JSError: Error: hello world ( test @ 14 : 10 )  ->     throw Error("hello world");', str(e))
+                    self.assert_(str(e).startswith('JSError: Error: hello world ( test @ 14 : 34 )  ->'))
                     self.assertEqual("Error", e.name)
                     self.assertEqual("hello world", e.message)
                     self.assertEqual("test", e.scriptName)
                     self.assertEqual(14, e.lineNum)
-                    self.assertEqual(30, e.startPos)
-                    self.assertEqual(31, e.endPos)
-                    self.assertEqual(10, e.startCol)
-                    self.assertEqual(11, e.endCol)
-                    self.assertEqual('    throw Error("hello world");', e.sourceLine)
+                    self.assertEqual(102, e.startPos)
+                    self.assertEqual(103, e.endPos)
+                    self.assertEqual(34, e.startCol)
+                    self.assertEqual(35, e.endCol)
+                    self.assertEqual('throw Error("hello world");', e.sourceLine.strip())
         
     def testPythonException(self):
         class Global(JSClass):
@@ -605,19 +605,19 @@ hello();""", "test", 10, 10).run()
                 
         with JSContext(Global()) as ctxt:
             r = ctxt.eval("""
-msg ="";
-try
-{
-    this.raiseException()
-}
-catch(e)
-{
-    msg += "catch " + e + ";";
-}
-finally
-{
-    msg += "finally";
-}""")
+                msg ="";
+                try
+                {
+                    this.raiseException()
+                }
+                catch(e)
+                {
+                    msg += "catch " + e + ";";
+                }
+                finally
+                {
+                    msg += "finally";
+                }""")
             self.assertEqual("catch Error: Hello;finally", str(ctxt.locals.msg))
         
     def testExceptionMapping(self):
@@ -657,7 +657,33 @@ finally
             ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
             
             self.assertEqual("Error", str(ctxt.locals.msg))
-        
+    def testArray(self):
+        with JSContext() as ctxt:
+            array = ctxt.eval("""
+                var array = new Array();
+                
+                for (i=0; i<10; i++)
+                {
+                    array[i] = 10-i;
+                }
+                
+                array;
+                """)
+            
+            self.assert_(isinstance(array, _PyV8.JSArray))
+            self.assertEqual(10, len(array))
+            
+            for i in xrange(10):
+                self.assertEqual(10-i, array[i])
+                
+            array[5] = 0
+            
+            self.assertEqual(0, array[5])
+            
+            del array[5]
+            
+            self.assertRaises(IndexError, lambda: array[5])
+    
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
