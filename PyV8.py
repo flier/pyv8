@@ -426,7 +426,7 @@ class TestContext(unittest.TestCase):
         self.assert_(not bool(JSContext.entered))
         self.assert_(not bool(JSContext.inContext))
         
-    def testMultiContext(self):
+    def _testMultiContext(self):
         # Create an environment
         with JSContext() as ctxt0:
             ctxt0.securityToken = "password"
@@ -453,7 +453,7 @@ class TestContext(unittest.TestCase):
                     self.assertRaises(AttributeError, int, global1.custom)
                     self.assertRaises(AttributeError, int, global2.custom)
             
-    def testSecurityChecks(self):
+    def _testSecurityChecks(self):
         with JSContext() as env1:
             env1.securityToken = "foo"
             
@@ -487,7 +487,7 @@ class TestContext(unittest.TestCase):
             with env2:
                 self.assertRaises(JSError, spy2.apply, env2.locals)
                 
-    def testCrossDomainDelete(self):
+    def _testCrossDomainDelete(self):
         with JSContext() as env1:
             env2 = JSContext()
             
@@ -672,6 +672,9 @@ class TestWrapper(unittest.TestCase):
             
             self.assert_(isinstance(array, _PyV8.JSArray))
             self.assertEqual(10, len(array))
+            
+            self.assert_(5 in array)
+            self.assertFalse(15 in array)
             
             l = list(array)
             

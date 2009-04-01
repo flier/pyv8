@@ -39,6 +39,8 @@ void CWrapper::Expose(void)
     .def("__delitem__", &CJavascriptArray::DelItem)
 
     .def("__iter__", py::range(&CJavascriptArray::begin, &CJavascriptArray::end))
+
+    .def("__contains__", &CJavascriptArray::Contains)
     ;
 
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)
@@ -648,6 +650,25 @@ py::object CJavascriptArray::DelItem(size_t idx)
     CJavascriptException::ThrowIf(try_catch);
 
   return value;
+}
+
+bool CJavascriptArray::Contains(py::object item)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  for (size_t i=0; i<Length(); i++)
+  {
+    if (m_obj->Has(i) && item == GetItem(i))
+    {
+      return true;
+    }
+  }
+
+  if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
+
+  return false;
 }
 
 py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)

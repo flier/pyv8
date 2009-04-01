@@ -121,6 +121,7 @@ public:
   py::object GetItem(size_t idx);
   py::object SetItem(size_t idx, py::object value);
   py::object DelItem(size_t idx);
+  bool Contains(py::object item);
 
   ArrayIterator begin(void) { return ArrayIterator(this, 0);}
   ArrayIterator end(void) { return ArrayIterator(this, Length());}
