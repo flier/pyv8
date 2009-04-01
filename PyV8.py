@@ -673,9 +673,14 @@ class TestWrapper(unittest.TestCase):
             self.assert_(isinstance(array, _PyV8.JSArray))
             self.assertEqual(10, len(array))
             
+            l = list(array)
+            
+            self.assertEqual(10, len(l))            
+            
             for i in xrange(10):
                 self.assertEqual(10-i, array[i])
-                
+                self.assertEqual(10-i, l[i])
+            
             array[5] = 0
             
             self.assertEqual(0, array[5])

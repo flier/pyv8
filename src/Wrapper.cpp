@@ -37,6 +37,8 @@ void CWrapper::Expose(void)
     .def("__getitem__", &CJavascriptArray::GetItem)
     .def("__setitem__", &CJavascriptArray::SetItem)
     .def("__delitem__", &CJavascriptArray::DelItem)
+
+    .def("__iter__", py::range(&CJavascriptArray::begin, &CJavascriptArray::end))
     ;
 
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)

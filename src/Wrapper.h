@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 
 #include "Exception.h"
 
@@ -91,6 +92,24 @@ public:
 class CJavascriptArray : public CJavascriptObject
 {
 public:
+  class ArrayIterator 
+    : public boost::iterator_facade<ArrayIterator, py::object, boost::forward_traversal_tag>
+  {
+    CJavascriptArray *m_array;
+    size_t m_idx;
+  public:
+    ArrayIterator(CJavascriptArray *array, size_t idx)
+      : m_array(array), m_idx(idx)
+    {
+    }
+
+    void increment() { m_idx++; }
+
+    bool equal(ArrayIterator const& other) const { return m_array == other.m_array && m_idx == other.m_idx; }
+
+    py::object& dereference() const { return m_array->GetItem(m_idx); }
+  };
+
   CJavascriptArray(v8::Handle<v8::Array> array)
     : CJavascriptObject(array)
   {
@@ -102,6 +121,9 @@ public:
   py::object GetItem(size_t idx);
   py::object SetItem(size_t idx, py::object value);
   py::object DelItem(size_t idx);
+
+  ArrayIterator begin(void) { return ArrayIterator(this, 0);}
+  ArrayIterator end(void) { return ArrayIterator(this, Length());}
 };
 
 class CJavascriptFunction : public CJavascriptObject
