@@ -46,54 +46,62 @@ void CWrapper::Expose(void)
     py::objects::pointer_holder<boost::shared_ptr<CJavascriptObject>,CJavascriptObject> > >();
 }
 
-v8::Handle<v8::Value> CPythonObject::ThrowIf(void)
+void CPythonObject::ThrowIf(void)
 {
+  assert(::PyErr_Occurred());
+  
   v8::HandleScope handle_scope;
 
-  py::object ex(py::handle<>(py::borrowed(::PyErr_Occurred())));
+  PyObject *exc, *val, *trb;  
 
-  const std::string msg = py::extract<const std::string>(ex);
+  ::PyErr_Fetch(&exc, &val, &trb);
 
-  ::PyErr_Clear();
+  py::object type(py::handle<>(py::allow_null(exc))),
+             value(py::handle<>(py::allow_null(val))),
+             traceback(py::handle<>(py::allow_null(trb)));
   
-  return v8::ThrowException(v8::Exception::Error(v8::String::New(msg.c_str(), msg.size())));
+  const std::string msg = py::extract<const std::string>(value.attr("message"));
+
+  v8::Handle<v8::Value> error = v8::Exception::Error(v8::String::New(msg.c_str(), msg.size()));
+
+  v8::ThrowException(error);
 }
+
+#define TRY_HANDLE_EXCEPTION() try {
+#define END_HANDLE_EXCEPTION(result) } \
+  catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } \
+  catch (const py::error_already_set&) { ThrowIf(); } \
+  catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::New("unknown exception"))); } \
+  return result;
 
 v8::Handle<v8::Value> CPythonObject::NamedGetter(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
-  try
-  {
-    v8::HandleScope handle_scope;
+  TRY_HANDLE_EXCEPTION()
+  
+  v8::HandleScope handle_scope;
 
-    py::object obj = CJavascriptObject::Wrap(info.Holder());  
+  py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-    v8::String::AsciiValue name(prop);
+  v8::String::AsciiValue name(prop);
 
-    py::str attr_name(*name, name.length());
+  py::str attr_name(*name, name.length());
 
-    if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
-      return v8::Local<v8::Value>();
+  if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
+    return v8::Local<v8::Value>();
 
-    v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
+  v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
 
-    if (::PyErr_Occurred()) return ThrowIf();
+  return handle_scope.Close(result);
 
-    return handle_scope.Close(result);
-  }
-  catch (const std::exception& ex)
-  {
-    return v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what())));
-  }
-  catch (...)
-  {
-    return ThrowIf();
-  }
+  END_HANDLE_EXCEPTION(v8::Undefined())
 }
 
 v8::Handle<v8::Value> CPythonObject::NamedSetter(
   v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -105,11 +113,15 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   obj.attr(*name) = CJavascriptObject::Wrap(value);
 
   return value;
+ 
+  END_HANDLE_EXCEPTION(v8::Undefined());
 }
 
 v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -119,11 +131,15 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
   py::str attr_name(*name, name.length());
 
   return v8::Boolean::New(::PyObject_HasAttr(obj.ptr(), attr_name.ptr()));
+
+  END_HANDLE_EXCEPTION(v8::False())
 }
 
 v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -133,11 +149,15 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   py::str attr_name(*name, name.length());
   
   return v8::Boolean::New(::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+  
+  END_HANDLE_EXCEPTION(v8::False())
 }
 
 v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   uint32_t index, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -145,10 +165,14 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
   return handle_scope.Close(Wrap(ret));  
+  
+  END_HANDLE_EXCEPTION(v8::Undefined())
 }
 v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   uint32_t index, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -159,19 +183,27 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
     v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set indexed value")));
 
   return value;
+  
+  END_HANDLE_EXCEPTION(v8::Undefined())
 }
 v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
   uint32_t index, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   return v8::Boolean::New(index < ::PySequence_Size(obj.ptr()));
+  
+  END_HANDLE_EXCEPTION(v8::False())
 }
 v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   uint32_t index, const v8::AccessorInfo& info)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -179,10 +211,14 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   v8::Handle<v8::Value> value = IndexedGetter(index, info);
 
   return v8::Boolean::New(0 <= ::PySequence_DelItem(obj.ptr(), index));
+  
+  END_HANDLE_EXCEPTION(v8::False())
 }
 
 v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 {
+  TRY_HANDLE_EXCEPTION()
+
   v8::HandleScope handle_scope;
 
   py::object self;
@@ -216,10 +252,12 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
                         CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                         CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
   default:
-    v8::ThrowException(v8::Exception::RangeError(v8::String::New("too many arguments")));
+    return v8::ThrowException(v8::Exception::Error(v8::String::New("too many arguments")));
   }
 
   return handle_scope.Close(Wrap(result));
+  
+  END_HANDLE_EXCEPTION(v8::Undefined())
 }
 
 void CPythonObject::SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz)

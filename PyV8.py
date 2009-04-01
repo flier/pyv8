@@ -25,7 +25,6 @@ class JSError(Exception):
         except AttributeError:
             return super(JSError, self).__getattribute__(attr)
             
-_PyV8.JSError = JSError
 _PyV8._JSError._jsclass = JSError
 
 class JSClass(object):    
@@ -554,10 +553,11 @@ function()
 """)
             self.assertEquals("abc", str(func()))
         
-    def testExceptionTranslator(self):
+    def testJSError(self):
         with JSContext() as ctxt:
             try:
                 ctxt.eval('throw "test"')
+                self.fail()
             except:
                 self.assert_(JSError, sys.exc_type)
                 
@@ -584,6 +584,28 @@ hello();""", "test").run()
                     self.assertEqual(10, e.startCol)
                     self.assertEqual(11, e.endCol)
                     self.assertEqual('    throw Error("hello world");', e.sourceLine)
+        
+    def testPythonException(self):
+        class Global(JSClass):
+            def raiseException(self):
+                raise RuntimeError("Hello")
+                
+        with JSContext(Global()) as ctxt:
+            r = ctxt.eval("""
+msg ="";
+try
+{
+    this.raiseException()
+}
+catch(e)
+{
+    msg += "catch " + e + ";";
+}
+finally
+{
+    msg += "finally";
+}""")
+            self.assertEqual("catch Error: Hello;finally", str(ctxt.locals.msg))
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
