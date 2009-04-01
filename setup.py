@@ -16,7 +16,7 @@ extra_link_args = []
 if os.name == "nt":
   include_dirs += os.environ["INCLUDE"].split(';')
   library_dirs += os.environ["LIB"].split(';')
-  libraries += ["winmm"]
+  libraries += ["winmm", "ws2_32"]
   extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
   extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
 elif os.name == "posix":
