@@ -54,6 +54,11 @@ protected:
   void CheckAttr(v8::Handle<v8::String> name) const;
 
   static py::object Wrap(CJavascriptObject *obj);
+
+  CJavascriptObject()
+  {
+
+  }
 public:
   CJavascriptObject(v8::Handle<v8::Object> obj)
     : m_obj(v8::Persistent<v8::Object>::New(obj))
@@ -115,6 +120,9 @@ public:
   {
 
   }
+
+  CJavascriptArray(size_t size);
+  CJavascriptArray(py::list items);
 
   size_t Length(void) const;
 

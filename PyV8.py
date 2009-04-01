@@ -6,7 +6,7 @@ import StringIO
 
 import _PyV8
 
-__all__ = ["JSError", "JSClass", "JSEngine", "JSContext", "debugger"]
+__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", "debugger"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -26,6 +26,8 @@ class JSError(Exception):
             return super(JSError, self).__getattribute__(attr)
             
 _PyV8._JSError._jsclass = JSError
+
+JSArray = _PyV8.JSArray
 
 class JSClass(object):    
     def toString(self):
@@ -691,6 +693,24 @@ class TestWrapper(unittest.TestCase):
             del array[5]
             
             self.assertRaises(IndexError, lambda: array[5])
+            
+            ctxt.locals.array1 = JSArray(5)
+            ctxt.locals.array2 = JSArray([1, 2, 3, 4, 5])
+            
+            for i in xrange(len(ctxt.locals.array2)):
+                ctxt.locals.array1[i] = ctxt.locals.array2[i] * 10
+                            
+            ctxt.eval("""
+                var sum = 0;
+                
+                for (i=0; i<array1.length; i++)
+                    sum += array1[i]
+                
+                for (i=0; i<array2.length; i++)
+                    sum += array2[i]                
+                """)
+            
+            self.assertEqual(165, ctxt.locals.sum)
     
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):

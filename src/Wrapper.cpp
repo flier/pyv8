@@ -32,6 +32,9 @@ void CWrapper::Expose(void)
     ;
 
   py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)
+    .def(py::init<size_t>())
+    .def(py::init<py::list>())    
+
     .def("__len__", &CJavascriptArray::Length)
 
     .def("__getitem__", &CJavascriptArray::GetItem)
@@ -595,13 +598,35 @@ py::object CJavascriptObject::Wrap(CJavascriptObject *obj)
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObjectPtr(obj))));
 }
 
+CJavascriptArray::CJavascriptArray(size_t size)  
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Array> array = v8::Array::New(size);
+
+  m_obj = v8::Persistent<v8::Object>::New(array);  
+}
+CJavascriptArray::CJavascriptArray(py::list items)
+{
+  v8::HandleScope handle_scope;
+
+  size_t size = ::PyList_Size(items.ptr());
+
+  v8::Handle<v8::Array> array = v8::Array::New(size);
+
+  for (size_t i=0; i<size; i++)
+  {
+    array->Set(v8::Integer::New(i), CPythonObject::Wrap(items[i]));
+  }
+
+  m_obj = v8::Persistent<v8::Object>::New(array);  
+}
 size_t CJavascriptArray::Length(void) const
 {
   v8::HandleScope handle_scope;
 
   return v8::Handle<v8::Array>::Cast(m_obj)->Length();
 }
-
 py::object CJavascriptArray::GetItem(size_t idx)
 {
   v8::HandleScope handle_scope;
