@@ -62,7 +62,28 @@ void CPythonObject::ThrowIf(void)
   
   const std::string msg = py::extract<const std::string>(value.attr("message"));
 
-  v8::Handle<v8::Value> error = v8::Exception::Error(v8::String::New(msg.c_str(), msg.size()));
+  v8::Handle<v8::Value> error;
+
+  if (::PyErr_ExceptionMatches(::PyExc_IndexError))
+  {
+    error = v8::Exception::RangeError(v8::String::New(msg.c_str(), msg.size()));
+  }
+  else if (::PyErr_ExceptionMatches(::PyExc_ReferenceError))
+  {
+    error = v8::Exception::ReferenceError(v8::String::New(msg.c_str(), msg.size()));
+  }
+  else if (::PyErr_ExceptionMatches(::PyExc_SyntaxError))
+  {
+    error = v8::Exception::SyntaxError(v8::String::New(msg.c_str(), msg.size()));
+  }
+  else if (::PyErr_ExceptionMatches(::PyExc_TypeError))
+  {
+    error = v8::Exception::TypeError(v8::String::New(msg.c_str(), msg.size()));
+  }
+  else
+  {
+    error = v8::Exception::Error(v8::String::New(msg.c_str(), msg.size()));
+  }
 
   v8::ThrowException(error);
 }
