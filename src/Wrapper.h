@@ -70,6 +70,8 @@ public:
   py::object GetAttr(const std::string& name);
   void SetAttr(const std::string& name, py::object value);
   void DelAttr(const std::string& name);
+
+  py::list GetAttrList(void);
   
   operator long() const;
   operator double() const;

@@ -481,7 +481,7 @@ class TestContext(unittest.TestCase):
                 
                 self.assert_(isinstance(result, _PyV8.JSFunction))
                 
-            env2.securityToken = "bar"
+            env2.securityToken = "bar"            
             
             # Call cross_domain_call, it should throw an exception
             with env2:
@@ -496,13 +496,18 @@ class TestContext(unittest.TestCase):
             env2.securityToken = "foo"
             
             env1.locals.prop = 3
+            
             env2.locals.env1 = env1.locals
             
             # Change env2 to a different domain and delete env1.prop.
             #env2.securityToken = "bar"
             
+            self.assertEquals(3, int(env1.eval("prop")))
+            
+            print env1.eval("env1")
+            
             with env2:
-                self.assertEquals(3, int(env2.eval("env1.prop")))                
+                self.assertEquals(3, int(env2.eval("this.env1.prop")))
                 self.assertEquals("false", str(e.eval("delete env1.prop")))
             
             # Check that env1.prop still exists.
@@ -537,6 +542,14 @@ class TestWrapper(unittest.TestCase):
             var_b = vars.var_b
             self.assert_(var_b)
             self.assert_(bool(var_b))
+            
+            attrs = dir(ctxt.locals)
+                        
+            self.assert_(attrs)
+            self.assert_("var_i" in attrs)
+            self.assert_("var_f" in attrs)
+            self.assert_("var_s" in attrs)
+            self.assert_("var_b" in attrs)
             
     def testFunction(self):
         with JSContext() as ctxt:

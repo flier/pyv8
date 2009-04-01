@@ -20,6 +20,8 @@ void CWrapper::Expose(void)
     .def("__setattr__", &CJavascriptObject::SetAttr)
     .def("__delattr__", &CJavascriptObject::DelAttr)    
 
+    .def_readonly("__members__", &CJavascriptObject::GetAttrList)
+
     .def(int_(py::self))
     .def(float_(py::self))
     .def(str(py::self))
@@ -422,7 +424,8 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
   v8::Handle<v8::Value> attr_obj = CPythonObject::Wrap(value);
 
-  if (!m_obj->Set(attr_name, attr_obj)) CJavascriptException::ThrowIf(try_catch);
+  if (!m_obj->Set(attr_name, attr_obj)) 
+    CJavascriptException::ThrowIf(try_catch);
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
@@ -435,6 +438,25 @@ void CJavascriptObject::DelAttr(const std::string& name)
   CheckAttr(attr_name);
   
   if (!m_obj->Delete(attr_name)) CJavascriptException::ThrowIf(try_catch);
+}
+py::list CJavascriptObject::GetAttrList(void)
+{
+  py::list attrs;
+
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  v8::Handle<v8::Array> props = m_obj->GetPropertyNames();
+
+  for (size_t i=0; i<props->Length(); i++)
+  {    
+    attrs.append(CJavascriptObject::Wrap(props->Get(v8::Integer::New(i))));
+  }
+
+  if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
+
+  return attrs;
 }
 
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
@@ -572,7 +594,8 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
 
-  if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+  if (result.IsEmpty() || try_catch.HasCaught()) 
+    CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(result->ToObject());
 }
