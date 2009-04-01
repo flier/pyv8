@@ -60,23 +60,30 @@ void CPythonObject::ThrowIf(void)
              value(py::handle<>(py::allow_null(val))),
              traceback(py::handle<>(py::allow_null(trb)));
   
-  const std::string msg = py::extract<const std::string>(value.attr("message"));
+  std::string msg;
+
+  if (::PyObject_HasAttrString(value.ptr(), "message"))
+  {
+    py::extract<const std::string> extractor(value.attr("message"));
+
+    if (extractor.check()) msg = extractor();
+  }
 
   v8::Handle<v8::Value> error;
 
-  if (::PyErr_ExceptionMatches(::PyExc_IndexError))
+  if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_IndexError))
   {
     error = v8::Exception::RangeError(v8::String::New(msg.c_str(), msg.size()));
   }
-  else if (::PyErr_ExceptionMatches(::PyExc_ReferenceError))
+  else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_AttributeError))
   {
     error = v8::Exception::ReferenceError(v8::String::New(msg.c_str(), msg.size()));
   }
-  else if (::PyErr_ExceptionMatches(::PyExc_SyntaxError))
+  else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_SyntaxError))
   {
     error = v8::Exception::SyntaxError(v8::String::New(msg.c_str(), msg.size()));
   }
-  else if (::PyErr_ExceptionMatches(::PyExc_TypeError))
+  else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_TypeError))
   {
     error = v8::Exception::TypeError(v8::String::New(msg.c_str(), msg.size()));
   }

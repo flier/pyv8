@@ -607,6 +607,44 @@ finally
 }""")
             self.assertEqual("catch Error: Hello;finally", str(ctxt.locals.msg))
         
+    def testExceptionMapping(self):
+        class Global(JSClass):
+            def raiseIndexError(self):
+                return [1, 2, 3][5]
+            
+            def raiseAttributeError(self):
+                None.hello()
+            
+            def raiseSyntaxError(self):
+                eval("???")
+            
+            def raiseTypeError(self):
+                int(sys)
+                
+            def raiseNotImplementedError(self):
+                raise NotImplementedError()
+        
+        with JSContext(Global()) as ctxt:
+            ctxt.eval("try { this.raiseIndexError(); } catch (e) { msg = e; }")
+            
+            self.assertEqual("RangeError", str(ctxt.locals.msg))
+            
+            ctxt.eval("try { this.raiseAttributeError(); } catch (e) { msg = e; }")
+            
+            self.assertEqual("ReferenceError", str(ctxt.locals.msg))
+            
+            ctxt.eval("try { this.raiseSyntaxError(); } catch (e) { msg = e; }")
+            
+            self.assertEqual("SyntaxError", str(ctxt.locals.msg))
+            
+            ctxt.eval("try { this.raiseTypeError(); } catch (e) { msg = e; }")
+            
+            self.assertEqual("TypeError", str(ctxt.locals.msg))
+            
+            ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
+            
+            self.assertEqual("Error", str(ctxt.locals.msg))
+        
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
