@@ -571,14 +571,14 @@ function hello()
     throw Error("hello world");
 }
 
-hello();""", "test").run()
+hello();""", "test", 10, 10).run()
                     self.fail()
                 except JSError, e:
-                    self.assertEqual('JSError: Error: hello world ( test @ 4 : 10 )  ->     throw Error("hello world");', str(e))
+                    self.assertEqual('JSError: Error: hello world ( test @ 14 : 10 )  ->     throw Error("hello world");', str(e))
                     self.assertEqual("Error", e.name)
                     self.assertEqual("hello world", e.message)
                     self.assertEqual("test", e.scriptName)
-                    self.assertEqual(4, e.lineNum)
+                    self.assertEqual(14, e.lineNum)
                     self.assertEqual(30, e.startPos)
                     self.assertEqual(31, e.endPos)
                     self.assertEqual(10, e.startCol)
