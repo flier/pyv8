@@ -98,7 +98,7 @@ class CJavascriptArray : public CJavascriptObject
 {
 public:
   class ArrayIterator 
-    : public boost::iterator_facade<ArrayIterator, py::object, boost::forward_traversal_tag>
+    : public boost::iterator_facade<ArrayIterator, py::object const, boost::forward_traversal_tag>
   {
     CJavascriptArray *m_array;
     size_t m_idx;
@@ -112,7 +112,7 @@ public:
 
     bool equal(ArrayIterator const& other) const { return m_array == other.m_array && m_idx == other.m_idx; }
 
-    py::object& dereference() const { return m_array->GetItem(m_idx); }
+    reference dereference() const { return m_array->GetItem(m_idx); }
   };
 
   CJavascriptArray(v8::Handle<v8::Array> array)

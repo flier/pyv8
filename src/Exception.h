@@ -58,7 +58,7 @@ public:
   {
   }
 
-  ~CJavascriptException()
+  ~CJavascriptException() throw()
   {
     if (!m_exc.IsEmpty()) m_exc.Dispose();
     if (!m_msg.IsEmpty()) m_msg.Dispose();
