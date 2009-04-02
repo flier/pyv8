@@ -2,6 +2,12 @@
 
 #include <vector>
 
+#ifdef _WIN32
+#  define _USE_32BIT_TIME_T
+#endif
+
+#include <datetime.h>
+
 #include "Context.h"
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
@@ -13,6 +19,8 @@ std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 
 void CWrapper::Expose(void)
 {
+  PyDateTime_IMPORT;
+
   py::class_<CJavascriptObject, boost::noncopyable>("JSObject", py::no_init)
     .def_readonly("__js__", &CJavascriptObject::Native)
 
@@ -382,6 +390,33 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {   
     result = v8::Number::New(py::extract<double>(obj));
   }
+  else if (PyDateTime_Check(obj.ptr()) || PyDate_Check(obj.ptr()))
+  {
+    tm ts = { 0 };
+
+    ts.tm_year = PyDateTime_GET_YEAR(obj.ptr()) - 1900;
+    ts.tm_mon = PyDateTime_GET_MONTH(obj.ptr()) - 1;
+    ts.tm_mday = PyDateTime_GET_DAY(obj.ptr());
+    ts.tm_hour = PyDateTime_DATE_GET_HOUR(obj.ptr());
+    ts.tm_min = PyDateTime_DATE_GET_MINUTE(obj.ptr());
+    ts.tm_sec = PyDateTime_DATE_GET_SECOND(obj.ptr());
+    
+    int ms = PyDateTime_DATE_GET_MICROSECOND(obj.ptr());
+
+    result = v8::Date::New(mktime(&ts) * 1000 + ms / 1000);
+  }
+  else if (PyTime_Check(obj.ptr()))
+  {
+    tm ts = { 0 };
+
+    ts.tm_hour = PyDateTime_TIME_GET_HOUR(obj.ptr()) - 1;
+    ts.tm_min = PyDateTime_TIME_GET_MINUTE(obj.ptr());
+    ts.tm_sec = PyDateTime_TIME_GET_SECOND(obj.ptr());
+
+    int ms = PyDateTime_TIME_GET_MICROSECOND(obj.ptr());
+
+    result = v8::Date::New(mktime(&ts) * 1000 + ms / 1000);    
+  }
   else
   {
     static v8::Persistent<v8::ObjectTemplate> s_template = CreateObjectTemplate();
@@ -552,6 +587,18 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
   }
   if (value->IsBoolean()) return py::object(py::handle<>(value->BooleanValue() ? Py_True : Py_False));
   if (value->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(value->NumberValue())));
+  if (value->IsDate())
+  {
+    double n = v8::Handle<v8::Date>::Cast(value)->NumberValue();
+
+    time_t ts = (time_t) floor(n / 1000);
+
+    tm *t = gmtime(&ts);
+
+    return py::object(py::handle<>(::PyDateTime_FromDateAndTime(
+      t->tm_year+1900, t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec, 
+      ((long long) floor(n)) % 1000 * 1000)));
+  }
 
   return Wrap(value->ToObject(), self);
 }

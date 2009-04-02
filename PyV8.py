@@ -392,6 +392,7 @@ class JSContext(_PyV8.JSContext):
         
         del self
 
+import datetime
 import unittest
 import logging
 import traceback
@@ -711,6 +712,21 @@ class TestWrapper(unittest.TestCase):
                 """)
             
             self.assertEqual(165, ctxt.locals.sum)
+    def testDate(self):
+        with JSContext() as ctxt:            
+            now = ctxt.eval("new Date();")
+            
+            self.assert_(now)
+            
+            delta = datetime.datetime.utcnow() - now
+            
+            self.assertEquals(0, delta.seconds)
+            
+            func = ctxt.eval("function (d) { return d.toString(); }")
+            
+            now = datetime.datetime.now() 
+            
+            self.assert_(str(func([now])).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
     
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
