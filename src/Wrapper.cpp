@@ -403,7 +403,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     
     int ms = PyDateTime_DATE_GET_MICROSECOND(obj.ptr());
 
-    result = v8::Date::New(mktime(&ts) * 1000 + ms / 1000);
+    result = v8::Date::New(((double) mktime(&ts)) * 1000 + ms / 1000);
   }
   else if (PyTime_Check(obj.ptr()))
   {
@@ -415,7 +415,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
     int ms = PyDateTime_TIME_GET_MICROSECOND(obj.ptr());
 
-    result = v8::Date::New(mktime(&ts) * 1000 + ms / 1000);    
+    result = v8::Date::New(((double) mktime(&ts)) * 1000 + ms / 1000);    
   }
   else
   {
