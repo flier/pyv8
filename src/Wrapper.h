@@ -149,7 +149,9 @@ public:
   {
     m_self.Dispose();
   }
-  
+
+  static py::object CallWithArgs(py::tuple args, py::dict kwds);
+
   py::object Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds);
   py::object Invoke(py::list args, py::dict kwds);
 

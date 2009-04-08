@@ -197,7 +197,7 @@ class JSDebug(object):
             return int(self.state.frameCount())
             
         def frame(self, idx = None):
-            return JSDebug.Frame(self.state.frame([idx]))
+            return JSDebug.Frame(self.state.frame(idx))
         
         @property    
         def selectedFrame(self):
@@ -249,11 +249,7 @@ class JSDebug(object):
         def __init__(self, event):
             self.event = event
             
-    class Script(object):
-        Native = 0
-        Extension = 1
-        Normal = 2
-        
+    class Script(object):        
         def __init__(self, script):            
             self.script = script            
             
@@ -267,7 +263,7 @@ class JSDebug(object):
             
         @property
         def name(self):
-            return self.script.name() if hasattr(self.script, "name") else None
+            return self.script.name()
             
         @property
         def lineOffset(self):
@@ -287,8 +283,8 @@ class JSDebug(object):
             
         def __repr__(self):
             return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
-                                                    self.lineOffset, self.columnOffset,
-                                                    self.source)
+                                                      self.lineOffset, self.columnOffset,
+                                                      self.source)
             
     class CompileEvent(StateEvent):
         def __init__(self, event):
@@ -716,7 +712,7 @@ class TestWrapper(unittest.TestCase):
             
             now = datetime.datetime.now() 
             
-            self.assert_(str(func([now])).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
+            self.assert_(str(func(now)).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
     
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):

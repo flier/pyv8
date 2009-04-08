@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <boost/python/raw_function.hpp>
+
 #ifdef _WIN32
 #  define _USE_32BIT_TIME_T
 #endif
@@ -54,10 +56,9 @@ void CWrapper::Expose(void)
     .def("__contains__", &CJavascriptArray::Contains)
     ;
 
-  py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)
-    .def("__call__", &CJavascriptFunction::Invoke, 
-         (py::arg("args") = py::list(), 
-          py::arg("kwds") = py::dict()))
+  py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)    
+    .def("__call__", py::raw_function(&CJavascriptFunction::CallWithArgs))
+
     .def("apply", &CJavascriptFunction::Apply, 
          (py::arg("self"), 
           py::arg("args") = py::list(), 
@@ -741,6 +742,27 @@ bool CJavascriptArray::Contains(py::object item)
   if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
   return false;
+}
+
+py::object CJavascriptFunction::CallWithArgs(py::tuple args, py::dict kwds)
+{
+  size_t argc = ::PyTuple_Size(args.ptr());
+
+  if (argc == 0) throw CJavascriptException("missed self argument", ::PyExc_TypeError);
+
+  py::object self = args[0];
+  py::extract<CJavascriptFunction&> extractor(self);
+
+  if (!extractor.check()) throw CJavascriptException("missed self argument", ::PyExc_TypeError);
+
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;  
+
+  CJavascriptFunction& func = extractor();
+  py::list argv(args.slice(1, py::_));
+
+  return func.Call(func.m_self, argv, kwds);
 }
 
 py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)
