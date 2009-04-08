@@ -53,8 +53,6 @@ protected:
 
   void CheckAttr(v8::Handle<v8::String> name) const;
 
-  static py::object Wrap(CJavascriptObject *obj);
-
   CJavascriptObject()
   {
 
@@ -88,6 +86,7 @@ public:
   
   void Dump(std::ostream& os) const;  
 
+  static py::object Wrap(CJavascriptObject *obj);
   static py::object Wrap(v8::Handle<v8::Value> value,
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
   static py::object Wrap(v8::Handle<v8::Object> obj, 

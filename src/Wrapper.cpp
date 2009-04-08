@@ -764,7 +764,7 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
-  return CJavascriptObject::Wrap(result->ToObject());
+  return CJavascriptObject::Wrap(result);
 }
 py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
 {
