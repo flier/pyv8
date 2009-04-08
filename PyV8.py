@@ -207,7 +207,7 @@ class JSDebug(object):
         def frames(self):
             return JSDebug.Frames(self)
         
-        def __str__(self):
+        def __repr__(self):
             s = StringIO.StringIO()
             
             try:
@@ -255,82 +255,72 @@ class JSDebug(object):
         Normal = 2
         
         def __init__(self, script):            
-            self.script = script
+            self.script = script            
             
         @property
         def source(self):
-            return str(self.script.source())
+            return self.script.source()
+            
+        @property
+        def id(self):
+            return self.script.id()
             
         @property
         def name(self):
-            if hasattr(self.script, "name"):
-                return str(self.script.name())
-            else:
-                return None
+            return self.script.name() if hasattr(self.script, "name") else None
             
         @property
         def lineOffset(self):
-            if hasattr(self.script, "line_offset"):
-                return int(self.script.line_offset().value())
-            else:
-                return -1;
+            return self.script.lineOffset() 
+            
+        @property
+        def lineCount(self):
+            return self.script.lineCount()
         
         @property    
         def columnOffset(self):
-            if hasattr(self.script, "column_offset"):
-                return int(self.script.column_offset().value())
-            else:
-                return -1;
+            return self.script.columnOffset()
             
         @property
         def type(self):
-            return int(self.script.type())
+            return self.script.type()
             
-        @property
-        def typename(self):
-            NAMES = {
-                JSDebug.Script.Native : "native",
-                JSDebug.Script.Extension : "extension",
-                JSDebug.Script.Normal : "normal"
-            }
-
-            return NAMES[self.type]
-            
-        def __str__(self):
-            return "<%s script %s @ %d:%d> : '%s'" % (self.typename, self.name,
+        def __repr__(self):
+            return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
                                                     self.lineOffset, self.columnOffset,
                                                     self.source)
             
     class CompileEvent(StateEvent):
-        __script = None
+        def __init__(self, event):
+            self.event = event
 
         @property
         def script(self):
-            if not self.__script:
-                self.__script = JSDebug.Script(self.event.script())
+            if not hasattr(self, "_script"):
+                setattr(self, "_script", JSDebug.Script(self.event.script()))
             
-            return self.__script
+            return self._script
         
         def __str__(self):
             return str(self.script)
             
     class BeforeCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.BeforeCompile
+        type = _PyV8.JSDebugEvent.BeforeCompile        
         
-        def __init__(self, event):
-            self.event = event
+        def __init__(self, event):            
+            JSDebug.CompileEvent.__init__(self, event)
         
         def __repr__(self):
-            return "before compile script: %s\n%s" % (str(self.script), str(self.state))
+            return "before compile script: %s\n%s" % (repr(self.script), repr(self.state))
     
     class AfterCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.AfterCompile
-        
-        def __init__(self, event):
-            self.event = event
+        type = _PyV8.JSDebugEvent.AfterCompile        
+
+        def __init__(self, event):            
+            JSDebug.CompileEvent.__init__(self, event)
 
         def __repr__(self):
-            return "after compile script: %s\n%s" % (str(self.script), str(self.state))
+            return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
 
     onMessage = None
     onBreak = None
