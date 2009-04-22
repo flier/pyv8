@@ -333,9 +333,6 @@ v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
-#define TRY_CONVERT(type, cls) { py::extract<type> extractor(obj); \
-  if (extractor.check()) return handle_scope.Close(cls::New(extractor())); }
-
 v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 {
   assert(v8::Context::InContext());
@@ -346,11 +343,6 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   if (obj.ptr() == Py_True) return v8::True();
   if (obj.ptr() == Py_False) return v8::False();
 
-  TRY_CONVERT(int, v8::Int32);
-  TRY_CONVERT(const char *, v8::String);
-  TRY_CONVERT(bool, v8::Boolean);
-  TRY_CONVERT(double, v8::Number);  
-
   py::extract<CJavascriptObject&> extractor(obj);
 
   if (extractor.check())
@@ -360,20 +352,9 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   v8::Handle<v8::Value> result;
 
-  if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
+  if (PyLong_Check(obj.ptr()))
   {
-    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
-
-    func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
-    
-    if (PyType_Check(obj.ptr()))
-    {
-      v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__"))());
-
-      func_tmpl->SetClassName(cls_name);
-    }
-
-    result = func_tmpl->GetFunction();
+    result = v8::Integer::New(::PyLong_AsLong(obj.ptr()));
   }
   else if (PyBool_Check(obj.ptr()))
   {
@@ -387,7 +368,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {
     result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
   }
-  else if (PyNumber_Check(obj.ptr()))
+  else if (::PyNumber_Check(obj.ptr()))
   {   
     result = v8::Number::New(py::extract<double>(obj));
   }
@@ -417,6 +398,21 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     int ms = PyDateTime_TIME_GET_MICROSECOND(obj.ptr());
 
     result = v8::Date::New(((double) mktime(&ts)) * 1000 + ms / 1000);    
+  }
+  else if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
+  {
+    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
+
+    func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
+
+    if (PyType_Check(obj.ptr()))
+    {
+      v8::Handle<v8::String> cls_name = v8::String::New(py::extract<const char *>(obj.attr("__name__"))());
+
+      func_tmpl->SetClassName(cls_name);
+    }
+
+    result = func_tmpl->GetFunction();
   }
   else
   {
@@ -536,9 +532,9 @@ void CJavascriptObject::Dump(std::ostream& os) const
   else if (m_obj->IsUndefined())
     os << "N/A";
   else if (m_obj->IsString())  
-    os << *v8::String::AsciiValue(v8::Handle<v8::String>::Cast(m_obj));  
+    os << *v8::String::Utf8Value(v8::Handle<v8::String>::Cast(m_obj));  
   else 
-    os << *v8::String::AsciiValue(m_obj->ToString());
+    os << *v8::String::Utf8Value(m_obj->ToString());
 }
 
 CJavascriptObject::operator long() const 
@@ -582,7 +578,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
   if (value->IsInt32()) return py::object(value->Int32Value());  
   if (value->IsString())
   {
-    v8::String::AsciiValue str(v8::Handle<v8::String>::Cast(value));
+    v8::String::Utf8Value str(v8::Handle<v8::String>::Cast(value));
 
     return py::str(*str, str.length());
   }

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 from __future__ import with_statement
 
 import sys
@@ -713,6 +714,15 @@ class TestWrapper(unittest.TestCase):
             now = datetime.datetime.now() 
             
             self.assert_(str(func(now)).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
+    
+    def testUnicode(self):
+        with JSContext() as ctxt:
+            self.assertEquals(u"人", unicode(ctxt.eval("\"人\""), "utf-8"))
+            self.assertEquals(u"é", unicode(ctxt.eval("\"é\""), "utf-8"))
+            
+            func = ctxt.eval("function (msg) { return msg.length; }")
+            
+            self.assertEquals(2, func(u"测试"))
     
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
