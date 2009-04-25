@@ -3,6 +3,8 @@
 #include <sstream>
 #include <string>
 
+py::object CDebug::s_onDebugMessage;
+
 void CDebug::Init(void)
 {
   v8::HandleScope scope;
@@ -26,15 +28,8 @@ void CDebug::SetEnable(bool enable)
     v8::Handle<v8::External> data = v8::External::New(this);
 
     v8::Debug::SetDebugEventListener(OnDebugEvent, data);
-    v8::Debug::SetMessageHandler(OnDebugMessage, this);
+    v8::Debug::SetMessageHandler(OnDebugMessage);
   }
-#if TODO_FIX_HANG_ISSUE
-  else
-  {
-    v8::Debug::SetDebugEventListener(v8::Null()->ToObject());
-    v8::Debug::SetMessageHandler(NULL);
-  }
-#endif
 }
 
 void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
@@ -55,17 +50,13 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
   py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
 }
 
-void CDebug::OnDebugMessage(const uint16_t* message, int length, void* data)
+void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data)
 {
-  CDebug *pThis = static_cast<CDebug *>(data);
-
-  if (!pThis->m_enabled) return;
-
-  if (pThis->m_onDebugMessage.ptr() == Py_None) return;
+  if (s_onDebugMessage.ptr() == Py_None) return;
   
   std::wstring msg(reinterpret_cast<std::wstring::const_pointer>(message), length);
 
-  py::call<void>(pThis->m_onDebugMessage.ptr(), msg);
+  py::call<void>(s_onDebugMessage.ptr(), msg);
 }
 
 void CDebug::Expose(void)
@@ -74,8 +65,7 @@ void CDebug::Expose(void)
     .add_property("enabled", &CDebug::IsEnabled, &CDebug::SetEnable)
 
     .def_readwrite("onDebugEvent", &CDebug::m_onDebugEvent)
-    .def_readwrite("onDebugMessage", &CDebug::m_onDebugMessage)
-    ;
+    .attr("onDebugMessage") = CDebug::s_onDebugMessage;
 
   py::enum_<v8::DebugEvent>("JSDebugEvent")
     .value("Break", v8::Break)
