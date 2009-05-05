@@ -718,6 +718,13 @@ class TestWrapper(unittest.TestCase):
             
             self.assertEquals(["bar"], list(func(NamedClass())))
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
+            
+    def testDict(self):
+        with JSContext() as ctxt:
+            obj = ctxt.eval("var r = { 'a' : 1, 'b' : 2 }; r")
+            
+            self.assertEqual(1, obj.a)
+            self.assertEqual(2, obj.b)
         
     def testDate(self):
         with JSContext() as ctxt:            
