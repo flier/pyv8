@@ -207,6 +207,33 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   END_HANDLE_EXCEPTION(v8::False())
 }
 
+v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& info)
+{
+  TRY_HANDLE_EXCEPTION()
+
+  v8::HandleScope handle_scope;  
+
+  py::object obj = CJavascriptObject::Wrap(info.Holder());
+
+  if (::PyObject_HasAttrString(obj.ptr(), "__dict__"))
+  {
+    py::list keys = py::dict(obj.attr("__dict__")).keys();
+    size_t len = PyList_GET_SIZE(keys.ptr());
+
+    v8::Handle<v8::Array> result = v8::Array::New(len);
+
+    for (size_t i=0; i<len; i++)
+    {
+      result->Set(v8::Uint32::New(i), 
+        Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(keys.ptr(), i))))));
+    }
+
+    return handle_scope.Close(result);
+  }
+
+  END_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
+}
+
 v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   uint32_t index, const v8::AccessorInfo& info)
 {
@@ -269,6 +296,41 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   END_HANDLE_EXCEPTION(v8::False())
 }
 
+v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& info)
+{
+  TRY_HANDLE_EXCEPTION()
+
+  v8::HandleScope handle_scope;  
+
+  py::object obj = CJavascriptObject::Wrap(info.Holder());
+
+  size_t len = 0;
+
+  if (PyList_Check(obj.ptr()))
+  {
+    len = PyList_GET_SIZE(obj.ptr());
+  }
+  else if (PyTuple_Check(obj.ptr()))
+  {
+    len = PyTuple_GET_SIZE(obj.ptr());
+  }
+  else if (PyDict_Check(obj.ptr()))
+  {
+    len = ::PyDict_Size(obj.ptr());
+  }
+
+  v8::Handle<v8::Array> result = v8::Array::New(len);
+
+  for (size_t i=0; i<len; i++)
+  {
+    result->Set(v8::Uint32::New(i), v8::Int32::New(i)->ToString());
+  }
+
+  return handle_scope.Close(result);
+
+  END_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
+}
+
 v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 {
   TRY_HANDLE_EXCEPTION()
@@ -317,8 +379,8 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 void CPythonObject::SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz)
 {
   clazz->SetInternalFieldCount(1);
-  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter);
-  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter);
+  clazz->SetNamedPropertyHandler(NamedGetter, NamedSetter, NamedQuery, NamedDeleter, NamedEnumerator);
+  clazz->SetIndexedPropertyHandler(IndexedGetter, IndexedSetter, IndexedQuery, IndexedDeleter, IndexedEnumerator);
   clazz->SetCallAsFunctionHandler(Caller);
 }
 

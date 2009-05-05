@@ -28,6 +28,7 @@ class CPythonObject : public CWrapper
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
   static v8::Handle<v8::Boolean> NamedDeleter(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Array> NamedEnumerator(const v8::AccessorInfo& info);
 
   static v8::Handle<v8::Value> IndexedGetter(
     uint32_t index, const v8::AccessorInfo& info);
@@ -37,6 +38,7 @@ class CPythonObject : public CWrapper
     uint32_t index, const v8::AccessorInfo& info);
   static v8::Handle<v8::Boolean> IndexedDeleter(
     uint32_t index, const v8::AccessorInfo& info);
+  static v8::Handle<v8::Array> IndexedEnumerator(const v8::AccessorInfo& info);
 
   static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
 protected:

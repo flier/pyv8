@@ -699,6 +699,26 @@ class TestWrapper(unittest.TestCase):
                 """)
             
             self.assertEqual(165, ctxt.locals.sum)
+            
+    def testForEach(self):
+        class NamedClass(JSClass):
+            foo = 1
+            
+            def __init__(self):
+                self.bar = 2
+                
+        with JSContext() as ctxt:
+            func = ctxt.eval("""function (k) {
+                var result = [];    
+                for (var prop in k) {
+                  result.push(prop);
+                }
+                return result;
+            }""")
+            
+            self.assertEquals(["bar"], list(func(NamedClass())))
+            self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
+        
     def testDate(self):
         with JSContext() as ctxt:            
             now = ctxt.eval("new Date();")
