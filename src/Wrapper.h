@@ -78,6 +78,8 @@ public:
   void DelAttr(const std::string& name);
 
   py::list GetAttrList(void);
+
+  bool Contains(const std::string& name);
   
   operator long() const;
   operator double() const;

@@ -32,6 +32,15 @@ void CWrapper::Expose(void)
 
     .def_readonly("__members__", &CJavascriptObject::GetAttrList)
 
+    // Emulating dict object
+    .def("keys", &CJavascriptObject::GetAttrList)
+
+    .def("__getitem__", &CJavascriptObject::GetAttr)
+    .def("__setitem__", &CJavascriptObject::SetAttr)
+    .def("__delitem__", &CJavascriptObject::DelAttr)
+
+    .def("__contains__", &CJavascriptObject::Contains)
+
     .def(int_(py::self))
     .def(float_(py::self))
     .def(str(py::self))
@@ -568,6 +577,19 @@ py::list CJavascriptObject::GetAttrList(void)
   if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
   return attrs;
+}
+
+bool CJavascriptObject::Contains(const std::string& name)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  bool found = m_obj->Has(v8::String::New(name.c_str()));
+  
+  if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
+
+  return found;
 }
 
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const

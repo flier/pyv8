@@ -377,7 +377,17 @@ class JSContext(_PyV8.JSContext):
     def __exit__(self, exc_type, exc_value, traceback):
         self.leave()
         
-        del self
+        del self        
+        
+# contribute by marc boeker <http://code.google.com/u/marc.boeker/>
+def convert(obj):    
+    if type(obj) == _PyV8.JSArray:
+        return [convert(v) for v in obj]
+    
+    if type(obj) == _PyV8.JSObject:
+        return dict([[k, convert(obj.__getattr__(k))] for k in obj.__members__])
+        
+    return obj
 
 import datetime
 import unittest
@@ -720,11 +730,31 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
             
     def testDict(self):
+        import UserDict
+        
         with JSContext() as ctxt:
             obj = ctxt.eval("var r = { 'a' : 1, 'b' : 2 }; r")
             
             self.assertEqual(1, obj.a)
             self.assertEqual(2, obj.b)
+            
+            self.assertEqual({ 'a' : 1, 'b' : 2 }, dict(obj))            
+        
+            self.assertEqual({ 'a': 1,
+                               'b': [1, 2, 3],
+                               'c': { 'str' : 'goofy',
+                                      'float' : 1.234,
+                                      'obj' : { 'name': 'john doe' }},                                      
+                               'd': True,
+                               'e': None },
+                             convert(ctxt.eval("""var x =
+                             { a: 1,
+                               b: [1, 2, 3],
+                               c: { str: 'goofy',
+                                    float: 1.234,
+                                    obj: { name: 'john doe' }},
+                               d: true,
+                               e: null }; x""")))
         
     def testDate(self):
         with JSContext() as ctxt:            
