@@ -38,6 +38,7 @@ public:
 
   static py::object GetEntered(void);
   static py::object GetCurrent(void);
+  static py::object GetCalling(void);
   static bool InContext(void) { return v8::Context::InContext(); }
 
   static void Expose(void);

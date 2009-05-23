@@ -14,9 +14,11 @@ void CContext::Expose(void)
     .def_readonly("locals", &CContext::GetGlobal, "Local variables within context")
     
     .add_static_property("entered", &CContext::GetEntered, 
-                         "Returns the last entered context.")
+                         "the last entered context.")
     .add_static_property("current", &CContext::GetCurrent, 
-                         "Returns the context that is on the top of the stack.")
+                         "the context that is on the top of the stack.")
+    .add_static_property("calling", &CContext::GetCalling,
+                         "the context of the calling JavaScript code.")
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
 
@@ -112,6 +114,16 @@ py::object CContext::GetCurrent(void)
   return !v8::Context::InContext() ? py::object(py::handle<>(Py_None)) :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
       CContextPtr(new CContext(v8::Context::GetCurrent()))))); 
+}
+py::object CContext::GetCalling(void)
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Context> calling = v8::Context::GetCalling();
+
+  return calling.IsEmpty() ? py::object(py::handle<>(Py_None)) :
+    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
+      CContextPtr(new CContext(handle_scope.Close(calling))))));
 }
 
 py::object CContext::Evaluate(const std::string& src) 
