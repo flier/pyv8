@@ -52,7 +52,10 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
                                             const std::string name,
                                             int line, int col)
 {
-  assert(v8::Context::InContext());
+  if (!v8::Context::InContext())
+  {
+    throw CJavascriptException("please enter a context first");
+  }
 
   v8::HandleScope handle_scope;
 
@@ -81,7 +84,10 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 {    
-  assert(v8::Context::InContext());
+  if (!v8::Context::InContext())
+  {
+    throw CJavascriptException("please enter a context first");
+  }
 
   v8::HandleScope handle_scope;
 
