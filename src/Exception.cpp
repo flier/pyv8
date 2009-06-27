@@ -22,7 +22,8 @@ void CJavascriptException::Expose(void)
     .def_readonly("endPos", &CJavascriptException::GetEndPosition)
     .def_readonly("startCol", &CJavascriptException::GetStartColumn)
     .def_readonly("endCol", &CJavascriptException::GetEndColumn)
-    .def_readonly("sourceLine", &CJavascriptException::GetSourceLine);
+    .def_readonly("sourceLine", &CJavascriptException::GetSourceLine)
+    .def("print_tb", &CJavascriptException::PrintCallStack);
 
   py::register_exception_translator<CJavascriptException>(ExceptionTranslator::Translate);
 
@@ -124,11 +125,12 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 
   v8::HandleScope handle_scope;
 
-  v8::String::AsciiValue msg(try_catch.Exception());
-
   std::ostringstream oss;
 
-  oss << std::string(*msg, msg.length());
+  v8::String::AsciiValue msg(try_catch.Exception());
+
+  if (*msg)
+    oss << std::string(*msg, msg.length());
 
   v8::Handle<v8::Message> message = try_catch.Message();
 
@@ -208,4 +210,9 @@ void ExceptionTranslator::Construct(PyObject* obj,
     new (memory_chunk) CJavascriptException(py::extract<CJavascriptException>(impl));
 
   data->convertible = memory_chunk;
+}
+
+void CJavascriptException::PrintCallStack(py::object file)
+{  
+  m_msg->PrintCurrentStackTrace(::PyFile_AsFile(file.ptr()));
 }

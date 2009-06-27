@@ -73,6 +73,8 @@ public:
   int GetStartColumn(void);
   int GetEndColumn(void);
   const std::string GetSourceLine(void);
+  
+  void PrintCallStack(py::object file);
 
   static void ThrowIf(v8::TryCatch& try_catch)
   {
