@@ -595,8 +595,8 @@ bool CJavascriptObject::Contains(const std::string& name)
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
 {
   v8::HandleScope handle_scope;
-
-  return m_obj->Equals(other->m_obj);
+  
+  return other.get() && m_obj->Equals(other->m_obj);
 }
 
 void CJavascriptObject::Dump(std::ostream& os) const

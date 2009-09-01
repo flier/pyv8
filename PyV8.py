@@ -564,7 +564,10 @@ class TestWrapper(unittest.TestCase):
                     return a();    
                 };
                 """)
+            
             self.assertEquals("abc", str(func()))
+            self.assert_(func != None)
+            self.assertFalse(func == None)
         
     def testJSError(self):
         with JSContext() as ctxt:
