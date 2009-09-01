@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\lib\v8\inc;..\lib\boost\inc;..\lib\python\inc"
+				AdditionalIncludeDirectories="&quot;$(V8_HOME)\include&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -67,7 +67,7 @@
 				AdditionalDependencies="Winmm.lib Ws2_32.lib"
 				OutputFile="$(OutDir)\_$(ProjectName).pyd"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\lib\v8\lib;..\lib\boost\lib;..\lib\python\lib"
+				AdditionalLibraryDirectories="&quot;$(V8_HOME)\tools\visual_studio\$(ConfigurationName)\lib&quot;;&quot;$(BOOST_HOME)\stage\lib&quot;;&quot;$(PYTHON_HOME)\libs&quot;"
 				IgnoreDefaultLibraryNames="libcmt.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -124,7 +124,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\lib\v8\inc;..\lib\boost\inc;..\lib\python\inc"
+				AdditionalIncludeDirectories="&quot;$(V8_HOME)\include&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -147,7 +147,7 @@
 				AdditionalDependencies="Winmm.lib Ws2_32.lib"
 				OutputFile="$(OutDir)\_$(ProjectName).pyd"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\lib\v8\lib;..\lib\boost\lib;..\lib\python\lib"
+				AdditionalLibraryDirectories="&quot;$(V8_HOME)\tools\visual_studio\$(ConfigurationName)\lib&quot;;&quot;$(BOOST_HOME)\stage\lib&quot;;&quot;$(PYTHON_HOME)\libs&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
