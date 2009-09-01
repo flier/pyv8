@@ -5,21 +5,37 @@ from distutils.core import setup, Extension
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "PyV8.cpp"]
 
 macros = [("BOOST_PYTHON_STATIC_LIB", None)]
-third_party_libraries = ["python", "boost", "v8"]
 
-include_dirs = [os.path.join("lib", lib, "inc") for lib in third_party_libraries]
-library_dirs = [os.path.join("lib", lib, "lib") for lib in third_party_libraries]
+include_dirs = [
+  os.path.join(os.environ.get('V8_HOME'), 'include'),
+]
+library_dirs = []
 libraries = []
 extra_compile_args = []
 extra_link_args = []
   
 if os.name == "nt":
-  include_dirs += os.environ["INCLUDE"].split(';')
-  library_dirs += os.environ["LIB"].split(';')
+  include_dirs += [   
+    os.environ.get('BOOST_HOME'),
+    os.path.join(os.environ.get('PYTHON_HOME'), 'include'),
+  ]
+  library_dirs += [
+    os.path.join(os.environ.get('V8_HOME'), 'tools\\visual_studio\\Release\\lib'),
+    os.path.join(os.environ.get('BOOST_HOME'), 'stage/lib'),
+    os.path.join(os.environ.get('PYTHON_HOME'), 'libs'),
+  ]  
+  
+  include_dirs += [p for p in os.environ["INCLUDE"].split(';') if p]
+  library_dirs += [p for p in os.environ["LIB"].split(';') if p]
+  
   libraries += ["winmm", "ws2_32"]
   extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
   extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
 elif os.name == "posix":
+  library_dirs += [
+    os.environ.get('V8_HOME'),
+  ]
+  
   libraries = ["boost_python", "v8", "rt"]
 
 pyv8 = Extension(name = "_PyV8",
@@ -33,7 +49,7 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      version='0.6',
+      version='0.7',
       description='Python Wrapper for Google V8 Engine',
       long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
       platforms="x86",
@@ -45,7 +61,7 @@ setup(name='PyV8',
       py_modules=['PyV8'],
       ext_modules=[pyv8],
       classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Plugins',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
@@ -61,4 +77,4 @@ setup(name='PyV8',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Utilities', 
       ]
-      )
+    )
