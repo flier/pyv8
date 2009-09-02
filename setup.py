@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os, os.path
 from distutils.core import setup, Extension
 
@@ -36,7 +37,10 @@ elif os.name == "posix":
     os.environ.get('V8_HOME'),
   ]
   
-  libraries = ["boost_python", "v8", "rt"]
+  libraries += ["boost_python", "v8", "rt"]
+  
+  if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
+    extra_link_args += ["-fPIC"]
 
 pyv8 = Extension(name = "_PyV8",
                  sources = [os.path.join("src", file) for file in source_files],                 
