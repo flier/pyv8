@@ -423,7 +423,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   v8::Handle<v8::Value> result;
 
-  if (PyLong_Check(obj.ptr()))
+  if (PyLong_CheckExact(obj.ptr()))
   {
     result = v8::Integer::New(::PyLong_AsLong(obj.ptr()));
   }
@@ -431,11 +431,11 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {
     result = v8::Boolean::New(py::extract<bool>(obj));
   }
-  else if (PyString_Check(obj.ptr()))
+  else if (PyString_CheckExact(obj.ptr()))
   {
     result = v8::String::New(PyString_AS_STRING(obj.ptr()));
   }
-  else if (PyUnicode_Check(obj.ptr()))
+  else if (PyUnicode_CheckExact(obj.ptr()))
   {
     result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
   }
@@ -443,7 +443,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {   
     result = v8::Number::New(py::extract<double>(obj));
   }
-  else if (PyDateTime_Check(obj.ptr()) || PyDate_Check(obj.ptr()))
+  else if (PyDateTime_CheckExact(obj.ptr()) || PyDate_CheckExact(obj.ptr()))
   {
     tm ts = { 0 };
 
@@ -458,7 +458,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
     result = v8::Date::New(((double) mktime(&ts)) * 1000 + ms / 1000);
   }
-  else if (PyTime_Check(obj.ptr()))
+  else if (PyTime_CheckExact(obj.ptr()))
   {
     tm ts = { 0 };
 
