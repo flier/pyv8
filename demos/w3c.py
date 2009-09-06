@@ -129,6 +129,19 @@ class Node(PyV8.JSClass):
     def cloneNode(self, deep):
         pass
     
+    @staticmethod
+    def wrap(doc, obj):
+        if obj is None:
+            return None
+        
+        if type(obj) == BeautifulSoup.CData:
+            return CDATASection(doc, obj)
+        
+        if type(obj) == BeautifulSoup.NavigableString:
+            return Text(doc, obj)        
+        
+        return Element(doc, obj)
+    
 class NodeList(PyV8.JSClass):
     def __init__(self, doc, nodes):
         self.doc = doc
@@ -279,12 +292,25 @@ class Element(Node):
     def childNodes(self):
         return NodeList(self.doc, self.tag.contents)
         
-    def checkChild(self, child):
-        if not isinstance(child, Element):
-            raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
+    @property
+    def firstChild(self):
+        return Node.wrap(self.doc, self.tag.contents[0]) if len(self.tag) > 0 else None
             
-        if child.tag.parser != self.tag.parser:
-            raise DOMException(DOMException.WRONG_DOCUMENT_ERR)        
+    @property
+    def lastChild(self):
+        return Node.wrap(self.doc, self.tag.contents[-1]) if len(self.tag) > 0 else None
+            
+    @property
+    def nextSibling(self):
+        return Node.wrap(self.doc, self.tag.nextSibling)
+            
+    @property
+    def previousSibling(self):
+        return Node.wrap(self.doc, self.tag.previousSibling)
+        
+    def checkChild(self, child):
+        if not isinstance(child, Node):
+            raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)            
         
     def findChild(self, child):
         try:
@@ -292,11 +318,11 @@ class Element(Node):
         except ValueError:
             return -1
         
-    def insertBefore(self, newChild, refChild):
+    def insertBefore(self, newChild, refChild):        
         self.checkChild(newChild)
         self.checkChild(refChild)
         
-        index = self.findChild(refChild)
+        index = self.findChild(refChild)        
         
         if index < 0:
             self.tag.append(newChild.tag)            
@@ -368,16 +394,16 @@ class Element(Node):
         pass
 
 class CharacterData(Node):
-    def __init__(self, doc, str):
+    def __init__(self, doc, tag):
         Node.__init__(self, doc)
         
-        self.str = str
+        self.tag = tag
         
     def __str__(self):
-        return self.str
+        return str(self.tag)
         
     def getData(self):
-        return unicode(self.str)
+        return unicode(self.tag)
         
     def setData(self, data):
         raise DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR)
@@ -386,10 +412,10 @@ class CharacterData(Node):
     
     @property
     def length(self):
-        return len(self.str)
+        return len(self.tag)
         
     def substringData(self, offset, count):
-        return self.str[offset:offset+count]
+        return self.tag[offset:offset+count]
         
     def appendData(self, arg):
         raise DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR)
@@ -404,11 +430,15 @@ class CharacterData(Node):
         raise DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR)
 
 class Text(CharacterData):
+    def __repr__(self):
+        return "<Text '%s' at 0x%08X>" % (self.tag, id(self))
+    
     def splitText(self, offset):
         raise DOMException(DOMException.NO_MODIFICATION_ALLOWED_ERR)
         
 class CDATASection(Text):
-    pass
+    def __repr__(self):
+        return "<CDATA '%s' at 0x%08X>" % (self.tag, id(self))
 
 class Comment(CharacterData):
     pass
@@ -511,7 +541,7 @@ class Document(Node):
         return self
     
     @property
-    def documentElement(self):
+    def documentElement(self):        
         return Element(self, self.doc.find('html'))
         
     onCreateElement = None
