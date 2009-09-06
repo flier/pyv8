@@ -41,6 +41,12 @@ elif os.name == "posix":
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
+elif os.name == "mac": # contribute by Artur Ventura
+  include_dirs += [
+    os.environ.get('BOOST_HOME'),
+  ]
+  library_dirs += [os.path.join('/lib')]
+  libraries += ["boost_python", "v8", "c"]
 
 pyv8 = Extension(name = "_PyV8",
                  sources = [os.path.join("src", file) for file in source_files],                 
@@ -53,7 +59,7 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      version='0.7',
+      version='0.7.1',
       description='Python Wrapper for Google V8 Engine',
       long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
       platforms="x86",
