@@ -630,8 +630,61 @@ class HTMLCollection(PyV8.JSClass):
                 return DOMImplementation.createHTMLElement(self.doc, node) if node else None
             
         return None
+    
+class CSSStyleDeclaration(object):
+    def __init__(self, style):
+        self.props = dict([prop.strip().split(': ') for prop in style.split(';') if prop])
+        
+        for k, v in self.props.items():
+            if v and v[0] == v[-1] and v[0] in ['"', "'"]:
+                self.props[k] = v[1:-1]                
+        
+    @property
+    def cssText(self):
+        return '; '.join(["%s: %s" % (k, v) for k, v in self.props.items()])
+        
+    def getPropertyValue(self, name):
+        return self.props.get(name, '')
+        
+    def removeProperty(self, name):
+        v = self.props.get(name, '')
+        
+        if v:
+            del self.props[name]
+            
+        return v
+    
+    @property
+    def length(self):
+        return len(self.props)
+        
+    def item(self, index):
+        if type(index) == str:
+            return self.props.get(index, '')
+        
+        if index < 0 or index >= len(self.props):
+            return ''
+        
+        return self.props[self.props.keys()[index]]
+        
+    def __getattr__(self, name):
+        if hasattr(object, name):
+            return object.__getattribute__(self, name)
+        else:
+            return object.__getattribute__(self, 'props').get(name, '')
+        
+    def __setattr__(self, name, value):
+        if name == 'props':
+            object.__setattr__(self, name, value)
+        else:
+            object.__getattribute__(self, 'props')[name] = value
+    
+class ElementCSSInlineStyle(object):
+    @property
+    def style(self):
+        return CSSStyleDeclaration(self.tag['style'] if self.tag.has_key('style') else '')
 
-class HTMLElement(Element):    
+class HTMLElement(Element, ElementCSSInlineStyle):    
     id = attr_property("id")
     title = attr_property("title")
     lang = attr_property("lang")
@@ -1360,6 +1413,28 @@ class HTMLDocumentTest(unittest.TestCase):
         self.assert_(isinstance(forms[0], HTMLFormElement))
         self.assertEquals("first", forms[0].name)
         self.assertEquals("second", forms[1].name)
+        
+class CSSStyleDeclarationTest(unittest.TestCase):
+    def testParse(self):
+        style = 'width: "auto"; border: "none"; font-family: "serif"; background: "red"'
+        
+        css = CSSStyleDeclaration(style)
+        
+        self.assert_(css)
+        self.assertEquals('width: auto; font-family: serif; border: none; background: red', css.cssText)
+        self.assertEquals(4, css.length)
+        
+        self.assertEquals('auto', css.getPropertyValue('width'))
+        self.assertEquals('', css.getPropertyValue('height'))
+        
+        self.assertEquals('auto', css.item(0))
+        self.assertEquals('auto', css.width)
+        
+        css.width = 'none'
+        
+        self.assertEquals('none', css.getPropertyValue('width'))
+        self.assertEquals('none', css.item(0))
+        self.assertEquals('none', css.width)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
