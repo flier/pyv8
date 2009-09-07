@@ -514,7 +514,7 @@ class TestContext(unittest.TestCase):
             self.assertEquals(3, int(env1.locals.prop))            
 
 class TestWrapper(unittest.TestCase):    
-    def testConverter(self):
+    def testAutoConverter(self):
         with JSContext() as ctxt:
             ctxt.eval("""
                 var_i = 1;
@@ -550,6 +550,60 @@ class TestWrapper(unittest.TestCase):
             self.assert_("var_f" in attrs)
             self.assert_("var_s" in attrs)
             self.assert_("var_b" in attrs)
+            
+    def testExactConverter(self):
+        class MyInteger(int, JSClass):
+            pass
+        
+        class MyString(str, JSClass):
+            pass
+        
+        class MyUnicode(unicode, JSClass):
+            pass
+        
+        class MyDateTime(datetime.time, JSClass):
+            pass
+        
+        class Global(JSClass):
+            var_bool = True
+            var_int = 1
+            var_float = 1.0
+            var_str = 'str'
+            var_unicode = u'unicode'
+            var_datetime = datetime.datetime.now()
+            var_date = datetime.date.today()
+            var_time = datetime.time()
+            
+            var_myint = MyInteger()
+            var_mystr = MyString('mystr')
+            var_myunicode = MyUnicode('myunicode')
+            var_mytime = MyDateTime()
+            
+        with JSContext(Global()) as ctxt:
+            typename = ctxt.eval("function (name) { return this[name].constructor.name; }")
+            typeof = ctxt.eval("function (name) { return typeof(this[name]); }")
+            
+            self.assertEquals('Boolean', typename('var_bool'))
+            self.assertEquals('Number', typename('var_int'))
+            self.assertEquals('Number', typename('var_float'))
+            self.assertEquals('String', typename('var_str'))
+            self.assertEquals('String', typename('var_unicode'))
+            self.assertEquals('Date', typename('var_datetime'))
+            self.assertEquals('Date', typename('var_date'))
+            self.assertEquals('Date', typename('var_time'))
+            
+            # TODO: check the convert strategy for number
+            self.assertEquals('Number', typename('var_myint'))
+            self.assertEquals('number', typeof('var_myint'))
+            
+            # TODO: fill the constructor name of python object
+            self.assertEquals('', typename('var_mystr'))
+            self.assertEquals('', typename('var_myunicode'))
+            self.assertEquals('', typename('var_mytime'))            
+            
+            self.assertEquals('object', typeof('var_mystr'))
+            self.assertEquals('object', typeof('var_myunicode'))
+            self.assertEquals('object', typeof('var_mytime'))  
             
     def testFunction(self):
         with JSContext() as ctxt:
