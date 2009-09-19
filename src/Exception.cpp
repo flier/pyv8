@@ -23,6 +23,7 @@ void CJavascriptException::Expose(void)
     .def_readonly("startCol", &CJavascriptException::GetStartColumn)
     .def_readonly("endCol", &CJavascriptException::GetEndColumn)
     .def_readonly("sourceLine", &CJavascriptException::GetSourceLine)
+    .def_readonly("stackTrace", &CJavascriptException::GetStackTrace)
     .def("print_tb", &CJavascriptException::PrintCallStack);
 
   py::register_exception_translator<CJavascriptException>(ExceptionTranslator::Translate);
@@ -118,7 +119,21 @@ const std::string CJavascriptException::GetSourceLine(void)
 
   return std::string();
 }
+const std::string CJavascriptException::GetStackTrace(void)
+{
+  assert(v8::Context::InContext());
 
+  v8::HandleScope handle_scope;
+
+  if (!m_stack.IsEmpty())
+  {
+    v8::String::AsciiValue stack(v8::Handle<v8::String>::Cast(m_stack));
+
+    return std::string(*stack, stack.length());
+  }
+
+  return std::string();
+}
 const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 {
   assert(v8::Context::InContext());

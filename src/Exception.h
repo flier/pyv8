@@ -52,7 +52,7 @@ class CJavascriptException : public std::runtime_error
 {
   PyObject *m_type;
 
-  v8::Persistent<v8::Value> m_exc;
+  v8::Persistent<v8::Value> m_exc, m_stack;
   v8::Persistent<v8::Message> m_msg;
 
   friend struct ExceptionTranslator;
@@ -62,7 +62,8 @@ protected:
   CJavascriptException(v8::TryCatch& try_catch)
     : std::runtime_error(Extract(try_catch)), m_type(NULL),
       m_exc(v8::Persistent<v8::Value>::New(try_catch.Exception())),
-      m_msg(v8::Persistent<v8::Message>::New(try_catch.Message()))
+      m_msg(v8::Persistent<v8::Message>::New(try_catch.Message())),
+      m_stack(v8::Persistent<v8::Value>::New(try_catch.StackTrace()))
   {
     
   }
@@ -87,6 +88,7 @@ public:
   int GetStartColumn(void);
   int GetEndColumn(void);
   const std::string GetSourceLine(void);
+  const std::string GetStackTrace(void);
   
   void PrintCallStack(py::object file);
 

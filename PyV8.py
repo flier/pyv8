@@ -687,6 +687,10 @@ class TestWrapper(unittest.TestCase):
                     self.assertEqual(34, e.startCol)
                     self.assertEqual(35, e.endCol)
                     self.assertEqual('throw Error("hello world");', e.sourceLine.strip())
+                    self.assertEqual('Error: hello world\n' +
+                                     '    at Error (unknown source)\n' +
+                                     '    at hello (test:14:34)\n' +
+                                     '    at test:17:24', e.stackTrace)
         
     def testPythonException(self):
         class Global(JSClass):
