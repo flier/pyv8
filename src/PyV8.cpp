@@ -2,6 +2,7 @@
 //
 #include "Engine.h"
 #include "Debug.h"
+#include "Locker.h"
 
 BOOST_PYTHON_MODULE(_PyV8)
 {
@@ -10,4 +11,5 @@ BOOST_PYTHON_MODULE(_PyV8)
   CContext::Expose();
   CEngine::Expose();
   CDebug::Expose();  
+  CLocker::Expose();
 }

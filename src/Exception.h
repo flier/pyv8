@@ -24,6 +24,20 @@ namespace py = boost::python;
 # pragma warning( pop )
 #endif 
 
+struct CPythonGIL
+{
+  PyGILState_STATE m_state;
+
+  CPythonGIL() : m_state(::PyGILState_Ensure())
+  {
+
+  }
+  ~CPythonGIL()
+  {
+    ::PyGILState_Release(m_state);
+  }
+};
+
 class CJavascriptException;
 
 struct ExceptionTranslator

@@ -162,6 +162,8 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 
 void ExceptionTranslator::Translate(CJavascriptException const& ex) 
 {
+  CPythonGIL python_gil;
+
   if (ex.m_type)
   {
     ::PyErr_SetString(ex.m_type, ex.what());
@@ -183,6 +185,8 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
 
 void *ExceptionTranslator::Convertible(PyObject* obj)
 {
+  CPythonGIL python_gil;
+
   if (1 != ::PyObject_IsInstance(obj, ::PyExc_Exception))
     return NULL;
 
@@ -199,6 +203,8 @@ void *ExceptionTranslator::Convertible(PyObject* obj)
 void ExceptionTranslator::Construct(PyObject* obj, 
   py::converter::rvalue_from_python_stage1_data* data)
 {
+  CPythonGIL python_gil;
+
   py::object err(py::handle<>(py::borrowed(obj)));
   py::object impl = err.attr("_impl");
 
@@ -214,5 +220,7 @@ void ExceptionTranslator::Construct(PyObject* obj,
 
 void CJavascriptException::PrintCallStack(py::object file)
 {  
+  CPythonGIL python_gil;
+
   m_msg->PrintCurrentStackTrace(::PyFile_AsFile(file.ptr()));
 }

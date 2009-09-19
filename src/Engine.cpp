@@ -66,6 +66,8 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
   v8::Handle<v8::Script> script;
 
+  Py_BEGIN_ALLOW_THREADS
+
   if (line >= 0 && col >= 0)
   {
     v8::ScriptOrigin script_origin(script_name, v8::Integer::New(line), v8::Integer::New(col));
@@ -76,6 +78,8 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
   {
     script = v8::Script::Compile(script_source, script_name);
   }
+
+  Py_END_ALLOW_THREADS 
 
   if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
@@ -93,7 +97,13 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::Value> result = script->Run();
+  v8::Handle<v8::Value> result;
+
+  Py_BEGIN_ALLOW_THREADS
+
+  result = script->Run();
+
+  Py_END_ALLOW_THREADS
 
   if (result.IsEmpty())
   {

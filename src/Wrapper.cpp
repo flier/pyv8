@@ -82,9 +82,11 @@ void CWrapper::Expose(void)
 }
 
 void CPythonObject::ThrowIf(void)
-{
+{  
+  CPythonGIL python_gil;
+
   assert(::PyErr_Occurred());
-  
+
   v8::HandleScope handle_scope;
 
   PyObject *exc, *val, *trb;  
@@ -143,6 +145,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   TRY_HANDLE_EXCEPTION()
   
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -166,6 +169,7 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -186,6 +190,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -204,6 +209,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -221,6 +227,7 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;  
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -249,6 +256,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -264,6 +272,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -282,6 +291,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -295,6 +305,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -310,6 +321,7 @@ v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& i
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;  
+  CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -345,6 +357,7 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
   TRY_HANDLE_EXCEPTION()
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   py::object self;
   
@@ -409,6 +422,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   assert(v8::Context::InContext());
 
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
 
   if (obj.ptr() == Py_None) return v8::Null();
   if (obj.ptr() == Py_True) return v8::True();
@@ -565,9 +579,10 @@ void CJavascriptObject::DelAttr(const std::string& name)
 }
 py::list CJavascriptObject::GetAttrList(void)
 {
-  py::list attrs;
-
   v8::HandleScope handle_scope;
+  CPythonGIL python_gil;
+
+  py::list attrs;
 
   v8::TryCatch try_catch;
 
@@ -727,6 +742,8 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 
 py::object CJavascriptObject::Wrap(CJavascriptObject *obj)
 {
+  CPythonGIL python_gil;
+
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObjectPtr(obj))));
 }
 
@@ -864,9 +881,15 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
     params[i] = CPythonObject::Wrap(args[i]);
   }
 
-  v8::Handle<v8::Value> result = func->Call(
+  v8::Handle<v8::Value> result;
+
+  Py_BEGIN_ALLOW_THREADS
+
+  result = func->Call(
     self.IsEmpty() ? v8::Context::GetCurrent()->Global() : self,
     params.size(), params.empty() ? NULL : &params[0]);
+
+  Py_END_ALLOW_THREADS
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 

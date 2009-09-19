@@ -7,7 +7,7 @@ import StringIO
 
 import _PyV8
 
-__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", "debugger"]
+__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", "JSLocker", "JSUnlocker", "debugger"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -30,6 +30,30 @@ _PyV8._JSError._jsclass = JSError
 
 JSArray = _PyV8.JSArray
 
+class JSLocker(_PyV8.JSLocker):
+    def __enter__(self):
+        self.enter()
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.leave()
+        
+    def __nonzero__(self):
+        return self.entered()
+
+class JSUnlocker(_PyV8.JSUnlocker):
+    def __enter__(self):
+        self.enter()
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.leave()
+
+    def __nonzero__(self):
+        return self.entered()
+        
 class JSClass(object):    
     def toString(self):
         "Returns a string representation of an object."
@@ -369,6 +393,13 @@ class JSEngine(_PyV8.JSEngine):
         del self
 
 class JSContext(_PyV8.JSContext):
+    def __init__(self, obj=None):
+        if JSLocker.actived:
+            self.lock = JSLocker()
+            self.lock.enter()
+            
+        _PyV8.JSContext.__init__(self, obj)
+        
     def __enter__(self):
         self.enter()
         
@@ -377,7 +408,11 @@ class JSContext(_PyV8.JSContext):
     def __exit__(self, exc_type, exc_value, traceback):
         self.leave()
         
-        del self        
+        if hasattr(JSLocker, 'lock'):
+            self.lock.leave()
+            self.lock = None
+            
+        del self
         
 # contribute by marc boeker <http://code.google.com/u/marc.boeker/>
 def convert(obj):    
@@ -849,7 +884,35 @@ class TestWrapper(unittest.TestCase):
                 
         with JSContext(Global()) as ctxt:    
             self.assertEquals(os.getcwd(), ctxt.eval("fs.cwd"))
-    
+            
+class TestMutithread(unittest.TestCase):
+    def testLocker(self):
+        self.assertFalse(JSLocker.actived)
+        self.assertFalse(JSLocker.locked)
+        with JSContext() as ctxt:
+            with JSLocker() as outter_locker:        
+                self.assertTrue(JSLocker.actived)
+                self.assertTrue(JSLocker.locked)
+                
+                self.assertTrue(outter_locker)
+                
+                with JSLocker() as inner_locker:
+                    self.assertTrue(JSLocker.locked)
+                    
+                    self.assertTrue(outter_locker)
+                    self.assertTrue(inner_locker)
+                    
+                    with JSUnlocker() as unlocker:
+                        self.assertFalse(JSLocker.locked)
+                    
+                        self.assertTrue(outter_locker)
+                        self.assertTrue(inner_locker)
+                        
+                    self.assertTrue(JSLocker.locked)
+                    
+        self.assertTrue(JSLocker.actived)
+        self.assertFalse(JSLocker.locked)        
+        
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:

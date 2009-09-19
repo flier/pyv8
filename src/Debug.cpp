@@ -35,7 +35,7 @@ void CDebug::SetEnable(bool enable)
 void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
   v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope;  
   
   CDebug *pThis = static_cast<CDebug *>(v8::Handle<v8::External>::Cast(data)->Value());
 
@@ -43,9 +43,11 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 
   if (pThis->m_onDebugEvent.ptr() == Py_None) return;
 
-  v8::Context::Scope context_scope(pThis->m_global_context);
+  v8::Context::Scope context_scope(pThis->m_global_context);  
 
   CJavascriptObjectPtr event_obj(new CJavascriptObject(event_data));
+
+  CPythonGIL python_gil;
 
   py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
 }
@@ -53,8 +55,10 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data)
 {
   if (s_onDebugMessage.ptr() == Py_None) return;
-  
+
   std::wstring msg(reinterpret_cast<std::wstring::const_pointer>(message), length);
+
+  CPythonGIL python_gil;
 
   py::call<void>(s_onDebugMessage.ptr(), msg);
 }

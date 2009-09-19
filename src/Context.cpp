@@ -48,7 +48,7 @@ CContext::CContext(v8::Handle<v8::Context> context)
 
 CContext::CContext(py::object global)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope;  
 
   m_context = v8::Context::New();
 
