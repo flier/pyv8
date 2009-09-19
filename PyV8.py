@@ -919,6 +919,7 @@ class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
             self.assert_(str(JSEngine.version).startswith("1."))
+            self.assertFalse(JSEngine.dead)
         
     def testCompile(self):
         with JSContext() as ctxt:

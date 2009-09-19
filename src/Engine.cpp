@@ -12,13 +12,33 @@ void CEngine::Expose(void)
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
 
-    .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId)
+    .add_static_property("dead", &v8::V8::IsDead,
+                         "Check if V8 is dead and therefore unusable.")
 
-    .def("terminateThread", terminateThread)
+    .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
+                         "the V8 thread id of the calling thread.")
+
+    .def("terminateThread", terminateThread,
+         "Forcefully terminate execution of a JavaScript thread.")
     .staticmethod("terminateThread")
 
-    .def("terminateAllThreads", terminateAllThreads)
+    .def("terminateAllThreads", terminateAllThreads,
+         "Forcefully terminate the current thread of JavaScript execution.")
     .staticmethod("terminateAllThreads")
+
+    .def("dispose", &v8::V8::Dispose,
+         "Releases any resources used by v8 and stops any utility threads "
+         "that may be running. Note that disposing v8 is permanent, "
+         "it cannot be reinitialized.")
+    .staticmethod("dispose")
+
+    .def("idle", &v8::V8::IdleNotification,
+         "Optional notification that the embedder is idle.")
+    .staticmethod("idle")
+
+    .def("lowMemory", &v8::V8::LowMemoryNotification,
+         "Optional notification that the system is running low on memory.")
+    .staticmethod("lowMemory")
 
     .def("compile", &CEngine::Compile, (py::arg("source"), 
                                         py::arg("name") = std::string(),
