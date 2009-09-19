@@ -848,13 +848,15 @@ class TestWrapper(unittest.TestCase):
         
     def testDate(self):
         with JSContext() as ctxt:            
-            now = ctxt.eval("new Date();")
+            now1 = ctxt.eval("new Date();")
             
-            self.assert_(now)
+            self.assert_(now1)
             
-            delta = datetime.datetime.utcnow() - now
+            now2 = datetime.datetime.utcnow()
             
-            self.assertEquals(0, delta.seconds)
+            delta = now2 - now1 if now2 > now1 else now1 - now2
+            
+            self.assert_(delta < datetime.timedelta(seconds=1))
             
             func = ctxt.eval("function (d) { return d.toString(); }")
             
