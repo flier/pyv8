@@ -423,7 +423,11 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   v8::Handle<v8::Value> result;
 
-  if (PyLong_CheckExact(obj.ptr()))
+  if (PyInt_CheckExact(obj.ptr()))
+  {
+    result = v8::Integer::New(::PyInt_AsLong(obj.ptr()));    
+  }
+  else if (PyLong_CheckExact(obj.ptr()))
   {
     result = v8::Integer::New(::PyLong_AsLong(obj.ptr()));
   }
@@ -439,7 +443,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {
     result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
   }
-  else if (::PyNumber_Check(obj.ptr()))
+  else if (PyFloat_CheckExact(obj.ptr()))
   {   
     result = v8::Number::New(py::extract<double>(obj));
   }

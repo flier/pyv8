@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 
-import sys
+import sys, os
 import StringIO
 
 import _PyV8
@@ -590,17 +590,15 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('String', typename('var_unicode'))
             self.assertEquals('Date', typename('var_datetime'))
             self.assertEquals('Date', typename('var_date'))
-            self.assertEquals('Date', typename('var_time'))
-            
-            # TODO: check the convert strategy for number
-            self.assertEquals('Number', typename('var_myint'))
-            self.assertEquals('number', typeof('var_myint'))
+            self.assertEquals('Date', typename('var_time'))            
             
             # TODO: fill the constructor name of python object
+            self.assertEquals('', typename('var_myint'))
             self.assertEquals('', typename('var_mystr'))
             self.assertEquals('', typename('var_myunicode'))
             self.assertEquals('', typename('var_mytime'))            
             
+            self.assertEquals('object', typeof('var_myint'))
             self.assertEquals('object', typeof('var_mystr'))
             self.assertEquals('object', typeof('var_myunicode'))
             self.assertEquals('object', typeof('var_mytime'))  
@@ -837,6 +835,20 @@ class TestWrapper(unittest.TestCase):
             func = ctxt.eval("function (msg) { return msg.length; }")
             
             self.assertEquals(2, func(u"测试"))
+            
+    def testClassicStyleObject(self):
+        class FileSystemWarpper:
+            @property
+            def cwd(self):
+                return os.getcwd() 
+            
+        class Global:
+            @property
+            def fs(self):
+                return FileSystemWarpper()
+                
+        with JSContext(Global()) as ctxt:    
+            self.assertEquals(os.getcwd(), ctxt.eval("fs.cwd"))
     
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
