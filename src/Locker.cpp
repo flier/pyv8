@@ -8,10 +8,11 @@ void CLocker::Expose(void)
     .add_static_property("locked", &v8::Locker::IsLocked,
                          "whether or not the locker is locked by the current thread.")
 
-    .def("StartPreemption", &v8::Locker::StartPreemption)    
-    .def("StopPreemption", &v8::Locker::StopPreemption)
-    .staticmethod("StartPreemption")
-    .staticmethod("StopPreemption")
+    .def("startPreemption", &v8::Locker::StartPreemption)    
+    .staticmethod("startPreemption")
+
+    .def("stopPreemption", &v8::Locker::StopPreemption)    
+    .staticmethod("stopPreemption")
 
     .def("entered", &CLocker::entered)
 

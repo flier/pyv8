@@ -6,8 +6,19 @@ void CEngine::Expose(void)
   v8::V8::SetFatalErrorHandler(ReportFatalError);
   v8::V8::AddMessageListener(ReportMessage);
 
+  void (*terminateThread)(int) = &v8::V8::TerminateExecution;
+  void (*terminateAllThreads)(void) = &v8::V8::TerminateExecution;
+
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
+
+    .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId)
+
+    .def("terminateThread", terminateThread)
+    .staticmethod("terminateThread")
+
+    .def("terminateAllThreads", terminateAllThreads)
+    .staticmethod("terminateAllThreads")
 
     .def("compile", &CEngine::Compile, (py::arg("source"), 
                                         py::arg("name") = std::string(),
