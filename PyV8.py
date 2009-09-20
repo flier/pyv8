@@ -961,7 +961,34 @@ class TestMutithread(unittest.TestCase):
         self.assert_((time.time() - now) >= 1)        
     
     def testMultiJavascriptThread(self):
-        pass
+        import time, thread, threading
+        
+        class Global:
+            result = []
+            
+            def add(self, value):
+                with JSUnlocker() as unlocker:
+                    time.sleep(0.1)
+                    
+                    self.result.append(value)
+                    
+        g = Global()
+        
+        def run():            
+            with JSContext(g) as ctxt:                
+                ctxt.eval("""
+                    for (i=0; i<10; i++)
+                        add(i);
+                """)
+                
+        threads = [threading.Thread(target=run), threading.Thread(target=run)]        
+        
+        with JSLocker() as locker:
+            for t in threads: t.start()
+            
+        for t in threads: t.join()
+        
+        self.assertEquals([i / 2 for i in range(20)], g.result)
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
