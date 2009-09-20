@@ -917,7 +917,51 @@ class TestMutithread(unittest.TestCase):
                     self.assertTrue(JSLocker.locked)
                     
         self.assertTrue(JSLocker.actived)
-        self.assertFalse(JSLocker.locked)        
+        self.assertFalse(JSLocker.locked)
+        
+    def testMultiPythonThread(self):
+        import time, threading
+        
+        class Global:
+            count = 0
+            started = threading.Event()
+            finished = threading.Semaphore(0)
+            
+            def sleep(self, ms):
+                time.sleep(ms / 1000.0)
+                
+                self.count += 1
+            
+        g = Global()
+        
+        def run():
+            with JSContext(g) as ctxt:
+                ctxt.eval("""
+                    started.wait();                    
+                    
+                    for (i=0; i<10; i++)
+                    {                        
+                        sleep(100);
+                    }
+                    
+                    finished.release();
+                """)
+        
+        threading.Thread(target=run).start()        
+        
+        now = time.time()
+        
+        self.assertEqual(0, g.count)
+        
+        g.started.set()
+        g.finished.acquire()
+        
+        self.assertEqual(10, g.count)
+        
+        self.assert_((time.time() - now) >= 1)        
+    
+    def testMultiJavascriptThread(self):
+        pass
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
