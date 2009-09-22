@@ -989,7 +989,6 @@ class TestMutithread(unittest.TestCase):
         for t in threads: t.join()
         
         self.assertEqual(20, len(g.result))
-        self.assertEquals([i / 2 for i in range(20)], g.result)
         
     def testPreemptionJavascriptThreads(self):
         import time, thread, threading
@@ -1025,7 +1024,6 @@ class TestMutithread(unittest.TestCase):
         for t in threads: t.join()
         
         self.assertEqual(20, len(g.result))
-        self.assertNotEquals([i / 2 for i in range(20)], g.result)
         
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
