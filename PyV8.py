@@ -1040,6 +1040,21 @@ class TestEngine(unittest.TestCase):
                 
                 self.assertEquals("1+2", s.source)
                 self.assertEquals(3, int(s.run()))
+                
+    def testPrecompile(self):
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                data = engine.precompile("1+2")
+                
+                self.assert_(data)
+                self.assertEquals(16, len(data))
+                
+                s = engine.compile("1+2", precompiled=data)
+                
+                self.assert_(isinstance(s, _PyV8.JSScript))
+                
+                self.assertEquals("1+2", s.source)
+                self.assertEquals(3, int(s.run()))                
             
     def testEval(self):
         with JSContext() as ctxt:

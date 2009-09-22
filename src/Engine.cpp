@@ -40,10 +40,12 @@ void CEngine::Expose(void)
          "Optional notification that the system is running low on memory.")
     .staticmethod("lowMemory")
 
+    .def("precompile", &CEngine::PreCompile, (py::arg("source")))
     .def("compile", &CEngine::Compile, (py::arg("source"), 
                                         py::arg("name") = std::string(),
                                         py::arg("line") = -1,
-                                        py::arg("col") = -1))    
+                                        py::arg("col") = -1,
+                                        py::arg("precompiled") = py::object()))    
     ;
 
   py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
@@ -54,7 +56,7 @@ void CEngine::Expose(void)
 
   py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
     py::objects::make_ptr_instance<CScript, 
-    py::objects::pointer_holder<boost::shared_ptr<CScript>,CScript> > >();
+    py::objects::pointer_holder<boost::shared_ptr<CScript>, CScript> > >();
 }
 
 void CEngine::ReportFatalError(const char* location, const char* message)
@@ -79,9 +81,41 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
   throw CJavascriptException(oss.str());
 }
 
+py::object CEngine::PreCompile(const std::string& src)
+{
+  v8::TryCatch try_catch;
+
+  std::auto_ptr<v8::ScriptData> precompiled;
+
+  Py_BEGIN_ALLOW_THREADS
+
+  precompiled.reset(v8::ScriptData::PreCompile(src.c_str(), src.size()));
+
+  Py_END_ALLOW_THREADS 
+
+  if (!precompiled.get()) CJavascriptException::ThrowIf(try_catch);
+
+  py::object obj(py::handle<>(::PyBuffer_New(sizeof(unsigned) * precompiled->Length())));
+
+  void *buf = NULL;
+  Py_ssize_t len = 0;
+
+  if (0 == ::PyObject_AsWriteBuffer(obj.ptr(), &buf, &len) && buf && len > 0)
+  {
+    memcpy(buf, precompiled->Data(), len);    
+  }
+  else
+  {
+    obj = py::object();
+  }
+
+  return obj;
+}
+
 boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, 
                                             const std::string name,
-                                            int line, int col)
+                                            int line, int col,
+                                            py::object precompiled)
 {
   if (!v8::Context::InContext())
   {
@@ -96,6 +130,18 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
   v8::Handle<v8::Value> script_name = name.empty() ? v8::Undefined() : v8::String::New(name.c_str());
 
   v8::Handle<v8::Script> script;
+  std::auto_ptr<v8::ScriptData> script_data;
+
+  if (PyBuffer_Check(precompiled.ptr()))
+  {
+    const void *buf = NULL;
+    Py_ssize_t len = 0;
+
+    if (0 == ::PyObject_AsReadBuffer(precompiled.ptr(), &buf, &len) && buf && len > 0)
+    {
+      script_data.reset(v8::ScriptData::New((unsigned *)buf, len/sizeof(unsigned)));
+    }
+  }
 
   Py_BEGIN_ALLOW_THREADS
 
@@ -103,11 +149,13 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
   {
     v8::ScriptOrigin script_origin(script_name, v8::Integer::New(line), v8::Integer::New(col));
 
-    script = v8::Script::Compile(script_source, &script_origin);
+    script = v8::Script::Compile(script_source, &script_origin, script_data.release());
   }
   else
   {
-    script = v8::Script::Compile(script_source, script_name);
+    v8::ScriptOrigin script_origin(script_name);
+
+    script = v8::Script::Compile(script_source, &script_origin, script_data.release());
   }
 
   Py_END_ALLOW_THREADS 

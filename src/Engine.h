@@ -16,8 +16,11 @@ protected:
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);  
 public:
+  py::object PreCompile(const std::string& src);
+
   CScriptPtr Compile(const std::string& src, const std::string name = std::string(),
-                     int line = -1, int col = -1);
+                     int line = -1, int col = -1, py::object precompiled = py::object());
+
   CJavascriptObjectPtr Execute(const std::string& src);
 
   void RaiseError(v8::TryCatch& try_catch);
