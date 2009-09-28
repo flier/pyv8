@@ -1,10 +1,23 @@
 #include "Engine.h"
 
+#undef COMPILER
+
+#include "src/v8.h"
+
+#include "src/bootstrapper.h"
+#include "src/natives.h"
+#include "src/platform.h"
+#include "src/serialize.h"
+#include "src/stub-cache.h"
+#include "src/heap.h"
+
+CEngine::CounterTable CEngine::m_counters;
+
 void CEngine::Expose(void)
 {
   v8::V8::Initialize();
-  v8::V8::SetFatalErrorHandler(ReportFatalError);
-  v8::V8::AddMessageListener(ReportMessage);
+  //v8::V8::SetFatalErrorHandler(ReportFatalError);
+  //v8::V8::AddMessageListener(ReportMessage);
 
   void (*terminateThread)(int) = &v8::V8::TerminateExecution;
   void (*terminateAllThreads)(void) = &v8::V8::TerminateExecution;
@@ -17,6 +30,12 @@ void CEngine::Expose(void)
 
     .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
                          "the V8 thread id of the calling thread.")
+
+    .def("serialize", &CEngine::Serialize)
+    .staticmethod("serialize")
+
+    .def("deserialize", &CEngine::Deserialize)
+    .staticmethod("deserialize")
 
     .def("terminateThread", terminateThread,
          "Forcefully terminate execution of a JavaScript thread.")
@@ -57,6 +76,92 @@ void CEngine::Expose(void)
   py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
     py::objects::make_ptr_instance<CScript, 
     py::objects::pointer_holder<boost::shared_ptr<CScript>, CScript> > >();
+
+  py::class_<CExtension, boost::noncopyable>("JSEntension", py::no_init)    
+    .def(py::init<const std::string&, py::object, py::list, bool>((py::arg("name"), 
+                                                                   py::arg("source_or_func"),
+                                                                   py::arg("dependencies") = py::list(),
+                                                                   py::arg("register") = true)))
+    .add_property("name", &CExtension::GetName)
+    .add_property("source", &CExtension::GetSource)
+    .add_property("dependencies", &CExtension::GetDependencies)
+
+    .add_property("autoEnable", &CExtension::IsAutoEnable, &CExtension::SetAutoEnable)
+
+    .add_property("registered", &CExtension::IsRegistered)
+    .def("register", &CExtension::Register)
+    ;
+}
+
+int *CEngine::CounterLookup(const char* name)
+{
+  CounterTable::const_iterator it = m_counters.find(name);
+
+  if (it == m_counters.end())
+    m_counters[name] = 0;
+
+  return &m_counters[name];
+}
+
+py::object CEngine::Serialize(void)
+{
+  v8::internal::byte* data = NULL;
+  int size = 0;
+
+  Py_BEGIN_ALLOW_THREADS
+
+  v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
+
+  v8::internal::Serializer::Enable();
+
+  v8::internal::Heap::CollectAllGarbage(false);
+
+  v8::internal::Serializer serializer;
+
+  serializer.Serialize();
+
+  serializer.Finalize(&data, &size);
+
+  Py_END_ALLOW_THREADS 
+
+  py::object obj(py::handle<>(::PyBuffer_New(size)));
+
+  void *buf = NULL;
+  Py_ssize_t len = 0;
+
+  if (0 == ::PyObject_AsWriteBuffer(obj.ptr(), &buf, &len) && buf && len > 0)
+  {
+    memcpy(buf, data, len);    
+  }
+  else
+  {
+    obj = py::object();
+  }
+
+  return obj;
+}
+void CEngine::Deserialize(py::object snapshot)
+{
+  if (PyBuffer_Check(snapshot.ptr()))
+  {
+    const void *buf = NULL;
+    Py_ssize_t len = 0;
+
+    if (0 == ::PyObject_AsReadBuffer(snapshot.ptr(), &buf, &len) && buf && len > 0)
+    {
+      Py_BEGIN_ALLOW_THREADS
+
+      v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
+
+      deserializer.GetFlags();
+      
+      deserializer.Deserialize();
+
+      v8::internal::StubCache::Clear();
+
+      Py_END_ALLOW_THREADS 
+    }
+  }
 }
 
 void CEngine::ReportFatalError(const char* location, const char* message)
@@ -199,4 +304,53 @@ py::object CScript::Run(void)
   v8::HandleScope handle_scope;
 
   return m_engine.ExecuteScript(m_script); 
+}
+
+class CPythonExtension : public v8::Extension
+{
+  py::object m_callback;
+public:
+  CPythonExtension(const char *name, py::object callback, int dep_count, const char**deps)
+    : v8::Extension(name, NULL, dep_count, deps)
+  {
+
+  }
+
+  virtual v8::Handle<v8::FunctionTemplate> GetNativeFunction(v8::Handle<v8::String> name)
+  {
+    v8::HandleScope handle_scope;
+
+    v8::Handle<v8::FunctionTemplate> func;
+
+    return handle_scope.Close(func);
+  }
+};
+
+CExtension::CExtension(const std::string& name, py::object value, 
+                       py::list deps, bool autoRegister)
+  : m_name(name), m_deps(deps), m_registered(false)
+{
+  for (Py_ssize_t i=0; i<::PyList_Size(deps.ptr()); i++)
+  {
+    py::extract<const std::string> extractor(::PyList_GetItem(deps.ptr(), i));
+
+    if (extractor.check()) 
+    {
+      m_depNames.push_back(extractor());
+      m_depPtrs.push_back(m_depNames.rbegin()->c_str());
+    }
+  }
+
+  if (::PyCallable_Check(value.ptr()))
+  {
+    m_extension.reset(new CPythonExtension(m_name.c_str(), value, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
+  }
+  else
+  {
+    m_source = py::extract<const std::string>(value);
+
+    m_extension.reset(new v8::Extension(m_name.c_str(), m_source.c_str(), m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
+  }
+  
+  if (autoRegister) this->Register();
 }

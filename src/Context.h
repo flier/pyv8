@@ -16,7 +16,7 @@ class CContext
 public:
   CContext(v8::Handle<v8::Context> context);
 
-  CContext(py::object global);
+  CContext(py::object global, py::list extensions);
 
   ~CContext()
   {

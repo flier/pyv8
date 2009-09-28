@@ -6,8 +6,9 @@
 void CContext::Expose(void)
 {
   py::class_<CContext, boost::noncopyable>("JSContext", py::no_init)
-    .def(py::init<py::object>(py::arg("global") = py::object(), 
-                              "create a new context base on global object"))
+    .def(py::init<py::object, py::list>((py::arg("global") = py::object(), 
+                                         py::arg("extensions") = py::list()), 
+                                        "create a new context base on global object"))
                   
     .add_property("securityToken", &CContext::GetSecurityToken, &CContext::SetSecurityToken)
 
@@ -46,11 +47,28 @@ CContext::CContext(v8::Handle<v8::Context> context)
   m_context = v8::Persistent<v8::Context>::New(context);
 }
 
-CContext::CContext(py::object global)
+CContext::CContext(py::object global, py::list extensions)
 {
   v8::HandleScope handle_scope;  
 
-  m_context = v8::Context::New();
+  std::auto_ptr<v8::ExtensionConfiguration> cfg;
+  std::vector<std::string> ext_names;
+  std::vector<const char *> ext_ptrs;
+
+  for (Py_ssize_t i=0; i<::PyList_Size(extensions.ptr()); i++)
+  {
+    py::extract<const std::string> extractor(::PyList_GetItem(extensions.ptr(), i));
+
+    if (extractor.check()) 
+    {
+      ext_names.push_back(extractor());
+      ext_ptrs.push_back(ext_names.rbegin()->c_str());
+    }
+  }
+
+  if (!ext_ptrs.empty()) cfg.reset(new v8::ExtensionConfiguration(ext_ptrs.size(), &ext_ptrs[0]));
+  
+  m_context = v8::Context::New(cfg.get());
 
   v8::Context::Scope context_scope(m_context);
 

@@ -29,6 +29,7 @@ class JSError(Exception):
 _PyV8._JSError._jsclass = JSError
 
 JSArray = _PyV8.JSArray
+JSEntension = _PyV8.JSEntension
 
 class JSLocker(_PyV8.JSLocker):
     def __enter__(self):
@@ -393,12 +394,12 @@ class JSEngine(_PyV8.JSEngine):
         del self
 
 class JSContext(_PyV8.JSContext):
-    def __init__(self, obj=None):
+    def __init__(self, obj=None, extensions=[]):
         if JSLocker.actived:
             self.lock = JSLocker()
             self.lock.enter()
             
-        _PyV8.JSContext.__init__(self, obj)
+        _PyV8.JSContext.__init__(self, obj, extensions)
         
     def __enter__(self):
         self.enter()
@@ -1054,7 +1055,60 @@ class TestEngine(unittest.TestCase):
                 self.assert_(isinstance(s, _PyV8.JSScript))
                 
                 self.assertEquals("1+2", s.source)
-                self.assertEquals(3, int(s.run()))                
+                self.assertEquals(3, int(s.run()))
+                
+    def testExtension(self):
+        extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""        
+        extJs = JSEntension("hello/javascript", extSrc)
+        
+        self.assert_(extJs)
+        self.assertEqual("hello/javascript", extJs.name)
+        self.assertEqual(extSrc, extJs.source)
+        self.assertFalse(extJs.autoEnable)
+        self.assertTrue(extJs.registered)
+        
+        TestEngine.extJs = extJs
+                
+        with JSContext(extensions=['hello/javascript']) as ctxt:
+            self.assertEqual("hello flier from javascript", ctxt.eval("hello('flier')"))
+
+    def _testPythonExtension(self):
+        extPy = JSEntension("hello/python", lambda name: "hello " + name + " from python", register=False)
+        self.assert_(extPy)
+        self.assertEqual("hello/python", extPy.name)
+        self.assertEqual("", extPy.source)
+        self.assertFalse(extPy.autoEnable)
+        self.assertFalse(extPy.registered)
+        extPy.register()
+        self.assertTrue(extPy.registered)
+        
+        TestEngine.extPy = extPy
+        
+        with JSContext(extensions=['hello/python']) as ctxt:
+            self.assertEqual("hello flier from python", ctxt.eval("hello('flier')"))
+        
+    def _testSerialize(self):
+        data = None
+        
+        self.assertFalse(JSContext.entered)
+        
+        with JSContext() as ctxt:
+            self.assert_(JSContext.entered)
+            
+            #ctxt.eval("function hello(name) { return 'hello ' + name; }")
+            
+            data = JSEngine.serialize()
+        
+        self.assert_(data)
+        self.assert_(len(data) > 0)
+            
+        self.assertFalse(JSContext.entered)
+            
+        #JSEngine.deserialize()
+        
+        self.assert_(JSContext.entered)
+        
+        self.assertEquals('hello flier', JSContext.current.eval("hello('flier');"))
             
     def testEval(self):
         with JSContext() as ctxt:
@@ -1062,7 +1116,7 @@ class TestEngine(unittest.TestCase):
             
     def testGlobal(self):
         class Global(JSClass):
-            version = "1.0"
+            version = "1.0"            
             
         with JSContext(Global()) as ctxt:            
             vars = ctxt.locals

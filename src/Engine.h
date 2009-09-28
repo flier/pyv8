@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <map>
 
 #include <boost/shared_ptr.hpp>
 
@@ -13,8 +15,13 @@ typedef boost::shared_ptr<CScript> CScriptPtr;
 class CEngine
 {  
 protected:
+  typedef std::map<std::string, int> CounterTable;
+  static CounterTable m_counters;
+
+  static int *CounterLookup(const char* name);
+
   static void ReportFatalError(const char* location, const char* message);
-  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);  
+  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);    
 public:
   py::object PreCompile(const std::string& src);
 
@@ -30,6 +37,9 @@ public:
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
 
   py::object ExecuteScript(v8::Handle<v8::Script> script);
+
+  static py::object Serialize(void);
+  static void Deserialize(py::object snapshot);
 };
 
 class CScript
@@ -53,4 +63,30 @@ public:
   const std::string GetSource(void) const { return m_source; }
 
   py::object Run(void);
+};
+
+class CExtension 
+{
+  std::string m_name, m_source;  
+  
+  py::list m_deps;
+  std::vector<std::string> m_depNames;
+  std::vector<const char *> m_depPtrs;
+
+  bool m_registered;
+
+  std::auto_ptr<v8::Extension> m_extension;
+public:
+  CExtension(const std::string& name, py::object callback, py::list dependencies, bool autoRegister=true);
+
+  const std::string GetName(void) { return m_name; }
+  const std::string GetSource(void) { return m_source; }
+
+  bool IsRegistered(void) { return m_registered; }
+  void Register(void) { v8::RegisterExtension(m_extension.get()); m_registered = true; }
+
+  bool IsAutoEnable(void) { return m_extension->auto_enable(); }
+  void SetAutoEnable(bool value) { m_extension->set_auto_enable(value); }
+
+  py::list GetDependencies(void) { return m_deps; }
 };
