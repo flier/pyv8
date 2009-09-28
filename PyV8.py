@@ -1072,6 +1072,23 @@ class TestEngine(unittest.TestCase):
         with JSContext(extensions=['hello/javascript']) as ctxt:
             self.assertEqual("hello flier from javascript", ctxt.eval("hello('flier')"))
 
+        # test the auto enable property
+        
+        with JSContext() as ctxt:
+            self.assertRaises(JSError, ctxt.eval, "hello('flier')")
+            
+        extJs.autoEnable = True
+        self.assertTrue(extJs.autoEnable)
+        
+        with JSContext() as ctxt:
+            self.assertEqual("hello flier from javascript", ctxt.eval("hello('flier')"))
+            
+        extJs.autoEnable = False
+        self.assertFalse(extJs.autoEnable)
+
+        with JSContext() as ctxt:
+            self.assertRaises(JSError, ctxt.eval, "hello('flier')")
+
     def _testPythonExtension(self):
         extPy = JSEntension("hello/python", lambda name: "hello " + name + " from python", register=False)
         self.assert_(extPy)
@@ -1079,8 +1096,8 @@ class TestEngine(unittest.TestCase):
         self.assertEqual("", extPy.source)
         self.assertFalse(extPy.autoEnable)
         self.assertFalse(extPy.registered)
-        extPy.register()
-        self.assertTrue(extPy.registered)
+        #extPy.register()
+        #self.assertTrue(extPy.registered)
         
         TestEngine.extPy = extPy
         
