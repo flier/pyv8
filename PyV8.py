@@ -7,7 +7,8 @@ import StringIO
 
 import _PyV8
 
-__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", "JSLocker", "JSUnlocker", "debugger"]
+__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
+           "JSExtension", "JSLocker", "JSUnlocker", "debugger"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -29,7 +30,7 @@ class JSError(Exception):
 _PyV8._JSError._jsclass = JSError
 
 JSArray = _PyV8.JSArray
-JSEntension = _PyV8.JSEntension
+JSExtension = _PyV8.JSExtension
 
 class JSLocker(_PyV8.JSLocker):
     def __enter__(self):
@@ -1059,7 +1060,7 @@ class TestEngine(unittest.TestCase):
                 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""        
-        extJs = JSEntension("hello/javascript", extSrc)
+        extJs = JSExtension("hello/javascript", extSrc)
         
         self.assert_(extJs)
         self.assertEqual("hello/javascript", extJs.name)
@@ -1089,15 +1090,16 @@ class TestEngine(unittest.TestCase):
         with JSContext() as ctxt:
             self.assertRaises(JSError, ctxt.eval, "hello('flier')")
 
-    def _testPythonExtension(self):
-        extPy = JSEntension("hello/python", lambda name: "hello " + name + " from python", register=False)
+    def testNativeExtension(self):            
+        extSrc = "native function hello();"
+        extPy = JSExtension("hello/python", extSrc, lambda func: lambda name: "hello " + name + " from python", register=False)
         self.assert_(extPy)
         self.assertEqual("hello/python", extPy.name)
-        self.assertEqual("", extPy.source)
+        self.assertEqual(extSrc, extPy.source)
         self.assertFalse(extPy.autoEnable)
         self.assertFalse(extPy.registered)
-        #extPy.register()
-        #self.assertTrue(extPy.registered)
+        extPy.register()
+        self.assertTrue(extPy.registered)
         
         TestEngine.extPy = extPy
         

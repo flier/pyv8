@@ -77,11 +77,12 @@ void CEngine::Expose(void)
     py::objects::make_ptr_instance<CScript, 
     py::objects::pointer_holder<boost::shared_ptr<CScript>, CScript> > >();
 
-  py::class_<CExtension, boost::noncopyable>("JSEntension", py::no_init)    
-    .def(py::init<const std::string&, py::object, py::list, bool>((py::arg("name"), 
-                                                                   py::arg("source_or_func"),
-                                                                   py::arg("dependencies") = py::list(),
-                                                                   py::arg("register") = true)))
+  py::class_<CExtension, boost::noncopyable>("JSExtension", py::no_init)    
+    .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"), 
+                                                                                       py::arg("source"),
+                                                                                       py::arg("callback") = py::object(),
+                                                                                       py::arg("dependencies") = py::list(),
+                                                                                       py::arg("register") = true)))
     .add_property("name", &CExtension::GetName)
     .add_property("source", &CExtension::GetSource)
     .add_property("dependencies", &CExtension::GetDependencies)
@@ -309,9 +310,40 @@ py::object CScript::Run(void)
 class CPythonExtension : public v8::Extension
 {
   py::object m_callback;
+
+  static v8::Handle<v8::Value> CallStub(const v8::Arguments& args)
+  {
+    v8::HandleScope handle_scope;
+    CPythonGIL python_gil;
+
+    py::object func = *static_cast<py::object *>(v8::External::Unwrap(args.Data()));
+
+    py::object result;
+
+    switch (args.Length())
+    {
+    case 0: result = func(); break;
+    case 1: result = func(CJavascriptObject::Wrap(args[0])); break;
+    case 2: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1])); break;
+    case 3: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+                          CJavascriptObject::Wrap(args[2])); break;
+    case 4: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+                          CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3])); break;
+    case 5: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+                          CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
+                          CJavascriptObject::Wrap(args[4])); break;
+    case 6: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+                          CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
+                          CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
+    default:
+      return v8::ThrowException(v8::Exception::Error(v8::String::New("too many arguments")));
+    }
+
+    return handle_scope.Close(CPythonObject::Wrap(result));
+  }
 public:
-  CPythonExtension(const char *name, py::object callback, int dep_count, const char**deps)
-    : v8::Extension(name, NULL, dep_count, deps)
+  CPythonExtension(const char *name, const char *source, py::object callback, int dep_count, const char**deps)
+    : v8::Extension(name, source, dep_count, deps), m_callback(callback)
   {
 
   }
@@ -319,16 +351,41 @@ public:
   virtual v8::Handle<v8::FunctionTemplate> GetNativeFunction(v8::Handle<v8::String> name)
   {
     v8::HandleScope handle_scope;
+    CPythonGIL python_gil;
 
-    v8::Handle<v8::FunctionTemplate> func;
+    py::object func;
+    v8::String::Utf8Value func_name(name);
+    std::string func_name_str(*func_name, func_name.length());
 
-    return handle_scope.Close(func);
+    try
+    {
+      if (::PyCallable_Check(m_callback.ptr()))
+      {      
+        func = m_callback(func_name_str);
+      }
+      else if (::PyObject_HasAttrString(m_callback.ptr(), *func_name))
+      {
+        func = m_callback.attr(func_name_str.c_str());
+      }
+      else
+      {
+        return v8::Handle<v8::FunctionTemplate>();
+      }
+    }
+    catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } 
+    catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } 
+    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::New("unknown exception"))); } 
+    
+    v8::Handle<v8::External> func_data = v8::External::New(new py::object(func));
+    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(CallStub, func_data);
+
+    return handle_scope.Close(func_tmpl);
   }
 };
 
-CExtension::CExtension(const std::string& name, py::object value, 
-                       py::list deps, bool autoRegister)
-  : m_name(name), m_deps(deps), m_registered(false)
+CExtension::CExtension(const std::string& name, const std::string& source, 
+                       py::object callback, py::list deps, bool autoRegister)
+  : m_name(name), m_source(source), m_deps(deps), m_registered(false)
 {
   for (Py_ssize_t i=0; i<::PyList_Size(deps.ptr()); i++)
   {
@@ -341,16 +398,8 @@ CExtension::CExtension(const std::string& name, py::object value,
     }
   }
 
-  if (::PyCallable_Check(value.ptr()))
-  {
-    m_extension.reset(new CPythonExtension(m_name.c_str(), value, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
-  }
-  else
-  {
-    m_source = py::extract<const std::string>(value);
-
-    m_extension.reset(new v8::Extension(m_name.c_str(), m_source.c_str(), m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
-  }
+  m_extension.reset(new CPythonExtension(m_name.c_str(), m_source.c_str(), 
+    callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
   
   if (autoRegister) this->Register();
 }

@@ -77,7 +77,7 @@ class CExtension
 
   std::auto_ptr<v8::Extension> m_extension;
 public:
-  CExtension(const std::string& name, py::object callback, py::list dependencies, bool autoRegister=true);
+  CExtension(const std::string& name, const std::string& source, py::object callback, py::list dependencies, bool autoRegister);
 
   const std::string GetName(void) { return m_name; }
   const std::string GetSource(void) { return m_source; }

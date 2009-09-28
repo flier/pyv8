@@ -94,8 +94,7 @@ void CPythonObject::ThrowIf(void)
   ::PyErr_Fetch(&exc, &val, &trb);
 
   py::object type(py::handle<>(py::allow_null(exc))),
-             value(py::handle<>(py::allow_null(val))),
-             traceback(py::handle<>(py::allow_null(trb)));
+             value(py::handle<>(py::allow_null(val)));
   
   std::string msg;
 

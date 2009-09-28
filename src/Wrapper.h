@@ -18,8 +18,6 @@ struct CWrapper
 
 class CPythonObject : public CWrapper
 {
-  static void ThrowIf(void);
-
   static v8::Handle<v8::Value> NamedGetter(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> NamedSetter(
@@ -46,6 +44,8 @@ protected:
   static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);
 public:
   static v8::Handle<v8::Value> Wrap(py::object obj);
+
+  static void ThrowIf(void);
 };
 
 class CJavascriptObject : public CWrapper
