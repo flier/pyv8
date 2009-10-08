@@ -454,7 +454,19 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   }
   else if (PyUnicode_CheckExact(obj.ptr()))
   {
+  #ifndef Py_UNICODE_WIDE
     result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
+
+  #else
+    int len = PyUnicode_GET_SIZE(obj.ptr());
+    const uint32_t *p = reinterpret_cast<const uint32_t *>(PyUnicode_AS_UNICODE(obj.ptr()));
+    uint16_t *m = PyMem_NEW(uint16_t, len);
+
+    for(int i=0; i<len; i++) m[i] = (uint16_t)(p[i]);
+    result = v8::String::New(m, len);
+
+    PyMem_FREE(m);
+  #endif
   }
   else if (PyFloat_CheckExact(obj.ptr()))
   {   
