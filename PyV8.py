@@ -33,12 +33,20 @@ JSArray = _PyV8.JSArray
 JSExtension = _PyV8.JSExtension
 
 class JSLocker(_PyV8.JSLocker):
-    def __enter__(self):
+    def __enter__(self):       
         self.enter()
+        
+        if JSContext.entered:
+            self.leave()
+            raise RuntimeError("Lock should be acquired before enter the context")
         
         return self
     
     def __exit__(self, exc_type, exc_value, traceback):
+        if JSContext.entered:
+            self.leave()
+            raise RuntimeError("Lock should be released after leave the context")
+
         self.leave()
         
     def __nonzero__(self):
@@ -894,32 +902,40 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(os.getcwd(), ctxt.eval("fs.cwd"))
             
 class TestMutithread(unittest.TestCase):
-    def testLocker(self):
+    def testLocker(self):        
         self.assertFalse(JSLocker.actived)
         self.assertFalse(JSLocker.locked)
-        with JSContext() as ctxt:
-            with JSLocker() as outter_locker:        
-                self.assertTrue(JSLocker.actived)
+        
+        with JSLocker() as outter_locker:        
+            self.assertTrue(JSLocker.actived)
+            self.assertTrue(JSLocker.locked)
+            
+            self.assertTrue(outter_locker)
+            
+            with JSLocker() as inner_locker:
                 self.assertTrue(JSLocker.locked)
                 
                 self.assertTrue(outter_locker)
+                self.assertTrue(inner_locker)
                 
-                with JSLocker() as inner_locker:
-                    self.assertTrue(JSLocker.locked)
-                    
+                with JSUnlocker() as unlocker:
+                    self.assertFalse(JSLocker.locked)
+                
                     self.assertTrue(outter_locker)
                     self.assertTrue(inner_locker)
                     
-                    with JSUnlocker() as unlocker:
-                        self.assertFalse(JSLocker.locked)
-                    
-                        self.assertTrue(outter_locker)
-                        self.assertTrue(inner_locker)
-                        
-                    self.assertTrue(JSLocker.locked)
+                self.assertTrue(JSLocker.locked)
                     
         self.assertTrue(JSLocker.actived)
         self.assertFalse(JSLocker.locked)
+        
+        locker = JSLocker()
+        
+        with JSContext():
+            self.assertRaises(RuntimeError, locker.__enter__)
+            self.assertRaises(RuntimeError, locker.__exit__, None, None, None)
+            
+        del locker
         
     def testMultiPythonThread(self):
         import time, threading
@@ -976,16 +992,16 @@ class TestMutithread(unittest.TestCase):
                     
         g = Global()
         
-        def run():            
+        def run():
             with JSContext(g) as ctxt:                
                 ctxt.eval("""
                     for (i=0; i<10; i++)
                         add(i);
                 """)
                 
-        threads = [threading.Thread(target=run), threading.Thread(target=run)]        
-        
-        with JSLocker() as locker:
+        threads = [threading.Thread(target=run), threading.Thread(target=run)]
+                
+        with JSLocker():
             for t in threads: t.start()
             
         for t in threads: t.join()
