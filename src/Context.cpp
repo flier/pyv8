@@ -55,7 +55,7 @@ CContext::CContext(py::object global, py::list extensions)
   std::vector<std::string> ext_names;
   std::vector<const char *> ext_ptrs;
 
-  for (Py_ssize_t i=0; i<::PyList_Size(extensions.ptr()); i++)
+  for (Py_ssize_t i=0; i<PyList_Size(extensions.ptr()); i++)
   {
     py::extract<const std::string> extractor(::PyList_GetItem(extensions.ptr(), i));
 

@@ -387,7 +387,7 @@ CExtension::CExtension(const std::string& name, const std::string& source,
                        py::object callback, py::list deps, bool autoRegister)
   : m_name(name), m_source(source), m_deps(deps), m_registered(false)
 {
-  for (Py_ssize_t i=0; i<::PyList_Size(deps.ptr()); i++)
+  for (Py_ssize_t i=0; i<PyList_Size(deps.ptr()); i++)
   {
     py::extract<const std::string> extractor(::PyList_GetItem(deps.ptr(), i));
 
