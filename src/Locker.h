@@ -4,6 +4,8 @@
 
 class CLocker
 {
+  static bool s_preemption;
+
   std::auto_ptr<v8::Locker> m_locker;
 public:  
   bool entered(void) { return m_locker.get(); }
@@ -24,6 +26,10 @@ public:
 
     Py_END_ALLOW_THREADS
   }  
+
+  static bool IsPreemption(void) { return s_preemption; }
+  static void StartPreemption(int every_n_ms);
+  static void StopPreemption(void);
 
   static void Expose(void);
 };

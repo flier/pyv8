@@ -2,6 +2,31 @@
 
 #include <sstream>
 
+#undef COMPILER
+
+#include "src/v8.h"
+
+#include "src/bootstrapper.h"
+#include "src/natives.h"
+#include "src/platform.h"
+
+#include "Locker.h"
+
+CPythonGIL::CPythonGIL() 
+{
+  while (CLocker::IsPreemption() && _PyThreadState_Current && ::PyGILState_GetThisThreadState() != ::_PyThreadState_Current)
+  {
+    v8::internal::Thread::YieldCPU();
+  }
+
+  m_state = ::PyGILState_Ensure();
+}
+
+CPythonGIL::~CPythonGIL()
+{
+  ::PyGILState_Release(m_state);
+}  
+
 std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
 {
   os << "JSError: " << ex.what();

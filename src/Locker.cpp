@@ -1,5 +1,20 @@
 #include "Locker.h"
 
+bool CLocker::s_preemption = false;
+
+void CLocker::StartPreemption(int every_n_ms)
+{
+  v8::Locker::StartPreemption(every_n_ms);
+  
+  s_preemption = true;
+}
+void CLocker::StopPreemption(void)
+{
+  v8::Locker::StopPreemption();
+
+  s_preemption = false;
+}
+
 void CLocker::Expose(void)
 {
   py::class_<CLocker, boost::noncopyable>("JSLocker")
@@ -8,10 +23,10 @@ void CLocker::Expose(void)
     .add_static_property("locked", &v8::Locker::IsLocked,
                          "whether or not the locker is locked by the current thread.")
 
-    .def("startPreemption", &v8::Locker::StartPreemption)    
+    .add_static_property("isPreemption", &CLocker::IsPreemption)
+    .def("startPreemption", &CLocker::StartPreemption, (py::arg("every_n_ms")=100))    
     .staticmethod("startPreemption")
-
-    .def("stopPreemption", &v8::Locker::StopPreemption)    
+    .def("stopPreemption", &CLocker::StopPreemption)    
     .staticmethod("stopPreemption")
 
     .def("entered", &CLocker::entered)

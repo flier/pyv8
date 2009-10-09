@@ -28,14 +28,8 @@ struct CPythonGIL
 {
   PyGILState_STATE m_state;
 
-  CPythonGIL() : m_state(::PyGILState_Ensure())
-  {
-
-  }
-  ~CPythonGIL()
-  {
-    ::PyGILState_Release(m_state);
-  }
+  CPythonGIL();
+  ~CPythonGIL();
 };
 
 class CJavascriptException;
