@@ -625,8 +625,8 @@ class TestWrapper(unittest.TestCase):
             var_mytime = MyDateTime()
             
         with JSContext(Global()) as ctxt:
-            typename = ctxt.eval("function func(name) { return this[name].constructor.name; } func")
-            typeof = ctxt.eval("function func(name) { return typeof(this[name]); } func")
+            typename = ctxt.eval("(function (name) { return this[name].constructor.name; })")
+            typeof = ctxt.eval("(function (name) { return typeof(this[name]); })")
             
             self.assertEquals('Boolean', typename('var_bool'))
             self.assertEquals('Number', typename('var_int'))
@@ -651,7 +651,7 @@ class TestWrapper(unittest.TestCase):
     def testFunction(self):
         with JSContext() as ctxt:
             func = ctxt.eval("""
-                function func()
+                (function ()
                 {
                     function a()
                     {
@@ -659,7 +659,7 @@ class TestWrapper(unittest.TestCase):
                     }
                 
                     return a();    
-                } func
+                })
                 """)
             
             self.assertEquals("abc", str(func()))
@@ -822,13 +822,13 @@ class TestWrapper(unittest.TestCase):
                 self.bar = 2
                 
         with JSContext() as ctxt:
-            func = ctxt.eval("""function func(k) {
+            func = ctxt.eval("""(function (k) {
                 var result = [];    
                 for (var prop in k) {
                   result.push(prop);
                 }
                 return result;
-            } func""")
+            })""")
             
             self.assertEquals(["bar"], list(func(NamedClass())))
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
@@ -872,7 +872,7 @@ class TestWrapper(unittest.TestCase):
             
             self.assert_(delta < datetime.timedelta(seconds=1))
             
-            func = ctxt.eval("function func(d) { return d.toString(); } func")
+            func = ctxt.eval("(function (d) { return d.toString(); })")
             
             now = datetime.datetime.now() 
             
@@ -883,7 +883,7 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(u"人", unicode(ctxt.eval("\"人\""), "utf-8"))
             self.assertEquals(u"é", unicode(ctxt.eval("\"é\""), "utf-8"))
             
-            func = ctxt.eval("function func(msg) { return msg.length; } func")
+            func = ctxt.eval("(function (msg) { return msg.length; })")
             
             self.assertEquals(2, func(u"测试"))
             
