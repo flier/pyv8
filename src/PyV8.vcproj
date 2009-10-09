@@ -40,8 +40,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(V8_HOME)\include&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB"
+				AdditionalIncludeDirectories="&quot;$(V8_HOME)&quot;;&quot;$(V8_HOME)\include&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB;_USE_32BIT_TIME_T;V8_TARGET_ARCH_IA32;V8_NATIVE_REGEXP;ENABLE_DISASSEMBLER;V8_ENABLE_CHECKS;ENABLE_LOGGING_AND_PROFILING;ENABLE_DEBUGGER_SUPPORT"
+				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -124,8 +125,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(V8_HOME)\include&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB"
+				AdditionalIncludeDirectories="&quot;$(V8_HOME)\include&quot;;&quot;$(V8_HOME)&quot;;&quot;$(BOOST_HOME)&quot;;&quot;$(PYTHON_HOME)\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;BOOST_PYTHON_STATIC_LIB;_USE_32BIT_TIME_T;V8_TARGET_ARCH_IA32;V8_NATIVE_REGEXP;ENABLE_LOGGING_AND_PROFILING;ENABLE_DEBUGGER_SUPPORT"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
