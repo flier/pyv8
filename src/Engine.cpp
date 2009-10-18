@@ -15,7 +15,7 @@ CEngine::CounterTable CEngine::m_counters;
 
 void CEngine::Expose(void)
 {
-  v8::V8::Initialize();
+  //v8::V8::Initialize();
   //v8::V8::SetFatalErrorHandler(ReportFatalError);
   //v8::V8::AddMessageListener(ReportMessage);
 
@@ -30,6 +30,8 @@ void CEngine::Expose(void)
 
     .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
                          "the V8 thread id of the calling thread.")
+
+    .add_static_property("serializeEnabled", &CEngine::IsSerializeEnabled, &CEngine::SetSerializeEnable)
 
     .def("serialize", &CEngine::Serialize)
     .staticmethod("serialize")
@@ -104,6 +106,18 @@ int *CEngine::CounterLookup(const char* name)
   return &m_counters[name];
 }
 
+void CEngine::SetSerializeEnable(bool value)
+{
+  if (value)
+    v8::internal::Serializer::Enable();
+  else
+    v8::internal::Serializer::Disable();
+}
+bool CEngine::IsSerializeEnabled(void)
+{
+  return v8::internal::Serializer::enabled();
+}
+
 py::object CEngine::Serialize(void)
 {
   v8::internal::byte* data = NULL;
@@ -112,10 +126,6 @@ py::object CEngine::Serialize(void)
   Py_BEGIN_ALLOW_THREADS
 
   v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
-
-  v8::internal::Serializer::Enable();
-
-  v8::internal::Heap::CollectAllGarbage(false);
 
   v8::internal::Serializer serializer;
 
@@ -143,25 +153,35 @@ py::object CEngine::Serialize(void)
 }
 void CEngine::Deserialize(py::object snapshot)
 {
+  const void *buf = NULL;
+  Py_ssize_t len = 0;
+
   if (PyBuffer_Check(snapshot.ptr()))
   {
-    const void *buf = NULL;
-    Py_ssize_t len = 0;
-
-    if (0 == ::PyObject_AsReadBuffer(snapshot.ptr(), &buf, &len) && buf && len > 0)
+    if (0 != ::PyObject_AsReadBuffer(snapshot.ptr(), &buf, &len))
     {
-      Py_BEGIN_ALLOW_THREADS
-
-      v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
-
-      deserializer.GetFlags();
-      
-      deserializer.Deserialize();
-
-      v8::internal::StubCache::Clear();
-
-      Py_END_ALLOW_THREADS 
+      buf = NULL;
     }
+  }
+  else if(PyString_CheckExact(snapshot.ptr()) || PyUnicode_CheckExact(snapshot.ptr()))
+  {
+    if (0 != ::PyString_AsStringAndSize(snapshot.ptr(), (char **)&buf, &len))
+    {
+      buf = NULL;
+    }
+  }
+
+  if (buf && len > 0)
+  {
+    Py_BEGIN_ALLOW_THREADS
+
+    v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
+
+    deserializer.GetFlags();
+
+    v8::internal::V8::Initialize(&deserializer);
+
+    Py_END_ALLOW_THREADS 
   }
 }
 

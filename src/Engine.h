@@ -38,6 +38,9 @@ public:
 
   py::object ExecuteScript(v8::Handle<v8::Script> script);
 
+  static void SetSerializeEnable(bool value);
+  static bool IsSerializeEnabled(void);
+
   static py::object Serialize(void);
   static void Deserialize(py::object snapshot);
 };
