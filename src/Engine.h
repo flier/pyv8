@@ -38,6 +38,8 @@ public:
 
   py::object ExecuteScript(v8::Handle<v8::Script> script);
 
+  static void SetFlags(const std::string& flags) { v8::V8::SetFlagsFromString(flags.c_str(), flags.size()); }
+
   static void SetSerializeEnable(bool value);
   static bool IsSerializeEnabled(void);
 
@@ -92,4 +94,6 @@ public:
   void SetAutoEnable(bool value) { m_extension->set_auto_enable(value); }
 
   py::list GetDependencies(void) { return m_deps; }
+
+  static py::list GetExtensions(void);
 };

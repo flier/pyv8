@@ -31,6 +31,9 @@ void CEngine::Expose(void)
     .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
                          "the V8 thread id of the calling thread.")
 
+    .def("setFlags", &CEngine::SetFlags)
+    .staticmethod("setFlags")
+
     .add_static_property("serializeEnabled", &CEngine::IsSerializeEnabled, &CEngine::SetSerializeEnable)
 
     .def("serialize", &CEngine::Serialize)
@@ -85,6 +88,9 @@ void CEngine::Expose(void)
                                                                                        py::arg("callback") = py::object(),
                                                                                        py::arg("dependencies") = py::list(),
                                                                                        py::arg("register") = true)))
+
+    .add_static_property("extensions", &CExtension::GetExtensions)
+
     .add_property("name", &CExtension::GetName)
     .add_property("source", &CExtension::GetSource)
     .add_property("dependencies", &CExtension::GetDependencies)
@@ -175,11 +181,21 @@ void CEngine::Deserialize(py::object snapshot)
   {
     Py_BEGIN_ALLOW_THREADS
 
-    v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
+    v8::HandleScope scope;
+    {
+      /*
+      std::auto_ptr<v8::internal::Deserializer> deserializer(new v8::internal::Deserializer((const v8::internal::byte *) buf, len));
 
-    deserializer.GetFlags();
+      deserializer->GetFlags();
 
-    v8::internal::V8::Initialize(&deserializer);
+      v8::internal::V8::Initialize(deserializer.release());
+      */
+      v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
+
+      deserializer.GetFlags();
+
+      v8::internal::V8::Initialize(&deserializer);
+    }
 
     Py_END_ALLOW_THREADS 
   }
@@ -422,4 +438,19 @@ CExtension::CExtension(const std::string& name, const std::string& source,
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
   
   if (autoRegister) this->Register();
+}
+
+py::list CExtension::GetExtensions(void)
+{
+  v8::RegisteredExtension *ext = v8::RegisteredExtension::first_extension(); 
+  py::list extensions;
+
+  while (ext)
+  {
+    extensions.append(ext->extension()->name());
+
+    ext = ext->next();
+  }
+
+  return extensions;
 }
