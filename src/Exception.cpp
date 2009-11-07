@@ -4,11 +4,11 @@
 
 #undef COMPILER
 
+
 #include "src/v8.h"
 
 #include "src/bootstrapper.h"
 #include "src/natives.h"
-#include "src/platform.h"
 
 #include "Locker.h"
 

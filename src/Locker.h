@@ -8,7 +8,7 @@ class CLocker
 
   std::auto_ptr<v8::Locker> m_locker;
 public:  
-  bool entered(void) { return m_locker.get(); }
+  bool entered(void) { return NULL != m_locker.get(); }
 
   void enter(void) 
   { 
@@ -38,7 +38,7 @@ class CUnlocker
 {
   std::auto_ptr<v8::Unlocker> m_unlocker;
 public:
-  bool entered(void) { return m_unlocker.get(); }
+  bool entered(void) { return NULL != m_unlocker.get(); }
 
   void enter(void) 
   { 

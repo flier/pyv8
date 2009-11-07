@@ -197,7 +197,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
 
   py::str attr_name(*name, name.length());
 
-  return v8::Boolean::New(::PyObject_HasAttr(obj.ptr(), attr_name.ptr()));
+  return v8::Boolean::New(0 != ::PyObject_HasAttr(obj.ptr(), attr_name.ptr()));
 
   END_HANDLE_EXCEPTION(v8::False())
 }
@@ -216,7 +216,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
 
   py::str attr_name(*name, name.length());
   
-  return v8::Boolean::New(::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+  return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
   
   END_HANDLE_EXCEPTION(v8::False())
 }
@@ -294,7 +294,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  return v8::Boolean::New(index < ::PySequence_Size(obj.ptr()));
+  return v8::Boolean::New((Py_ssize_t) index < ::PySequence_Size(obj.ptr()));
   
   END_HANDLE_EXCEPTION(v8::False())
 }
