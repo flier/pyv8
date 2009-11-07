@@ -4,8 +4,12 @@
 
 #undef COMPILER
 
+#ifndef WIN32
+
 #ifndef isfinite
   #define isfinite(val) (val <= std::numeric_limits<double>::max())
+#endif
+
 #endif
 
 #include "src/v8.h"
