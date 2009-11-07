@@ -2,6 +2,10 @@
 
 #undef COMPILER
 
+#ifndef isfinite
+#define isfinite(val) (val <= std::numeric_limits<double>::max())
+#endif
+
 #include "src/v8.h"
 
 #include "src/bootstrapper.h"

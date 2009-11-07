@@ -16,6 +16,7 @@ macros = [
 include_dirs = [
   os.path.join(os.environ.get('V8_HOME'), 'include'),
   os.environ.get('V8_HOME'),
+  os.path.join(os.environ.get('V8_HOME'), 'src'),
 ]
 library_dirs = []
 libraries = []
