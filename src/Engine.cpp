@@ -1,7 +1,5 @@
 #include "Engine.h"
 
-#undef COMPILER
-
 #ifndef WIN32
 
 #ifndef isfinite
@@ -10,6 +8,16 @@
 
 #endif
 
+#ifdef SUPPORT_EXTENSION
+
+#undef COMPILER
+#include "src/v8.h"
+
+#endif
+
+#ifdef SUPPORT_SERIALIZE
+
+#undef COMPILER
 #include "src/v8.h"
 
 #include "src/bootstrapper.h"
@@ -19,13 +27,17 @@
 #include "src/stub-cache.h"
 #include "src/heap.h"
 
-CEngine::CounterTable CEngine::m_counters;
+#endif
+
+//CEngine::CounterTable CEngine::m_counters;
 
 void CEngine::Expose(void)
 {
-  //v8::V8::Initialize();
-  //v8::V8::SetFatalErrorHandler(ReportFatalError);
-  //v8::V8::AddMessageListener(ReportMessage);
+#ifndef SUPPORT_SERIALIZE
+  v8::V8::Initialize();
+  v8::V8::SetFatalErrorHandler(ReportFatalError);
+  v8::V8::AddMessageListener(ReportMessage);
+#endif
 
   void (*terminateThread)(int) = &v8::V8::TerminateExecution;
   void (*terminateAllThreads)(void) = &v8::V8::TerminateExecution;
@@ -42,6 +54,7 @@ void CEngine::Expose(void)
     .def("setFlags", &CEngine::SetFlags)
     .staticmethod("setFlags")
 
+  #ifdef SUPPORT_SERIALIZE
     .add_static_property("serializeEnabled", &CEngine::IsSerializeEnabled, &CEngine::SetSerializeEnable)
 
     .def("serialize", &CEngine::Serialize)
@@ -49,6 +62,7 @@ void CEngine::Expose(void)
 
     .def("deserialize", &CEngine::Deserialize)
     .staticmethod("deserialize")
+  #endif
 
     .def("terminateThread", terminateThread,
          "Forcefully terminate execution of a JavaScript thread.")
@@ -90,13 +104,14 @@ void CEngine::Expose(void)
     py::objects::make_ptr_instance<CScript, 
     py::objects::pointer_holder<boost::shared_ptr<CScript>, CScript> > >();
 
+#ifdef SUPPORT_EXTENSION
+
   py::class_<CExtension, boost::noncopyable>("JSExtension", py::no_init)    
     .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"), 
                                                                                        py::arg("source"),
                                                                                        py::arg("callback") = py::object(),
                                                                                        py::arg("dependencies") = py::list(),
                                                                                        py::arg("register") = true)))
-
     .add_static_property("extensions", &CExtension::GetExtensions)
 
     .add_property("name", &CExtension::GetName)
@@ -108,7 +123,11 @@ void CEngine::Expose(void)
     .add_property("registered", &CExtension::IsRegistered)
     .def("register", &CExtension::Register)
     ;
+
+#endif 
 }
+
+#ifdef SUPPORT_SERIALIZE
 
 int *CEngine::CounterLookup(const char* name)
 {
@@ -132,31 +151,38 @@ bool CEngine::IsSerializeEnabled(void)
   return v8::internal::Serializer::enabled();
 }
 
+struct PyBufferByteSink : public v8::internal::SnapshotByteSink
+{
+  std::vector<v8::internal::byte> m_data;
+
+  virtual void Put(int byte, const char* description) 
+  {
+    m_data.push_back(byte);
+  }
+};
+
 py::object CEngine::Serialize(void)
 {
-  v8::internal::byte* data = NULL;
-  int size = 0;
-
   Py_BEGIN_ALLOW_THREADS
 
-  v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
+  //v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
 
-  v8::internal::Serializer serializer;
+  PyBufferByteSink sink;
+
+  v8::internal::Serializer serializer(&sink);
 
   serializer.Serialize();
 
-  serializer.Finalize(&data, &size);
-
   Py_END_ALLOW_THREADS 
 
-  py::object obj(py::handle<>(::PyBuffer_New(size)));
+  py::object obj(py::handle<>(::PyBuffer_New(sink.m_data.size())));
 
   void *buf = NULL;
   Py_ssize_t len = 0;
 
   if (0 == ::PyObject_AsWriteBuffer(obj.ptr(), &buf, &len) && buf && len > 0)
   {
-    memcpy(buf, data, len);    
+    memcpy(buf, &sink.m_data[0], len);    
   }
   else
   {
@@ -208,6 +234,8 @@ void CEngine::Deserialize(py::object snapshot)
     Py_END_ALLOW_THREADS 
   }
 }
+
+#endif // SUPPORT_SERIALIZE
 
 void CEngine::ReportFatalError(const char* location, const char* message)
 {
@@ -351,6 +379,8 @@ py::object CScript::Run(void)
   return m_engine.ExecuteScript(m_script); 
 }
 
+#ifdef SUPPORT_EXTENSION
+
 class CPythonExtension : public v8::Extension
 {
   py::object m_callback;
@@ -462,3 +492,5 @@ py::list CExtension::GetExtensions(void)
 
   return extensions;
 }
+
+#endif // SUPPORT_EXTENSION

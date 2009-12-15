@@ -15,10 +15,15 @@ typedef boost::shared_ptr<CScript> CScriptPtr;
 class CEngine
 {  
 protected:
+
+#ifdef SUPPORT_SERIALIZE
+
   typedef std::map<std::string, int> CounterTable;
   static CounterTable m_counters;
 
   static int *CounterLookup(const char* name);
+
+#endif
 
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);    
@@ -70,6 +75,8 @@ public:
   py::object Run(void);
 };
 
+#ifdef SUPPORT_EXTENSION
+
 class CExtension 
 {
   std::string m_name, m_source;  
@@ -97,3 +104,6 @@ public:
 
   static py::list GetExtensions(void);
 };
+
+
+#endif // SUPPORT_EXTENSION

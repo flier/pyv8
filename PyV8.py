@@ -699,8 +699,8 @@ class TestWrapper(unittest.TestCase):
                     self.assertEqual('throw Error("hello world");', e.sourceLine.strip())
                     self.assertEqual('Error: hello world\n' +
                                      '    at Error (unknown source)\n' +
-                                     '    at hello (test:14:34)\n' +
-                                     '    at test:17:24', e.stackTrace)
+                                     '    at hello (test:14:35)\n' +
+                                     '    at test:17:25', e.stackTrace)
         
     def testPythonException(self):
         class Global(JSClass):
@@ -1046,7 +1046,7 @@ class TestMutithread(unittest.TestCase):
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
-            self.assert_(str(JSEngine.version).startswith("1."))
+            self.assert_(str(JSEngine.version).startswith("2."))
             self.assertFalse(JSEngine.dead)
         
     def testCompile(self):

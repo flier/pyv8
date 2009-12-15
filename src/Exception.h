@@ -24,6 +24,8 @@ namespace py = boost::python;
 # pragma warning( pop )
 #endif 
 
+#include "Config.h"
+
 struct CPythonGIL
 {
   PyGILState_STATE m_state;
