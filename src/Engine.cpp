@@ -29,7 +29,11 @@
 
 #endif
 
-//CEngine::CounterTable CEngine::m_counters;
+#ifdef SUPPORT_SERIALIZE
+
+CEngine::CounterTable CEngine::m_counters;
+
+#endif
 
 void CEngine::Expose(void)
 {
@@ -163,17 +167,17 @@ struct PyBufferByteSink : public v8::internal::SnapshotByteSink
 
 py::object CEngine::Serialize(void)
 {
-  Py_BEGIN_ALLOW_THREADS
+  v8::V8::Initialize();
 
-  //v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
+  v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
 
   PyBufferByteSink sink;
 
   v8::internal::Serializer serializer(&sink);
 
-  serializer.Serialize();
+  v8::internal::Heap::CollectAllGarbage(true);
 
-  Py_END_ALLOW_THREADS 
+  serializer.Serialize();
 
   py::object obj(py::handle<>(::PyBuffer_New(sink.m_data.size())));
 
@@ -215,21 +219,12 @@ void CEngine::Deserialize(py::object snapshot)
   {
     Py_BEGIN_ALLOW_THREADS
 
-    v8::HandleScope scope;
-    {
-      /*
-      std::auto_ptr<v8::internal::Deserializer> deserializer(new v8::internal::Deserializer((const v8::internal::byte *) buf, len));
+    v8::internal::SnapshotByteSource source((const v8::internal::byte *) buf, len);
+    v8::internal::Deserializer deserializer(&source);
 
-      deserializer->GetFlags();
+    //deserializer.Deserialize();
 
-      v8::internal::V8::Initialize(deserializer.release());
-      */
-      v8::internal::Deserializer deserializer((const v8::internal::byte *) buf, len);
-
-      deserializer.GetFlags();
-
-      v8::internal::V8::Initialize(&deserializer);
-    }
+    v8::internal::V8::Initialize(&deserializer);
 
     Py_END_ALLOW_THREADS 
   }
