@@ -24,13 +24,13 @@ void CWrapper::Expose(void)
   PyDateTime_IMPORT;
 
   py::class_<CJavascriptObject, boost::noncopyable>("JSObject", py::no_init)
-    .def_readonly("__js__", &CJavascriptObject::Native)
+    .add_property("__js__", &CJavascriptObject::Native)
 
     .def("__getattr__", &CJavascriptObject::GetAttr)
     .def("__setattr__", &CJavascriptObject::SetAttr)
     .def("__delattr__", &CJavascriptObject::DelAttr)    
 
-    .def_readonly("__members__", &CJavascriptObject::GetAttrList)
+    .add_property("__members__", &CJavascriptObject::GetAttrList)
 
     // Emulating dict object
     .def("keys", &CJavascriptObject::GetAttrList)

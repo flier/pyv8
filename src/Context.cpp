@@ -12,7 +12,7 @@ void CContext::Expose(void)
                   
     .add_property("securityToken", &CContext::GetSecurityToken, &CContext::SetSecurityToken)
 
-    .def_readonly("locals", &CContext::GetGlobal, "Local variables within context")
+    .add_property("locals", &CContext::GetGlobal, "Local variables within context")
     
     .add_static_property("entered", &CContext::GetEntered, 
                          "the last entered context.")
