@@ -901,6 +901,25 @@ class TestWrapper(unittest.TestCase):
         with JSContext(Global()) as ctxt:    
             self.assertEquals(os.getcwd(), ctxt.eval("fs.cwd"))
             
+    def testRefCount(self):
+        count = sys.getrefcount(None)
+        
+        class Global(JSClass):
+            pass
+
+        with JSContext(Global()) as ctxt:        
+            ctxt.eval("""
+                var none = null;
+            """)
+        
+            self.assertEquals(count+1, sys.getrefcount(None))
+
+            ctxt.eval("""
+                var none = null;
+            """)
+        
+            self.assertEquals(count+1, sys.getrefcount(None))
+            
 class TestMutithread(unittest.TestCase):
     def testLocker(self):        
         self.assertFalse(JSLocker.actived)

@@ -572,6 +572,23 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
   v8::Handle<v8::Value> attr_obj = CPythonObject::Wrap(value);
 
+  if (m_obj->Has(attr_name))
+  {
+    v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
+
+    if (!attr_value.IsEmpty() && attr_value->IsObject())
+    {
+      v8::Handle<v8::Object> obj = attr_value->ToObject();
+
+      if (obj->InternalFieldCount() == 1)
+      {
+        v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
+
+        std::auto_ptr<py::object> value(static_cast<py::object *>(field->Value()));
+      }
+    }
+  }
+
   if (!m_obj->Set(attr_name, attr_obj)) 
     CJavascriptException::ThrowIf(try_catch);
 }
@@ -584,9 +601,23 @@ void CJavascriptObject::DelAttr(const std::string& name)
   v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
 
   CheckAttr(attr_name);
-  
+
+  v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
+
   if (!m_obj->Delete(attr_name)) 
     CJavascriptException::ThrowIf(try_catch);
+
+  if (!attr_value.IsEmpty() && attr_value->IsObject())
+  {
+    v8::Handle<v8::Object> obj = attr_value->ToObject();
+
+    if (obj->InternalFieldCount() == 1)
+    {
+      v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
+
+      std::auto_ptr<py::object> value(static_cast<py::object *>(field->Value()));
+    }
+  }
 }
 py::list CJavascriptObject::GetAttrList(void)
 {
@@ -685,9 +716,9 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
   v8::HandleScope handle_scope;
 
-  if (value.IsEmpty() || value->IsNull()) return py::object(py::handle<>(Py_None));
-  if (value->IsTrue()) return py::object(py::handle<>(Py_True));
-  if (value->IsFalse()) return py::object(py::handle<>(Py_False));
+  if (value.IsEmpty() || value->IsNull()) return py::object(py::handle<>(py::borrowed(Py_None)));
+  if (value->IsTrue()) return py::object(py::handle<>(py::borrowed(Py_True)));
+  if (value->IsFalse()) return py::object(py::handle<>(py::borrowed(Py_False)));
 
   if (value->IsInt32()) return py::object(value->Int32Value());  
   if (value->IsString())
@@ -696,7 +727,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
     return py::str(*str, str.length());
   }
-  if (value->IsBoolean()) return py::object(py::handle<>(value->BooleanValue() ? Py_True : Py_False));
+  if (value->IsBoolean()) return py::object(py::handle<>(py::borrowed(value->BooleanValue() ? Py_True : Py_False)));
   if (value->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(value->NumberValue())));
   if (value->IsDate())
   {
@@ -720,7 +751,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 
   if (obj.IsEmpty())
   {
-    return py::object(py::handle<>(Py_None));
+    return py::object(py::handle<>(py::borrowed(Py_None)));
   }
   else if (obj->IsArray())
   {
