@@ -431,7 +431,21 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   if (extractor.check())
   {
-    return handle_scope.Close(extractor().Object());
+    CJavascriptObject& jsobj = extractor();
+
+    if (jsobj.Object().IsEmpty())
+    {
+      ILazyObject *pLazyObject = dynamic_cast<ILazyObject *>(&jsobj);
+
+      if (pLazyObject) pLazyObject->LazyConstructor();
+    }
+
+    if (jsobj.Object().IsEmpty())
+    {
+      throw CJavascriptException("Refer to a null object", ::PyExc_AttributeError);    
+    }
+
+    return handle_scope.Close(jsobj.Object());
   }
 
   v8::Handle<v8::Value> result;
@@ -789,30 +803,33 @@ py::object CJavascriptObject::Wrap(CJavascriptObject *obj)
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObjectPtr(obj))));
 }
 
-CJavascriptArray::CJavascriptArray(size_t size)  
+void CJavascriptArray::LazyConstructor(void)
 {
+  if (!m_obj.IsEmpty()) return;
+
   v8::HandleScope handle_scope;
 
-  v8::Handle<v8::Array> array = v8::Array::New(size);
-
-  m_obj = v8::Persistent<v8::Object>::New(array);  
-}
-CJavascriptArray::CJavascriptArray(py::list items)
-{
-  v8::HandleScope handle_scope;
-
-  size_t size = ::PyList_Size(items.ptr());
-
-  v8::Handle<v8::Array> array = v8::Array::New(size);
-
-  for (size_t i=0; i<size; i++)
+  if (m_items.ptr() == Py_None)
   {
-    array->Set(v8::Integer::New(i), CPythonObject::Wrap(items[i]));
-  }
+    v8::Handle<v8::Array> array = v8::Array::New(m_size);
 
-  m_obj = v8::Persistent<v8::Object>::New(array);  
+    m_obj = v8::Persistent<v8::Object>::New(array);  
+  }
+  else
+  {
+    size_t size = ::PyList_Size(m_items.ptr());
+
+    v8::Handle<v8::Array> array = v8::Array::New(size);
+
+    for (size_t i=0; i<size; i++)
+    {
+      array->Set(v8::Integer::New(i), CPythonObject::Wrap(m_items[i]));
+    }
+
+    m_obj = v8::Persistent<v8::Object>::New(array);  
+  }
 }
-size_t CJavascriptArray::Length(void) const
+size_t CJavascriptArray::Length(void) 
 {
   v8::HandleScope handle_scope;
 

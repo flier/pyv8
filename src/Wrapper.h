@@ -48,6 +48,11 @@ public:
   static void ThrowIf(void);
 };
 
+struct ILazyObject
+{
+  virtual void LazyConstructor(void) = 0;
+};
+
 class CJavascriptObject : public CWrapper
 {
 protected:
@@ -97,8 +102,10 @@ public:
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
 };
 
-class CJavascriptArray : public CJavascriptObject
+class CJavascriptArray : public CJavascriptObject, public ILazyObject
 {
+  py::list m_items;
+  size_t m_size;
 public:
   class ArrayIterator 
     : public boost::iterator_facade<ArrayIterator, py::object const, boost::forward_traversal_tag>
@@ -119,15 +126,19 @@ public:
   };
 
   CJavascriptArray(v8::Handle<v8::Array> array)
-    : CJavascriptObject(array)
+    : CJavascriptObject(array), m_size(array->Length())
   {
 
   }
 
-  CJavascriptArray(size_t size);
-  CJavascriptArray(py::list items);
+  CJavascriptArray(size_t size) : m_size(size) {}
+  CJavascriptArray(py::list items) 
+    : m_items(items), m_size(::PyList_Size(items.ptr()))
+  {
 
-  size_t Length(void) const;
+  }
+
+  size_t Length(void);
 
   py::object GetItem(size_t idx);
   py::object SetItem(size_t idx, py::object value);
@@ -136,6 +147,9 @@ public:
 
   ArrayIterator begin(void) { return ArrayIterator(this, 0);}
   ArrayIterator end(void) { return ArrayIterator(this, Length());}
+
+  // ILazyObject
+  virtual void LazyConstructor(void);
 };
 
 class CJavascriptFunction : public CJavascriptObject

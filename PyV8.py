@@ -814,6 +814,14 @@ class TestWrapper(unittest.TestCase):
             
             self.assertEqual(165, ctxt.locals.sum)
             
+    def testLazyConstructor(self):
+        class Globals(JSClass):
+            def __init__(self):
+                self.array=JSArray([1,2,3])
+        
+        with JSContext(Globals()) as ctxt:
+            self.assertEqual(2, ctxt.eval("""array[1]"""))
+            
     def testForEach(self):
         class NamedClass(JSClass):
             foo = 1
