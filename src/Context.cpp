@@ -61,9 +61,13 @@ CContext::CContext(py::object global, py::list extensions)
 
     if (extractor.check()) 
     {
-      ext_names.push_back(extractor());
-      ext_ptrs.push_back(ext_names.rbegin()->c_str());
+      ext_names.push_back(extractor());      
     }
+  }
+
+  for (size_t i=0; i<ext_names.size(); i++)
+  {
+    ext_ptrs.push_back(ext_names[i].c_str());
   }
 
   if (!ext_ptrs.empty()) cfg.reset(new v8::ExtensionConfiguration(ext_ptrs.size(), &ext_ptrs[0]));
