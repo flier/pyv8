@@ -360,15 +360,15 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 
   py::object self;
   
-  if (args.Data().IsEmpty())
-  {
-    self = CJavascriptObject::Wrap(args.This());
-  }
-  else
+  if (!args.Data().IsEmpty() && args.Data()->IsExternal())
   {
     v8::Handle<v8::External> field = v8::Handle<v8::External>::Cast(args.Data());
 
     self = *static_cast<py::object *>(field->Value());
+  }
+  else
+  {
+    self = CJavascriptObject::Wrap(args.This());
   }
 
   py::object result;

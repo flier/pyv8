@@ -665,6 +665,17 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals("abc", str(func()))
             self.assert_(func != None)
             self.assertFalse(func == None)
+            
+    def testCall(self):
+        class Hello(object):
+            def __call__(self, name):
+                return "hello " + name
+            
+        class Global(JSClass):
+            hello = Hello()
+            
+        with JSContext(Global()) as ctxt:
+            self.assertEquals("hello flier", ctxt.eval("hello('flier')"))
         
     def testJSError(self):
         with JSContext() as ctxt:
