@@ -157,6 +157,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
     return v8::Local<v8::Value>();
 
+#ifdef SUPPORT_PROPERTY
   py::object attr = obj.attr(*name);
 
   if (PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
@@ -170,7 +171,11 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   }
 
   return handle_scope.Close(Wrap(attr));
+#else
+  v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
 
+  return handle_scope.Close(result);
+#endif
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
 
@@ -187,6 +192,8 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   v8::String::AsciiValue name(prop);
 
   py::str attr_name(*name, name.length());  
+
+#ifdef SUPPORT_PROPERTY
   py::object attr = obj.attr(*name);
 
   if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) && 
@@ -203,6 +210,9 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   {
     attr = CJavascriptObject::Wrap(value);
   }
+#else
+  obj.attr(*name) = CJavascriptObject::Wrap(value);
+#endif
 
   return value;
  
@@ -241,6 +251,8 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   v8::String::AsciiValue name(prop);
 
   py::str attr_name(*name, name.length());
+ 
+#ifdef SUPPORT_PROPERTY
   py::object attr = obj.attr(*name);    
 
   if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) &&
@@ -257,6 +269,9 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   {
     return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
   }
+#else
+  return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+#endif
   
   END_HANDLE_EXCEPTION(v8::False())
 }

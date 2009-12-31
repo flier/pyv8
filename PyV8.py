@@ -87,12 +87,12 @@ class JSClass(object):
     
     def __defineGetter__(self, name, getter):
         "Binds an object's property to a function to be called when that property is looked up."
-        if hasattr(self, name):
-            setter = getattr(self, name).fset
+        if hasattr(type(self), name):
+            setter = getattr(type(self), name).fset
         else:
             setter = None
         
-        setattr(self, name, property(fget=getter, fset=setter))
+        setattr(type(self), name, property(fget=getter, fset=setter))
     
     def __lookupGetter__(self, name):
         "Return the function bound as a getter to the specified property."
@@ -100,12 +100,12 @@ class JSClass(object):
     
     def __defineSetter__(self, name, setter):
         "Binds an object's property to a function to be called when an attempt is made to set that property."
-        if hasattr(self, name):
-            getter = getattr(self, name).fget
+        if hasattr(type(self), name):
+            getter = getattr(type(self), name).fget
         else:
             getter = None
         
-        setattr(self, name, property(fget=getter, fset=setter))
+        setattr(type(self), name, property(fget=getter, fset=setter))
     
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
@@ -957,7 +957,9 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('flier', ctxt.eval("name = 'flier';"))
             self.assertEquals('flier', ctxt.eval("name"))
             self.assert_(ctxt.eval("delete name")) # FIXME
-            #self.assertEquals('deleted', ctxt.eval("name")) 
+            #self.assertEquals('deleted', ctxt.eval("name"))
+            ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
+            self.assertEquals('fixed', ctxt.eval("name"))
             
 class TestMutithread(unittest.TestCase):
     def testLocker(self):        
