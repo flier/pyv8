@@ -939,6 +939,26 @@ class TestWrapper(unittest.TestCase):
         
             self.assertEquals(count+1, sys.getrefcount(None))
             
+    def testProperty(self):
+        class Global(JSClass):
+            def __init__(self, name):
+                self._name = name
+            def getname(self):
+                return self._name
+            def setname(self, name):
+                self._name = name
+            def delname(self):
+                self._name = 'deleted'
+            
+            name = property(getname, setname, delname)            
+            
+        with JSContext(Global('world')) as ctxt:
+            self.assertEquals('world', ctxt.eval("name"))
+            self.assertEquals('flier', ctxt.eval("name = 'flier';"))
+            self.assertEquals('flier', ctxt.eval("name"))
+            self.assert_(ctxt.eval("delete name")) # FIXME
+            #self.assertEquals('deleted', ctxt.eval("name")) 
+            
 class TestMutithread(unittest.TestCase):
     def testLocker(self):        
         self.assertFalse(JSLocker.actived)

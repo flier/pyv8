@@ -4,6 +4,8 @@
 
 #include <boost/python/raw_function.hpp>
 
+#include <descrobject.h>
+
 #ifdef _WIN32
 #  define _USE_32BIT_TIME_T
 #endif
@@ -155,9 +157,19 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
     return v8::Local<v8::Value>();
 
-  v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
+  py::object attr = obj.attr(*name);
 
-  return handle_scope.Close(result);
+  if (PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+  {
+    py::object getter = attr.attr("fget");
+
+    if (getter.ptr() == Py_None)
+      throw CJavascriptException("unreadable attribute", ::PyExc_AttributeError);    
+	  
+    attr = getter();
+  }
+
+  return handle_scope.Close(Wrap(attr));
 
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
@@ -174,9 +186,23 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   v8::String::AsciiValue name(prop);
 
-  py::str attr_name(*name, name.length());
+  py::str attr_name(*name, name.length());  
+  py::object attr = obj.attr(*name);
 
-  obj.attr(*name) = CJavascriptObject::Wrap(value);
+  if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) && 
+      PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+  {
+    py::object setter = attr.attr("fset");
+    
+    if (setter.ptr() == Py_None)
+      throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
+
+    setter(CJavascriptObject::Wrap(value));    
+  }
+  else
+  {
+    attr = CJavascriptObject::Wrap(value);
+  }
 
   return value;
  
@@ -215,8 +241,22 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   v8::String::AsciiValue name(prop);
 
   py::str attr_name(*name, name.length());
-  
-  return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+  py::object attr = obj.attr(*name);    
+
+  if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) &&
+      PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+  {
+    py::object deleter = attr.attr("fdel");
+
+    if (deleter.ptr() == Py_None)
+      throw CJavascriptException("can't delete attribute", ::PyExc_AttributeError); 
+
+    return v8::Boolean::New(py::extract<bool>(deleter()));
+  }
+  else
+  {
+    return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+  }
   
   END_HANDLE_EXCEPTION(v8::False())
 }
