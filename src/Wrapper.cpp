@@ -100,7 +100,14 @@ void CPythonObject::ThrowIf(void)
   
   std::string msg;
 
-  if (::PyObject_HasAttrString(value.ptr(), "message"))
+  if (::PyObject_HasAttrString(value.ptr(), "args"))
+  {
+    py::object args = value.attr("args");
+
+    if (PyTuple_Check(args.ptr()) && PyTuple_GET_SIZE(args.ptr()))
+      msg = py::extract<const std::string>(args[0]);
+  }
+  else if (::PyObject_HasAttrString(value.ptr(), "message"))
   {
     py::extract<const std::string> extractor(value.attr("message"));
 
