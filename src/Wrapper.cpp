@@ -159,10 +159,18 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   v8::String::AsciiValue name(prop);
 
-  py::str attr_name(*name, name.length());
+  if (!::PyObject_HasAttrString(obj.ptr(), *name))
+  {
+    if (::PyMapping_Check(obj.ptr()) && 
+        ::PyMapping_HasKeyString(obj.ptr(), *name)) 
+    {      
+      py::object result(py::handle<>(::PyMapping_GetItemString(obj.ptr(), *name)));
 
-  if (!::PyObject_HasAttr(obj.ptr(), attr_name.ptr()))
+      return handle_scope.Close(Wrap(result));
+    }
+
     return v8::Local<v8::Value>();
+  }
 
 #ifdef SUPPORT_PROPERTY
   py::object attr = obj.attr(*name);
@@ -198,28 +206,34 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   v8::String::AsciiValue name(prop);
 
-  py::str attr_name(*name, name.length());  
-
-#ifdef SUPPORT_PROPERTY
-  py::object attr = obj.attr(*name);
-
-  if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) && 
-      PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+  if (!::PyObject_HasAttrString(obj.ptr(), *name) &&
+      ::PyMapping_Check(obj.ptr()))
   {
-    py::object setter = attr.attr("fset");
-    
-    if (setter.ptr() == Py_None)
-      throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
-
-    setter(CJavascriptObject::Wrap(value));    
+    ::PyMapping_SetItemString(obj.ptr(), *name, CJavascriptObject::Wrap(value).ptr());
   }
   else
   {
-    attr = CJavascriptObject::Wrap(value);
+  #ifdef SUPPORT_PROPERTY
+    py::object attr = obj.attr(*name);
+
+    if (::PyObject_HasAttrString(obj.ptr(), *name) && 
+        PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+    {
+      py::object setter = attr.attr("fset");
+      
+      if (setter.ptr() == Py_None)
+        throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
+
+      setter(CJavascriptObject::Wrap(value));    
+    }
+    else
+    {
+      attr = CJavascriptObject::Wrap(value);
+    }
+  #else
+    obj.attr(*name) = CJavascriptObject::Wrap(value);
+  #endif
   }
-#else
-  obj.attr(*name) = CJavascriptObject::Wrap(value);
-#endif
 
   return value;
  
@@ -238,9 +252,10 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
 
   v8::String::AsciiValue name(prop);
 
-  py::str attr_name(*name, name.length());
+  bool hasattr = ::PyObject_HasAttrString(obj.ptr(), *name),
+       hasitem = ::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name);
 
-  return v8::Boolean::New(0 != ::PyObject_HasAttr(obj.ptr(), attr_name.ptr()));
+  return v8::Boolean::New(hasattr || hasitem);
 
   END_HANDLE_EXCEPTION(v8::False())
 }
@@ -256,30 +271,37 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   v8::String::AsciiValue name(prop);
-
-  py::str attr_name(*name, name.length());
  
-#ifdef SUPPORT_PROPERTY
-  py::object attr = obj.attr(*name);    
-
-  if (::PyObject_HasAttr(obj.ptr(), attr_name.ptr()) &&
-      PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+  if (!::PyObject_HasAttrString(obj.ptr(), *name) &&
+      ::PyMapping_Check(obj.ptr()) && 
+      ::PyMapping_HasKeyString(obj.ptr(), *name))
   {
-    py::object deleter = attr.attr("fdel");
-
-    if (deleter.ptr() == Py_None)
-      throw CJavascriptException("can't delete attribute", ::PyExc_AttributeError); 
-
-    return v8::Boolean::New(py::extract<bool>(deleter()));
+    return v8::Boolean::New(-1 != ::PyMapping_DelItemString(obj.ptr(), *name));
   }
   else
   {
-    return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
+  #ifdef SUPPORT_PROPERTY
+    py::object attr = obj.attr(*name);    
+
+    if (::PyObject_HasAttrString(obj.ptr(), *name) &&
+        PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+    {
+      py::object deleter = attr.attr("fdel");
+
+      if (deleter.ptr() == Py_None)
+        throw CJavascriptException("can't delete attribute", ::PyExc_AttributeError); 
+
+      return v8::Boolean::New(py::extract<bool>(deleter()));
+    }
+    else
+    {
+      return v8::Boolean::New(-1 != ::PyObject_DelAttrString(obj.ptr(), *name));
+    }
+  #else
+    return v8::Boolean::New(-1 != ::PyObject_DelAttrString(obj.ptr(), *name));
+  #endif
   }
-#else
-  return v8::Boolean::New(-1 != ::PyObject_DelAttr(obj.ptr(), attr_name.ptr()));
-#endif
-  
+
   END_HANDLE_EXCEPTION(v8::False())
 }
 
@@ -292,13 +314,31 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
+  py::list keys;
+  size_t len = 0;
+  v8::Handle<v8::Array> result;
+
   if (::PyObject_HasAttrString(obj.ptr(), "__dict__"))
   {
-    py::list keys = py::dict(obj.attr("__dict__")).keys();
-    size_t len = PyList_GET_SIZE(keys.ptr());
+    keys = py::dict(obj.attr("__dict__")).keys();
+    len = PyList_GET_SIZE(keys.ptr());
 
-    v8::Handle<v8::Array> result = v8::Array::New(len);
+    result = v8::Array::New(len);
+  }
+  else if (::PyMapping_Check(obj.ptr()))
+  {
+    keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));
+    len = ::PyMapping_Size(obj.ptr());
 
+    result = v8::Array::New(len);
+  }
+  else
+  {
+    result = v8::Array::New(0);
+  }
+
+  if (len > 0)
+  {
     for (size_t i=0; i<len; i++)
     {
       result->Set(v8::Uint32::New(i), 

@@ -1252,6 +1252,7 @@ class TestEngine(unittest.TestCase):
     def testPythonWrapper(self):
         class Global(JSClass):
             s = [1, 2, 3]
+            d = {'a': {'b': 'c'}, 'd': ['e', 'f']}
             
         g = Global()
         
@@ -1262,6 +1263,14 @@ class TestEngine(unittest.TestCase):
                 delete s[1];
             """)
             self.assertEquals([2, 4], g.s)
+            self.assertEquals('c', ctxt.eval("d.a.b"))
+            self.assertEquals(['e', 'f'], ctxt.eval("d.d"))
+            ctxt.eval("""
+                d.a.q = 4
+                delete d.d
+            """)
+            self.assertEquals(4, g.d['a']['q'])
+            self.assertEquals(None, ctxt.eval("d.d"))
             
 class TestDebug(unittest.TestCase):
     def setUp(self):
