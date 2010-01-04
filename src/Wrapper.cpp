@@ -361,6 +361,9 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
+  if (index >= ::PySequence_Size(obj.ptr()))
+    return v8::Undefined();
+
   py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
   return handle_scope.Close(Wrap(ret));  

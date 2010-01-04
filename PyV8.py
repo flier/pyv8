@@ -825,6 +825,10 @@ class TestWrapper(unittest.TestCase):
             
             self.assertEqual(165, ctxt.locals.sum)
             
+            ctxt.locals.array3 = [1, 2, 3, 4, 5]
+            self.assert_(ctxt.eval('array3[1] === 2'))
+            self.assert_(ctxt.eval('array3[9] === undefined'))
+
     def testLazyConstructor(self):
         class Globals(JSClass):
             def __init__(self):
