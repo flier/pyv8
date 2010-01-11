@@ -46,7 +46,8 @@ if os.name == "nt":
   libraries += ["winmm", "ws2_32"]
   extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
   extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
-elif os.name == "posix":
+  
+elif os.name == "posix" and sys.platform in ["linux2", "cygwin"]:
   library_dirs += [
     os.environ.get('V8_HOME'),
   ]
@@ -65,6 +66,26 @@ elif os.name == "mac": # contribute by Artur Ventura
   ]
   library_dirs += [os.path.join('/lib')]
   libraries += ["boost_python", "v8", "c"]
+
+elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
+  include_dirs += [
+    "/opt/local/include", # use MacPorts to install Boost
+  ]
+  
+  library_dirs += [
+    os.environ.get('V8_HOME'),
+  ]
+  
+  libraries += ["boost_python_mt", "v8"]
+  
+  if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
+    extra_link_args += ["-fPIC"]
+    macros += [("V8_TARGET_ARCH_X64", None)]
+  else:
+    macros += [("V8_TARGET_ARCH_IA32", None)]
+      
+else:
+  print "ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform)
 
 pyv8 = Extension(name = "_PyV8",
 				 sources = [os.path.join("src", file) for file in source_files],                 
