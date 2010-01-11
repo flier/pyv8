@@ -828,6 +828,21 @@ class TestWrapper(unittest.TestCase):
             ctxt.locals.array3 = [1, 2, 3, 4, 5]
             self.assert_(ctxt.eval('array3[1] === 2'))
             self.assert_(ctxt.eval('array3[9] === undefined'))
+            
+    def testMultiDimArray(self):
+        with JSContext() as ctxt:
+            ret = ctxt.eval(""" 
+                ({ 
+                    'test': function(){ 
+                        return  [ 
+                            [ 1, 'abla' ], 
+                            [ 2, 'ajkss' ], 
+                        ] 
+                    } 
+                }) 
+                """).test()
+            
+            self.assertEquals([[1, 'abla'], [2, 'ajkss']], convert(ret))
 
     def testLazyConstructor(self):
         class Globals(JSClass):

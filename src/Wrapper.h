@@ -108,7 +108,7 @@ class CJavascriptArray : public CJavascriptObject, public ILazyObject
   size_t m_size;
 public:
   class ArrayIterator 
-    : public boost::iterator_facade<ArrayIterator, py::object const, boost::forward_traversal_tag>
+    : public boost::iterator_facade<ArrayIterator, py::object const, boost::forward_traversal_tag, py::object>
   {
     CJavascriptArray *m_array;
     size_t m_idx;
