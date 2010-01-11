@@ -56,11 +56,15 @@ void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::Clie
 {
   if (s_onDebugMessage.ptr() == Py_None) return;
 
-  std::wstring msg(reinterpret_cast<std::wstring::const_pointer>(message), length);
+  v8::HandleScope scope;  
+
+  v8::Handle<v8::String> msg(v8::String::New(message, length));
+
+  v8::String::Utf8Value str(msg);
 
   CPythonGIL python_gil;
 
-  py::call<void>(s_onDebugMessage.ptr(), msg);
+  py::call<void>(s_onDebugMessage.ptr(), py::str(*str, str.length()));
 }
 
 void CDebug::Expose(void)

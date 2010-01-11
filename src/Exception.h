@@ -6,11 +6,18 @@
 #include <v8.h>
 
 #ifdef _WIN32
+
 # pragma warning( push )
 # pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
 # pragma warning( disable : 4127 ) // conditional expression is constant
 # pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
 # pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
+
+#else
+
+#include <cmath>
+using std::isnan;
+
 #endif
 
 #include <boost/python.hpp>

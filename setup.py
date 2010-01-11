@@ -47,7 +47,7 @@ if os.name == "nt":
   extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
   extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
   
-elif os.name == "posix" and sys.platform in ["linux2", "cygwin"]:
+elif os.name == "posix" and sys.platform == "linux2":
   library_dirs += [
     os.environ.get('V8_HOME'),
   ]
