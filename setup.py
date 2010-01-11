@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os, os.path
+import sys, os, os.path
 from distutils.core import setup, Extension
+
+if not os.environ.has_key('V8_HOME') or not os.path.exists(os.path.join(os.environ.get('V8_HOME'), 'include', 'v8.h')):
+    print "ERROR: you should set V8_HOME to the Google v8 folder, or download and build it first. <http://code.google.com/p/v8/>"
+    sys.exit()
 
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
 
