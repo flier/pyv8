@@ -76,7 +76,7 @@ elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
     os.environ.get('V8_HOME'),
   ]
   
-  libraries += ["boost_python_mt", "v8"]
+  libraries += ["boost_python-mt", "v8"]
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
