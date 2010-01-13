@@ -19,6 +19,9 @@ class JSError(Exception):
     def __str__(self):
         return str(self._impl)
         
+    def __unicode__(self):
+        return unicode(self._impl)
+        
     def __getattribute__(self, attr):
         impl = super(JSError, self).__getattribute__("_impl")
         
