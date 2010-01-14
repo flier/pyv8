@@ -14,3 +14,8 @@
 // Enable the build-in python property supports
 //
 //#define SUPPORT_PROPERTY 1
+
+// 
+// Enable the javascript profiler supports
+//
+#define SUPPORT_PROFILER 1

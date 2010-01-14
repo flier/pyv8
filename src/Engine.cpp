@@ -8,7 +8,7 @@
 
 #endif
 
-#ifdef SUPPORT_EXTENSION
+#if defined(SUPPORT_EXTENSION) || defined(SUPPORT_PROFILER)
 
 #undef COMPILER
 #include "src/v8.h"
@@ -26,10 +26,6 @@
 #include "src/serialize.h"
 #include "src/stub-cache.h"
 #include "src/heap.h"
-
-#endif
-
-#ifdef SUPPORT_SERIALIZE
 
 CEngine::CounterTable CEngine::m_counters;
 
@@ -129,6 +125,35 @@ void CEngine::Expose(void)
     ;
 
 #endif 
+
+  py::enum_<v8::ProfilerModules>("JSProfilerModules")
+    .value("none", v8::PROFILER_MODULE_NONE)
+    .value("cpu", v8::PROFILER_MODULE_CPU)
+    .value("heap", v8::PROFILER_MODULE_HEAP_STATS)
+    .value("js", v8::PROFILER_MODULE_JS_CONSTRUCTORS)
+    .value("snapshot", v8::PROFILER_MODULE_HEAP_SNAPSHOT)
+    .value("all", (v8::ProfilerModules) (v8::PROFILER_MODULE_CPU | v8::PROFILER_MODULE_HEAP_STATS | 
+                                         v8::PROFILER_MODULE_JS_CONSTRUCTORS | v8::PROFILER_MODULE_HEAP_SNAPSHOT))
+    ;
+
+  py::class_<CProfiler, boost::noncopyable>("JSProfiler", py::init<>())
+    .add_static_property("started", &CProfiler::IsStarted)
+    .def("start", &CProfiler::Start)  
+    .staticmethod("start")
+    .def("stop", &CProfiler::Stop)    
+    .staticmethod("stop")
+
+    .def("getLogLines", &CProfiler::GetLogLines)
+    .staticmethod("getLogLines")
+
+    .add_static_property("paused", &v8::V8::IsProfilerPaused)
+    .def("pause", &v8::V8::PauseProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU))    
+    .staticmethod("pause")
+    .def("resume", &v8::V8::ResumeProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU))    
+    .staticmethod("resume")
+
+    .add_static_property("modules", v8::V8::GetActiveProfilerModules)
+    ;
 }
 
 #ifdef SUPPORT_SERIALIZE
@@ -489,3 +514,36 @@ py::list CExtension::GetExtensions(void)
 }
 
 #endif // SUPPORT_EXTENSION
+
+#ifdef SUPPORT_PROFILER
+
+void CProfiler::Start(void)
+{
+  char params[] = "--prof --prof_auto --logfile=*";
+
+  v8::V8::SetFlagsFromString(params, strlen(params));
+  v8::internal::Logger::Setup();
+}
+
+void CProfiler::Stop(void)
+{
+  v8::internal::Logger::TearDown();
+}
+
+bool CProfiler::IsStarted(void)
+{
+  return v8::internal::Log::IsEnabled();
+}
+
+py::tuple CProfiler::GetLogLines(int pos)
+{
+  char buf[4096];
+
+  int size = v8::V8::GetLogLines(pos, buf, sizeof(buf));
+
+  buf[size] = 0;
+
+  return py::make_tuple(size, py::str(buf, size));
+}
+
+#endif // SUPPORT_PROFILER

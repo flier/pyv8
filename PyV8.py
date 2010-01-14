@@ -8,7 +8,7 @@ import StringIO
 import _PyV8
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSExtension", "JSLocker", "JSUnlocker", "debugger"]
+           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -397,6 +397,26 @@ class JSDebug(object):
             if self.onAfterCompile: self.onAfterCompile(JSDebug.AfterCompileEvent(evt))
         
 debugger = JSDebug()
+
+class JSProfiler(_PyV8.JSProfiler):
+    Modules = _PyV8.JSProfilerModules
+    
+    @property
+    def logs(self):
+        pos = 0
+        
+        while True:
+            size, buf = self.getLogLines(pos)
+            
+            if size == 0:
+                break
+            
+            for line in buf.split('\n'):
+                yield line
+                    
+            pos += size
+        
+profiler = JSProfiler()
 
 class JSEngine(_PyV8.JSEngine):
     def __enter__(self):
@@ -1335,6 +1355,29 @@ class TestDebug(unittest.TestCase):
             self.assert_(not debugger.enabled)                
             
         self.assertEquals(4, len(self.events))
+        
+class TestProfile(unittest.TestCase):
+    def testStart(self):
+        self.assertFalse(profiler.started)
+        
+        profiler.start()
+        
+        self.assert_(profiler.started)
+        
+        profiler.stop()
+        
+        self.assertFalse(profiler.started)
+        
+    def testResume(self):
+        self.assert_(profiler.paused)
+        
+        self.assertEquals(profiler.Modules.cpu, profiler.modules)
+        
+        profiler.resume()
+        
+        profiler.resume(profiler.Modules.heap)
+        
+        self.assertFalse(profiler.paused)
         
 if __name__ == '__main__':
     if "-v" in sys.argv:

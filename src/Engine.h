@@ -105,5 +105,19 @@ public:
   static py::list GetExtensions(void);
 };
 
-
 #endif // SUPPORT_EXTENSION
+
+#ifdef SUPPORT_PROFILER
+
+class CProfiler
+{
+public:
+  static void Start(void);
+  static void Stop(void);
+
+  static bool IsStarted(void);
+
+  static py::tuple GetLogLines(int pos);
+};
+
+#endif // SUPPORT_PROFILER
