@@ -27,6 +27,8 @@ libraries = []
 extra_compile_args = []
 extra_link_args = []
   
+v8_lib = 'v8_g' if os.environ.get('DEBUG') else 'v8' # contribute by gaussgss
+
 if os.name == "nt":
   include_dirs += [
     os.environ.get('BOOST_HOME'),
@@ -52,7 +54,7 @@ elif os.name == "posix" and sys.platform == "linux2":
     os.environ.get('V8_HOME'),
   ]
   
-  libraries += ["boost_python", "v8", "rt"]
+  libraries += ["boost_python", v8_lib, "rt"]
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
@@ -65,7 +67,7 @@ elif os.name == "mac": # contribute by Artur Ventura
     os.environ.get('BOOST_HOME'),
   ]
   library_dirs += [os.path.join('/lib')]
-  libraries += ["boost_python", "v8", "c"]
+  libraries += ["boost_python", v8_lib, "c"]
 
 elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
   include_dirs += [
@@ -76,7 +78,7 @@ elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
     os.environ.get('V8_HOME'),
   ]
   
-  libraries += ["boost_python-mt", "v8"]
+  libraries += ["boost_python-mt", v8_lib]
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
