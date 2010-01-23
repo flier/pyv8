@@ -3,8 +3,32 @@
 import sys, os, os.path
 from distutils.core import setup, Extension
 
-if not os.environ.has_key('V8_HOME') or not os.path.exists(os.path.join(os.environ.get('V8_HOME'), 'include', 'v8.h')):
+# default settings, you can modify it in buildconf.py.
+# please look in buildconf.py.example for more information
+BOOST_HOME = None
+PYTHON_HOME = None
+V8_HOME = None
+INCLUDE = None
+LIB = None
+DEBUG = False
+
+# load defaults from config file
+try: from buildconf import *
+except: pass
+
+# override defaults from environment
+BOOST_HOME = os.environ.get('BOOST_HOME', BOOST_HOME)
+PYTHON_HOME = os.environ.get('PYTHON_HOME', PYTHON_HOME)
+V8_HOME = os.environ.get('V8_HOME', V8_HOME)
+INCLUDE = os.environ.get('INCLUDE', INCLUDE)
+LIB = os.environ.get('LIB', LIB)
+DEBUG = os.environ.get('DEBUG', DEBUG)
+
+if not V8_HOME:
     print "ERROR: you should set V8_HOME to the Google v8 folder, or download and build it first. <http://code.google.com/p/v8/>"
+    sys.exit()
+if not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
+    print "ERROR: V8_HOME=\"%s\" isn't valid Google v8 directory" % V8_HOME
     sys.exit()
 
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
@@ -18,30 +42,30 @@ macros = [
     ]
 
 include_dirs = [
-  os.path.join(os.environ.get('V8_HOME'), 'include'),
-  os.environ.get('V8_HOME'),
-  os.path.join(os.environ.get('V8_HOME'), 'src'),
+  os.path.join(V8_HOME, 'include'),
+  V8_HOME,
+  os.path.join(V8_HOME, 'src'),
 ]
 library_dirs = []
 libraries = []
 extra_compile_args = []
 extra_link_args = []
   
-v8_lib = 'v8_g' if os.environ.get('DEBUG') else 'v8' # contribute by gaussgss
+v8_lib = 'v8_g' if DEBUG else 'v8' # contribute by gaussgss
 
 if os.name == "nt":
   include_dirs += [
-    os.environ.get('BOOST_HOME'),
-    os.path.join(os.environ.get('PYTHON_HOME'), 'include'),
+    BOOST_HOME,
+    os.path.join(PYTHON_HOME, 'include'),
   ]
   library_dirs += [
-    os.path.join(os.environ.get('V8_HOME'), 'tools\\visual_studio\\Release\\lib'),
-    os.path.join(os.environ.get('BOOST_HOME'), 'stage/lib'),
-    os.path.join(os.environ.get('PYTHON_HOME'), 'libs'),
+    os.path.join(V8_HOME, 'tools\\visual_studio\\Release\\lib'),
+    os.path.join(BOOST_HOME, 'stage/lib'),
+    os.path.join(PYTHON_HOME, 'libs'),
   ]  
   
-  include_dirs += [p for p in os.environ["INCLUDE"].split(';') if p]
-  library_dirs += [p for p in os.environ["LIB"].split(';') if p]
+  include_dirs += [p for p in INCLUDE.split(';') if p]
+  library_dirs += [p for p in LIB.split(';') if p]
   
   macros += [("V8_TARGET_ARCH_IA32", None), ("WIN32", None)]
   
@@ -51,7 +75,7 @@ if os.name == "nt":
   
 elif os.name == "posix" and sys.platform == "linux2":
   library_dirs += [
-    os.environ.get('V8_HOME'),
+    V8_HOME,
   ]
   
   libraries += ["boost_python", v8_lib, "rt"]
@@ -64,7 +88,7 @@ elif os.name == "posix" and sys.platform == "linux2":
 
 elif os.name == "mac": # contribute by Artur Ventura
   include_dirs += [
-    os.environ.get('BOOST_HOME'),
+    BOOST_HOME,
   ]
   library_dirs += [os.path.join('/lib')]
   libraries += ["boost_python", v8_lib, "c"]
@@ -75,7 +99,7 @@ elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
   ]
   
   library_dirs += [
-    os.environ.get('V8_HOME'),
+    V8_HOME,
   ]
   
   libraries += ["boost_python-mt", v8_lib]
