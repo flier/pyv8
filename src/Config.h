@@ -19,3 +19,8 @@
 // Enable the javascript profiler supports
 //
 #define SUPPORT_PROFILER 1
+
+//
+// Enable the script AST supports
+//
+#define SUPPORT_AST 1

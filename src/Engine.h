@@ -70,6 +70,10 @@ public:
     m_script.Dispose();
   }
 
+#ifdef SUPPORT_AST
+  bool Accept(py::object callback) const;
+#endif
+
   const std::string GetSource(void) const { return m_source; }
 
   py::object Run(void);

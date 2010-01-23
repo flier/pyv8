@@ -10,25 +10,36 @@
 
 #if defined(SUPPORT_EXTENSION) || defined(SUPPORT_PROFILER)
 
-#undef COMPILER
-#include "src/v8.h"
+  #undef COMPILER
+  #include "src/v8.h"
+
+  namespace v8i = v8::internal;
 
 #endif
 
 #ifdef SUPPORT_SERIALIZE
 
-#undef COMPILER
-#include "src/v8.h"
+  #undef COMPILER
+  #include "src/v8.h"
 
-#include "src/bootstrapper.h"
-#include "src/natives.h"
-#include "src/platform.h"
-#include "src/serialize.h"
-#include "src/stub-cache.h"
-#include "src/heap.h"
+  #include "src/bootstrapper.h"
+  #include "src/natives.h"
+  #include "src/platform.h"
+  #include "src/serialize.h"
+  #include "src/stub-cache.h"
+  #include "src/heap.h"
 
-CEngine::CounterTable CEngine::m_counters;
+  CEngine::CounterTable CEngine::m_counters;
 
+  namespace v8i = v8::internal;
+
+#endif
+
+#ifdef SUPPORT_AST
+  #include "src/parser.h"
+  #include "src/compiler.h"
+
+  #include "AST.h"
 #endif
 
 void CEngine::Expose(void)
@@ -98,6 +109,10 @@ void CEngine::Expose(void)
     .add_property("source", &CScript::GetSource)
 
     .def("run", &CScript::Run)
+
+  #ifdef SUPPORT_AST
+    .def("accept", &CScript::Accept, (py::arg("callback")))
+  #endif
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
@@ -171,18 +186,18 @@ int *CEngine::CounterLookup(const char* name)
 void CEngine::SetSerializeEnable(bool value)
 {
   if (value)
-    v8::internal::Serializer::Enable();
+    v8i::Serializer::Enable();
   else
-    v8::internal::Serializer::Disable();
+    v8i::Serializer::Disable();
 }
 bool CEngine::IsSerializeEnabled(void)
 {
-  return v8::internal::Serializer::enabled();
+  return v8i::Serializer::enabled();
 }
 
-struct PyBufferByteSink : public v8::internal::SnapshotByteSink
+struct PyBufferByteSink : public v8i::SnapshotByteSink
 {
-  std::vector<v8::internal::byte> m_data;
+  std::vector<v8i::byte> m_data;
 
   virtual void Put(int byte, const char* description) 
   {
@@ -194,13 +209,13 @@ py::object CEngine::Serialize(void)
 {
   v8::V8::Initialize();
 
-  v8::internal::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
+  v8i::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
 
   PyBufferByteSink sink;
 
-  v8::internal::Serializer serializer(&sink);
+  v8i::Serializer serializer(&sink);
 
-  v8::internal::Heap::CollectAllGarbage(true);
+  v8i::Heap::CollectAllGarbage(true);
 
   serializer.Serialize();
 
@@ -244,12 +259,12 @@ void CEngine::Deserialize(py::object snapshot)
   {
     Py_BEGIN_ALLOW_THREADS
 
-    v8::internal::SnapshotByteSource source((const v8::internal::byte *) buf, len);
-    v8::internal::Deserializer deserializer(&source);
+    v8i::SnapshotByteSource source((const v8i::byte *) buf, len);
+    v8i::Deserializer deserializer(&source);
 
     //deserializer.Deserialize();
 
-    v8::internal::V8::Initialize(&deserializer);
+    v8i::V8::Initialize(&deserializer);
 
     Py_END_ALLOW_THREADS 
   }
@@ -392,6 +407,27 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
   return CJavascriptObject::Wrap(result);
 }
 
+#ifdef SUPPORT_AST
+
+bool CScript::Accept(py::object callback) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::String> source = v8::String::New(m_source.c_str(), m_source.size());
+  v8i::Handle<v8i::Script> script = v8i::Factory::NewScript(v8::Utils::OpenHandle(*source));
+
+  v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
+  v8i::PostponeInterruptsScope postpone;  
+
+  CAstVisitor adaptor(callback);
+
+  v8i::FunctionLiteral* lit = v8i::MakeAST(true, script, NULL, NULL);
+
+  return lit != NULL;
+}
+
+#endif
+
 py::object CScript::Run(void) 
 { 
   v8::HandleScope handle_scope;
@@ -522,17 +558,17 @@ void CProfiler::Start(void)
   char params[] = "--prof --prof_auto --logfile=*";
 
   v8::V8::SetFlagsFromString(params, strlen(params));
-  v8::internal::Logger::Setup();
+  v8i::Logger::Setup();
 }
 
 void CProfiler::Stop(void)
 {
-  v8::internal::Logger::TearDown();
+  v8i::Logger::TearDown();
 }
 
 bool CProfiler::IsStarted(void)
 {
-  return v8::internal::Log::IsEnabled();
+  return v8i::Log::IsEnabled();
 }
 
 py::tuple CProfiler::GetLogLines(int pos)
