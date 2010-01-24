@@ -419,9 +419,9 @@ bool CScript::Accept(py::object callback) const
   v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone;  
 
-  CAstVisitor adaptor(callback);
-
   v8i::FunctionLiteral* lit = v8i::MakeAST(true, script, NULL, NULL);
+
+  if (lit) CAstFunctionLiteral(lit).Accept(callback);
 
   return lit != NULL;
 }
