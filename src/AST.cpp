@@ -187,10 +187,33 @@ void CAstNode::Expose(void)
     .def("accept", &CAstThrow::Accept, (py::arg("callback")))
     ;
 
+  py::class_<CAstScope>("AstScope", py::no_init)
+    .add_property("is_eval", &CAstScope::is_eval)
+    .add_property("is_func", &CAstScope::is_func)
+    .add_property("is_global", &CAstScope::is_global)
+
+    .add_property("calls_eval", &CAstScope::calls_eval)
+    .add_property("outer_scope_calls_eval", &CAstScope::outer_scope_calls_eval)
+
+    .add_property("inside_with", &CAstScope::inside_with)
+    .add_property("contains_with", &CAstScope::contains_with)
+
+    .add_property("outer", &CAstScope::outer)
+
+    .def("visit_declarations", &CAstScope::visit_declarations, (py::arg("callback")))
+    ;
+
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
     .def("accept", &CAstFunctionLiteral::Accept, (py::arg("callback")))
 
-    .add_property("body", &CAstFunctionLiteral::body)
+    .add_property("name", &CAstFunctionLiteral::name)
+    .add_property("scope", &CAstFunctionLiteral::scope)    
+
+    .add_property("start_pos", &CAstFunctionLiteral::start_position)
+    .add_property("end_pos", &CAstFunctionLiteral::end_position)
+    .add_property("is_expression", &CAstFunctionLiteral::is_expression)
+
+    .def("visit_body", &CAstFunctionLiteral::visit_body, (py::arg("callback")))
     ;
 
   py::class_<CAstFunctionBoilerplateLiteral, py::bases<CAstExpression> >("AstFunctionBoilerplateLiteral", py::no_init)
@@ -206,36 +229,9 @@ void CAstNode::Expose(void)
 
 AST_NODE_LIST(DEFINE_ACCEPT)
 
-py::list CAstFunctionLiteral::body(void)
-{
-  v8i::ZoneList<v8i::Statement *> *stats = as<v8i::FunctionLiteral>()->body();
+const std::string CAstFunctionLiteral::name(void) const 
+{ 
+  v8i::Vector<const char> str = as<v8i::FunctionLiteral>()->name()->ToAsciiVector();
 
-  py::list result;
-
-  for (int i=0; i<stats->length(); i++)
-  {
-    v8i::Statement *stat = stats->at(i);
-
-    if (stat->AsBreakableStatement())
-    {
-      
-    }
-    else if(stat->AsIterationStatement())
-    {
-    }
-    else if(stat->AsExpressionStatement())
-    {
-      result.append(CAstExpressionStatement(stat->AsExpressionStatement()));
-    }
-    else if(stat->AsEmptyStatement())
-    {
-      result.append(CAstEmptyStatement(stat->AsEmptyStatement()));
-    }
-    else
-    {
-      
-    }
-  }
-
-  return result;
+  return std::string(str.start(), str.length());
 }

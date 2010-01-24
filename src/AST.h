@@ -3,6 +3,7 @@
 #undef COMPILER
 #include "src/v8.h"
 #include "src/ast.h"
+#include "src/scopes.h"
 
 #include "Wrapper.h"
 
@@ -24,6 +25,9 @@ public:
 };
 
 class CAstVisitor;
+
+template <typename T>
+void VisitZoneList(v8i::ZoneList<T *>* lst, py::object callback);
 
 class CAstStatement : public CAstNode
 {
@@ -370,6 +374,27 @@ public:
   void Accept(py::object callback);
 };
 
+class CAstScope 
+{
+  v8i::Scope *m_scope;
+public:
+  CAstScope(v8i::Scope *scope) : m_scope(scope) {}
+
+  bool is_eval(void) const { return m_scope->is_eval_scope(); }
+  bool is_func(void) const { return m_scope->is_function_scope(); }
+  bool is_global(void) const { return m_scope->is_global_scope(); }
+
+  bool calls_eval(void) const { return m_scope->calls_eval(); }
+  bool outer_scope_calls_eval(void) const { return m_scope->outer_scope_calls_eval(); }
+
+  bool inside_with(void) const { return m_scope->inside_with(); }
+  bool contains_with(void) const { return m_scope->contains_with(); }
+
+  py::object outer(void) const { return m_scope->outer_scope() ? py::object(CAstScope(m_scope->outer_scope())) : py::object(py::handle<>(py::borrowed(Py_None))); }
+
+  void visit_declarations(py::object callback) const { VisitZoneList(m_scope->declarations(), callback); }
+};
+
 class CAstFunctionLiteral : public CAstExpression
 {
 public:
@@ -377,7 +402,14 @@ public:
 
   void Accept(py::object callback);
 
-  py::list body(void);
+  const std::string name(void) const;
+  CAstScope scope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
+  void visit_body(py::object callback) { VisitZoneList(as<v8i::FunctionLiteral>()->body(), callback); }
+
+  int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
+  int end_position() const { return as<v8i::FunctionLiteral>()->end_position(); }
+  bool is_expression() const { return as<v8i::FunctionLiteral>()->is_expression(); }
+
 };
 
 class CAstFunctionBoilerplateLiteral : public CAstExpression
@@ -406,3 +438,14 @@ public:
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
 };
+
+template <typename T>
+inline void VisitZoneList(v8i::ZoneList<T *>* lst, py::object callback)
+{
+  CAstVisitor visitor(callback);
+
+  for (int i=0; i<lst->length(); i++)
+  {
+    lst->at(i)->Accept(&visitor);
+  }
+}
