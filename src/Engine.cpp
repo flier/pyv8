@@ -111,7 +111,7 @@ void CEngine::Expose(void)
     .def("run", &CScript::Run)
 
   #ifdef SUPPORT_AST
-    .def("accept", &CScript::Accept, (py::arg("callback")))
+    .def("ast", &CScript::ast, (py::arg("callback") = py::object()))
   #endif
     ;
 
@@ -409,21 +409,26 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 #ifdef SUPPORT_AST
 
-bool CScript::Accept(py::object callback) const
+py::object CScript::ast(py::object callback) const
 {
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::String> source = v8::String::New(m_source.c_str(), m_source.size());
   v8i::Handle<v8i::Script> script = v8i::Factory::NewScript(v8::Utils::OpenHandle(*source));
 
-  v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
+  v8i::CompilationZoneScope zone_scope(callback.ptr() == Py_None ? v8i::DONT_DELETE_ON_EXIT : v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone;  
 
-  v8i::FunctionLiteral* lit = v8i::MakeAST(true, script, NULL, NULL);
+  py::object ast(CAstFunctionLiteral(v8i::MakeAST(true, script, NULL, NULL)));
 
-  if (lit) CAstFunctionLiteral(lit).Accept(callback);
-
-  return lit != NULL;
+  if (callback.ptr() != Py_None)
+  {
+    return callback(ast);
+  }
+  else
+  {
+    return ast;
+  }
 }
 
 #endif

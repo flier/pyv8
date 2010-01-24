@@ -71,7 +71,7 @@ public:
   }
 
 #ifdef SUPPORT_AST
-  bool Accept(py::object callback) const;
+  py::object ast(py::object callback) const;
 #endif
 
   const std::string GetSource(void) const { return m_source; }
