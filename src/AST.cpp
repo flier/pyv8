@@ -200,7 +200,7 @@ void CAstNode::Expose(void)
 
     .add_property("outer", &CAstScope::outer)
 
-    .def("visit_declarations", &CAstScope::visit_declarations, (py::arg("callback")))
+    .add_property("declarations", &CAstScope::declarations)
     ;
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
@@ -208,12 +208,11 @@ void CAstNode::Expose(void)
 
     .add_property("name", &CAstFunctionLiteral::name)
     .add_property("scope", &CAstFunctionLiteral::scope)    
+    .add_property("body", &CAstFunctionLiteral::body)
 
     .add_property("start_pos", &CAstFunctionLiteral::start_position)
     .add_property("end_pos", &CAstFunctionLiteral::end_position)
-    .add_property("is_expression", &CAstFunctionLiteral::is_expression)
-
-    .def("visit_body", &CAstFunctionLiteral::visit_body, (py::arg("callback")))
+    .add_property("is_expression", &CAstFunctionLiteral::is_expression)    
     ;
 
   py::class_<CAstFunctionBoilerplateLiteral, py::bases<CAstExpression> >("AstFunctionBoilerplateLiteral", py::no_init)

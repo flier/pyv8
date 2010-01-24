@@ -27,7 +27,7 @@ public:
 class CAstVisitor;
 
 template <typename T>
-void VisitZoneList(v8i::ZoneList<T *>* lst, py::object callback);
+inline py::list Collect(v8i::ZoneList<T *>* lst);
 
 class CAstStatement : public CAstNode
 {
@@ -392,7 +392,7 @@ public:
 
   py::object outer(void) const { return m_scope->outer_scope() ? py::object(CAstScope(m_scope->outer_scope())) : py::object(py::handle<>(py::borrowed(Py_None))); }
 
-  void visit_declarations(py::object callback) const { VisitZoneList(m_scope->declarations(), callback); }
+  py::list declarations(void) const { return Collect(m_scope->declarations()); }
 };
 
 class CAstFunctionLiteral : public CAstExpression
@@ -404,12 +404,11 @@ public:
 
   const std::string name(void) const;
   CAstScope scope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
-  void visit_body(py::object callback) { VisitZoneList(as<v8i::FunctionLiteral>()->body(), callback); }
+  py::list body(void) const { return Collect(as<v8i::FunctionLiteral>()->body()); }
 
   int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
   int end_position() const { return as<v8i::FunctionLiteral>()->end_position(); }
   bool is_expression() const { return as<v8i::FunctionLiteral>()->is_expression(); }
-
 };
 
 class CAstFunctionBoilerplateLiteral : public CAstExpression
@@ -440,12 +439,23 @@ public:
 };
 
 template <typename T>
-inline void VisitZoneList(v8i::ZoneList<T *>* lst, py::object callback)
+inline py::list Collect(v8i::ZoneList<T *>* lst)
 {
-  CAstVisitor visitor(callback);
+  struct CAstCollector : public v8i::AstVisitor
+  {
+    py::list m_nodes;
+
+  #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }
+    AST_NODE_LIST(DECLARE_VISIT)
+  #undef DECLARE_VISIT
+  };
+
+  CAstCollector collector;
 
   for (int i=0; i<lst->length(); i++)
   {
-    lst->at(i)->Accept(&visitor);
+    lst->at(i)->Accept(&collector);
   }
+
+  return collector.m_nodes;
 }
