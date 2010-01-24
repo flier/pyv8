@@ -68,7 +68,7 @@ public:
 
 class CAstIterationStatement : public CAstBreakableStatement
 {
-public:
+protected:
   CAstIterationStatement(v8i::IterationStatement *stat) : CAstBreakableStatement(stat) {}
 };
 
@@ -376,6 +376,8 @@ public:
   CAstFunctionLiteral(v8i::FunctionLiteral *func) : CAstExpression(func) {}
 
   void Accept(py::object callback);
+
+  py::list body(void);
 };
 
 class CAstFunctionBoilerplateLiteral : public CAstExpression

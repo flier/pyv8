@@ -189,6 +189,8 @@ void CAstNode::Expose(void)
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
     .def("accept", &CAstFunctionLiteral::Accept, (py::arg("callback")))
+
+    .add_property("body", &CAstFunctionLiteral::body)
     ;
 
   py::class_<CAstFunctionBoilerplateLiteral, py::bases<CAstExpression> >("AstFunctionBoilerplateLiteral", py::no_init)
@@ -203,3 +205,37 @@ void CAstNode::Expose(void)
 #define DEFINE_ACCEPT(type) void CAst##type::Accept(py::object callback) { CAstVisitor visitor(callback); as<v8i::type>()->Accept(&visitor); }
 
 AST_NODE_LIST(DEFINE_ACCEPT)
+
+py::list CAstFunctionLiteral::body(void)
+{
+  v8i::ZoneList<v8i::Statement *> *stats = as<v8i::FunctionLiteral>()->body();
+
+  py::list result;
+
+  for (int i=0; i<stats->length(); i++)
+  {
+    v8i::Statement *stat = stats->at(i);
+
+    if (stat->AsBreakableStatement())
+    {
+      
+    }
+    else if(stat->AsIterationStatement())
+    {
+    }
+    else if(stat->AsExpressionStatement())
+    {
+      result.append(CAstExpressionStatement(stat->AsExpressionStatement()));
+    }
+    else if(stat->AsEmptyStatement())
+    {
+      result.append(CAstEmptyStatement(stat->AsEmptyStatement()));
+    }
+    else
+    {
+      
+    }
+  }
+
+  return result;
+}
