@@ -27,10 +27,10 @@ public:
 class CAstVisitor;
 
 template <typename T>
-inline py::object to_python(T *node);
+inline py::object ast_to_python(T *node);
 
 template <typename T>
-inline py::list to_python(v8i::ZoneList<T *>* lst);
+inline py::list ast_to_python(v8i::ZoneList<T *>* lst);
 
 class CAstStatement : public CAstNode
 {
@@ -104,7 +104,7 @@ class CAstExpressionStatement : public CAstStatement
 public:
   CAstExpressionStatement(v8i::ExpressionStatement *stat) : CAstStatement(stat) {}
 
-  py::object expression(void) const { return to_python(as<v8i::ExpressionStatement>()->expression()); }
+  py::object expression(void) const { return ast_to_python(as<v8i::ExpressionStatement>()->expression()); }
 };
 
 class CAstContinueStatement : public CAstStatement
@@ -252,8 +252,8 @@ class CAstCall : public CAstExpression
 public:
   CAstCall(v8i::Call *call) : CAstExpression(call) {}
 
-  py::object expression(void) const { return to_python(as<v8i::Call>()->expression()); }
-  py::list arguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
+  py::object expression(void) const { return ast_to_python(as<v8i::Call>()->expression()); }
+  py::list arguments(void) const { return ast_to_python(as<v8i::Call>()->arguments()); }
   int position(void) const { return as<v8i::Call>()->position(); }
 };
 
@@ -329,7 +329,7 @@ public:
 
   py::object outer(void) const { return m_scope->outer_scope() ? py::object(CAstScope(m_scope->outer_scope())) : py::object(py::handle<>(py::borrowed(Py_None))); }
 
-  py::list declarations(void) const { return to_python(m_scope->declarations()); }
+  py::list declarations(void) const { return ast_to_python(m_scope->declarations()); }
 };
 
 class CAstFunctionLiteral : public CAstExpression
@@ -339,7 +339,7 @@ public:
 
   const std::string name(void) const;
   CAstScope scope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
-  py::list body(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
+  py::list body(void) const { return ast_to_python(as<v8i::FunctionLiteral>()->body()); }
 
   int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
   int end_position() const { return as<v8i::FunctionLiteral>()->end_position(); }
@@ -359,7 +359,7 @@ public:
 };
 
 template <typename T>
-py::object to_python(T *node)
+py::object ast_to_python(T *node)
 {
   struct CAstCollector : public v8i::AstVisitor
   {
@@ -380,7 +380,7 @@ py::object to_python(T *node)
 }
 
 template <typename T>
-py::list to_python(v8i::ZoneList<T *>* lst)
+py::list ast_to_python(v8i::ZoneList<T *>* lst)
 {
   struct CAstCollector : public v8i::AstVisitor
   {
