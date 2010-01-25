@@ -129,9 +129,15 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstCallNew, py::bases<CAstExpression> >("AstCallNew", py::no_init)
+    .add_property("expression", &CAstCallNew::expression)
+    .add_property("arguments", &CAstCallNew::arguments)
+    .add_property("position", &CAstCallNew::position)
     ;
 
   py::class_<CAstCallRuntime, py::bases<CAstExpression> >("AstCallRuntime", py::no_init)
+    .add_property("name", &CAstCallRuntime::name)
+    .add_property("arguments", &CAstCallRuntime::arguments)
+    .add_property("is_jsruntime", &CAstCallRuntime::is_jsruntime)
     ;
 
   py::class_<CAstUnaryOperation, py::bases<CAstExpression> >("AstUnaryOperation", py::no_init)
@@ -186,12 +192,4 @@ void CAstNode::Expose(void)
 
   py::class_<CAstThisFunction, py::bases<CAstExpression> >("AstThisFunction", py::no_init)
     ;
-}
-
-const std::string CAstFunctionLiteral::name(void) const 
-{ 
-  v8i::Handle<v8i::String> name = as<v8i::FunctionLiteral>()->name();
-  v8i::Vector<const char> str = name->ToAsciiVector();
-
-  return std::string(str.start(), str.length());
 }
