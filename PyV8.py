@@ -8,7 +8,7 @@ import StringIO
 import _PyV8
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
+           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler", "AST"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -457,6 +457,56 @@ def convert(obj):
         
     return obj
 
+class AST:
+    Node = _PyV8.AstNode
+    Statement = _PyV8.AstStatement
+    Expression = _PyV8.AstExpression
+    Expression.Context = _PyV8.AstExpressionContext
+    Breakable = _PyV8.AstBreakableStatement
+    Block = _PyV8.AstBlock
+    Declaration = _PyV8.AstDeclaration
+    Iteration = _PyV8.AstIterationStatement
+    DoWhile = _PyV8.AstDoWhileStatement
+    While = _PyV8.AstWhileStatement
+    For = _PyV8.AstForStatement
+    ForIn = _PyV8.AstForInStatement
+    ExpressionStatement = _PyV8.AstExpressionStatement
+    Continue = _PyV8.AstContinueStatement
+    Break = _PyV8.AstBreakStatement
+    Return = _PyV8.AstReturnStatement
+    WithEnter = _PyV8.AstWithEnterStatement
+    WithExit = _PyV8.AstWithExitStatement
+    Case = _PyV8.AstCaseClause
+    Switch = _PyV8.AstSwitchStatement
+    Try = _PyV8.AstTryStatement
+    TryCatch = _PyV8.AstTryCatchStatement
+    TryFinally = _PyV8.AstTryFinallyStatement
+    Debugger = _PyV8.AstDebuggerStatement
+    Empty = _PyV8.AstEmptyStatement
+    Literal = _PyV8.AstLiteral
+    MaterializedLiteral = _PyV8.AstMaterializedLiteral
+    Object = _PyV8.AstObjectLiteral
+    RegExp = _PyV8.AstRegExpLiteral
+    Array = _PyV8.AstArrayLiteral
+    CatchExtension = _PyV8.AstCatchExtensionObject
+    VariableProxy = _PyV8.AstVariableProxy
+    Slot = _PyV8.AstSlot
+    Property = _PyV8.AstProperty
+    Call = _PyV8.AstCall
+    CallNew = _PyV8.AstCallNew
+    CallRuntime = _PyV8.AstCallRuntime
+    UnaryOp = _PyV8.AstUnaryOperation
+    BinOp = _PyV8.AstBinaryOperation
+    CountOp = _PyV8.AstCountOperation
+    CompOp = _PyV8.AstCompareOperation
+    Conditional = _PyV8.AstConditional
+    Assignment = _PyV8.AstAssignment
+    Throw = _PyV8.AstThrow
+    Scope = _PyV8.AstScope
+    Function = _PyV8.AstFunctionLiteral
+    FunctionBoilerplate = _PyV8.AstFunctionBoilerplateLiteral
+    This = _PyV8.AstThisFunction
+    
 import datetime
 import unittest
 import logging
