@@ -290,24 +290,44 @@ class CAstUnaryOperation : public CAstExpression
 {
 public:
   CAstUnaryOperation(v8i::UnaryOperation *op) : CAstExpression(op) {}
+
+  v8i::Token::Value op(void) const { return as<v8i::UnaryOperation>()->op(); }
+  py::object expression(void) const { return to_python(as<v8i::UnaryOperation>()->expression()); }
 };
 
 class CAstBinaryOperation : public CAstExpression
 {
 public:
   CAstBinaryOperation(v8i::BinaryOperation *op) : CAstExpression(op) {}
+
+  v8i::Token::Value op(void) const { return as<v8i::BinaryOperation>()->op(); }
+  py::object left(void) const { return to_python(as<v8i::BinaryOperation>()->left()); }
+  py::object right(void) const { return to_python(as<v8i::BinaryOperation>()->right()); }
 };
 
 class CAstCountOperation : public CAstExpression
 {
 public:
   CAstCountOperation(v8i::CountOperation *op) : CAstExpression(op) {}
+
+  bool is_prefix(void) const { return as<v8i::CountOperation>()->is_prefix(); }
+  bool is_postfix(void) const { return as<v8i::CountOperation>()->is_postfix(); }
+
+  v8i::Token::Value op(void) const { return as<v8i::CountOperation>()->op(); }
+  v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }
+  py::object expression(void) const { return to_python(as<v8i::CountOperation>()->expression()); }
 };
 
 class CAstCompareOperation : public CAstExpression
 {
 public:
   CAstCompareOperation(v8i::CompareOperation *op) : CAstExpression(op) {}
+
+  v8i::Token::Value op(void) const { return as<v8i::CompareOperation>()->op(); }
+  py::object left(void) const { return to_python(as<v8i::CompareOperation>()->left()); }
+  py::object right(void) const { return to_python(as<v8i::CompareOperation>()->right()); }
+
+  bool for_loop(void) const { return as<v8i::CompareOperation>()->is_for_loop_condition(); }
 };
 
 class CAstConditional : public CAstExpression

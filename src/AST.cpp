@@ -141,16 +141,38 @@ void CAstNode::Expose(void)
     .add_property("is_jsruntime", &CAstCallRuntime::is_jsruntime)
     ;
 
+  py::enum_<v8i::Token::Value>("AstOperation")
+  #define T(name, string, precedence) .value(#name, v8i::Token::name)
+    TOKEN_LIST(T, T, IGNORE_TOKEN)
+  #undef T
+    ;
+
   py::class_<CAstUnaryOperation, py::bases<CAstExpression> >("AstUnaryOperation", py::no_init)
+    .add_property("op", &CAstUnaryOperation::op)
+    .add_property("expression", &CAstUnaryOperation::expression)
     ;
 
   py::class_<CAstBinaryOperation, py::bases<CAstExpression> >("AstBinaryOperation", py::no_init)
+    .add_property("op", &CAstBinaryOperation::op)
+    .add_property("left", &CAstBinaryOperation::left)
+    .add_property("right", &CAstBinaryOperation::right)
     ;
 
   py::class_<CAstCountOperation, py::bases<CAstExpression> >("AstCountOperation", py::no_init)
+    .add_property("is_prefix", &CAstCountOperation::is_prefix)
+    .add_property("is_postfix", &CAstCountOperation::is_postfix)
+
+    .add_property("op", &CAstCountOperation::op)
+    .add_property("binary_op", &CAstCountOperation::binary_op)
+    .add_property("expression", &CAstCountOperation::expression)
     ;
 
   py::class_<CAstCompareOperation, py::bases<CAstExpression> >("AstCompareOperation", py::no_init)
+    .add_property("op", &CAstBinaryOperation::op)
+    .add_property("left", &CAstBinaryOperation::left)
+    .add_property("right", &CAstBinaryOperation::right)
+
+    .add_property("for_loop", &CAstCompareOperation::for_loop)
     ;
 
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
