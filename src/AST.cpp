@@ -50,6 +50,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstExpressionStatement, py::bases<CAstStatement> >("AstExpressionStatement", py::no_init)
+    .add_property("expression", &CAstExpressionStatement::expression)
     ;
 
   py::class_<CAstContinueStatement, py::bases<CAstStatement> >("AstContinueStatement", py::no_init)
@@ -122,6 +123,9 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstCall, py::bases<CAstExpression> >("AstCall", py::no_init)
+    .add_property("expression", &CAstCall::expression)
+    .add_property("arguments", &CAstCall::arguments)
+    .add_property("position", &CAstCall::position)
     ;
 
   py::class_<CAstCallNew, py::bases<CAstExpression> >("AstCallNew", py::no_init)

@@ -251,6 +251,10 @@ class CAstCall : public CAstExpression
 {
 public:
   CAstCall(v8i::Call *call) : CAstExpression(call) {}
+
+  py::object expression(void) const { return to_python(as<v8i::Call>()->expression()); }
+  py::list arguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
+  int position(void) const { return as<v8i::Call>()->position(); }
 };
 
 class CAstCallNew : public CAstExpression
