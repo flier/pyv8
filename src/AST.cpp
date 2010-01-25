@@ -60,6 +60,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstReturnStatement, py::bases<CAstStatement> >("AstReturnStatement", py::no_init)
+    .add_property("expression", &CAstReturnStatement::expression)
     ;
 
   py::class_<CAstWithEnterStatement, py::bases<CAstStatement> >("AstWithEnterStatement", py::no_init)

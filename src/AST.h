@@ -130,6 +130,8 @@ class CAstReturnStatement : public CAstStatement
 {
 public:
   CAstReturnStatement(v8i::ReturnStatement *stat) : CAstStatement(stat) {}
+
+  py::object expression(void) const { return to_python(as<v8i::ReturnStatement>()->expression()); }
 };
 
 class CAstWithEnterStatement : public CAstStatement
