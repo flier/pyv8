@@ -2,6 +2,9 @@
 # path to boost library
 BOOST_HOME = None
 
+# is boost_python-mt or plain boost_python
+BOOST_PYTHON_MT = False
+
 # path to python development headers
 PYTHON_HOME = None
 

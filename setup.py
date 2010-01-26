@@ -6,6 +6,7 @@ from distutils.core import setup, Extension
 # default settings, you can modify it in buildconf.py.
 # please look in buildconf.py.example for more information
 BOOST_HOME = None
+BOOST_PYTHON_MT = False
 PYTHON_HOME = None
 V8_HOME = None
 INCLUDE = None
@@ -19,6 +20,7 @@ except: pass
 
 # override defaults from environment
 BOOST_HOME = os.environ.get('BOOST_HOME', BOOST_HOME)
+BOOST_PYTHON_MT = os.environ.get('BOOST_PYTHON_MT', BOOST_PYTHON_MT)
 PYTHON_HOME = os.environ.get('PYTHON_HOME', PYTHON_HOME)
 V8_HOME = os.environ.get('V8_HOME', V8_HOME)
 INCLUDE = os.environ.get('INCLUDE', INCLUDE)
@@ -79,7 +81,7 @@ elif os.name == "posix" and sys.platform == "linux2":
     V8_HOME,
   ]
   
-  libraries += ["boost_python", v8_lib, "rt"]
+  libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
@@ -92,7 +94,7 @@ elif os.name == "mac": # contribute by Artur Ventura
     BOOST_HOME,
   ]
   library_dirs += [os.path.join('/lib')]
-  libraries += ["boost_python", v8_lib, "c"]
+  libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "c"]
 
 elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
   include_dirs += [
