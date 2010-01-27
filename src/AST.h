@@ -403,40 +403,40 @@ public:
   CAstThisFunction(v8i::ThisFunction *func) : CAstExpression(func) {}
 };
 
+struct CAstObjectCollector : public v8i::AstVisitor
+{
+  py::object m_obj;
+
+#define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_obj = py::object(CAst##type(node)); }
+  AST_NODE_LIST(DECLARE_VISIT)
+#undef DECLARE_VISIT
+};
+
 template <typename T>
 inline py::object to_python(T *node)
 {
-  struct CAstCollector : public v8i::AstVisitor
-  {
-    py::object m_obj;
-  
-  #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_obj = py::object(CAst##type(node)); }
-    AST_NODE_LIST(DECLARE_VISIT)
-  #undef DECLARE_VISIT
-  };
-
   if (!node) return py::object(py::handle<>(py::borrowed(Py_None)));
   
-  CAstCollector collector;
+  CAstObjectCollector collector;
 
   node->Accept(&collector);
 
   return collector.m_obj;  
 }
 
+struct CAstListCollector : public v8i::AstVisitor
+{
+  py::list m_nodes;
+
+#define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }
+  AST_NODE_LIST(DECLARE_VISIT)
+#undef DECLARE_VISIT
+};
+
 template <typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst)
 {
-  struct CAstCollector : public v8i::AstVisitor
-  {
-    py::list m_nodes;
-
-  #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }
-    AST_NODE_LIST(DECLARE_VISIT)
-  #undef DECLARE_VISIT
-  };
-
-  CAstCollector collector;
+  CAstListCollector collector;
 
   for (int i=0; i<lst->length(); i++)
   {
