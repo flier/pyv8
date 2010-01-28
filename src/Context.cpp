@@ -95,16 +95,11 @@ py::str CContext::GetSecurityToken(void)
  
   v8::Handle<v8::Value> token = m_context->GetSecurityToken();
 
-  if (token.IsEmpty())
-  {
-    return py::str(py::handle<>(py::borrowed(Py_None)));
-  }
-  else
-  {
-    v8::String::AsciiValue str(token->ToString());
+  if (token.IsEmpty()) return py::str();
+  
+  v8::String::AsciiValue str(token->ToString());
 
-    return py::str(*str, str.length());
-  }  
+  return py::str(*str, str.length());    
 }
 
 void CContext::SetSecurityToken(py::str token)
@@ -125,7 +120,7 @@ py::object CContext::GetEntered(void)
 { 
   v8::HandleScope handle_scope;
 
-  return !v8::Context::InContext() ? py::object(py::handle<>(py::borrowed(Py_None))) :
+  return !v8::Context::InContext() ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
       CContextPtr(new CContext(v8::Context::GetEntered())))));
 }
@@ -133,7 +128,7 @@ py::object CContext::GetCurrent(void)
 { 
   v8::HandleScope handle_scope;
 
-  return !v8::Context::InContext() ? py::object(py::handle<>(py::borrowed(Py_None))) :
+  return !v8::Context::InContext() ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
       CContextPtr(new CContext(v8::Context::GetCurrent()))))); 
 }
@@ -143,7 +138,7 @@ py::object CContext::GetCalling(void)
 
   v8::Handle<v8::Context> calling = v8::Context::GetCalling();
 
-  return calling.IsEmpty() ? py::object(py::handle<>(py::borrowed(Py_None))) :
+  return calling.IsEmpty() ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
       CContextPtr(new CContext(handle_scope.Close(calling))))));
 }
