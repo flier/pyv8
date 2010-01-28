@@ -458,6 +458,8 @@ def convert(obj):
     return obj
 
 class AST:
+    Scope = _PyV8.AstScope
+    Var = _PyV8.AstVariable
     Node = _PyV8.AstNode
     Statement = _PyV8.AstStatement
     Expression = _PyV8.AstExpression
@@ -489,20 +491,20 @@ class AST:
     RegExp = _PyV8.AstRegExpLiteral
     Array = _PyV8.AstArrayLiteral
     CatchExtension = _PyV8.AstCatchExtensionObject
-    VariableProxy = _PyV8.AstVariableProxy
+    VarProxy = _PyV8.AstVariableProxy
     Slot = _PyV8.AstSlot
     Property = _PyV8.AstProperty
     Call = _PyV8.AstCall
     CallNew = _PyV8.AstCallNew
     CallRuntime = _PyV8.AstCallRuntime
+    Op = _PyV8.AstOperation
     UnaryOp = _PyV8.AstUnaryOperation
     BinOp = _PyV8.AstBinaryOperation
     CountOp = _PyV8.AstCountOperation
     CompOp = _PyV8.AstCompareOperation
     Conditional = _PyV8.AstConditional
     Assignment = _PyV8.AstAssignment
-    Throw = _PyV8.AstThrow
-    Scope = _PyV8.AstScope
+    Throw = _PyV8.AstThrow    
     Function = _PyV8.AstFunctionLiteral
     FunctionBoilerplate = _PyV8.AstFunctionBoilerplateLiteral
     This = _PyV8.AstThisFunction

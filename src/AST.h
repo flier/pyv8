@@ -17,6 +17,60 @@
 
 namespace v8i = v8::internal;
 
+template <typename T>
+inline py::object to_python(T *node);
+
+template <typename T>
+inline py::list to_python(v8i::ZoneList<T *>* lst);
+
+inline py::object to_python(v8i::Handle<v8i::String> str)
+{ 
+  if (str.is_null()) return py::object();
+
+  v8i::Vector<const char> buf = str->ToAsciiVector();
+
+  return py::str(buf.start(), buf.length());
+}
+
+class CAstScope 
+{
+  v8i::Scope *m_scope;
+public:
+  CAstScope(v8i::Scope *scope) : m_scope(scope) {}
+
+  bool is_eval(void) const { return m_scope->is_eval_scope(); }
+  bool is_func(void) const { return m_scope->is_function_scope(); }
+  bool is_global(void) const { return m_scope->is_global_scope(); }
+
+  bool calls_eval(void) const { return m_scope->calls_eval(); }
+  bool outer_scope_calls_eval(void) const { return m_scope->outer_scope_calls_eval(); }
+
+  bool inside_with(void) const { return m_scope->inside_with(); }
+  bool contains_with(void) const { return m_scope->contains_with(); }
+
+  py::object outer(void) const { v8i::Scope *scope = m_scope->outer_scope(); return scope ? py::object(CAstScope(scope)) : py::object(); }
+
+  py::list declarations(void) const { return to_python(m_scope->declarations()); }
+};
+
+class CAstVariable 
+{
+  v8i::Variable *m_var;
+public:
+  CAstVariable(v8i::Variable *var) : m_var(var) {}
+
+  bool IsValidLeftHandSide(void) const { return m_var->IsValidLeftHandSide(); }
+
+  CAstScope scope(void) const { return CAstScope(m_var->scope()); }
+  py::object name(void) const { return to_python(m_var->name()); }
+  v8i::Variable::Mode mode(void) const { return m_var->mode(); }
+
+  bool is_global(void) const { return m_var->is_global(); }
+  bool is_this(void) const { return m_var->is_this(); }
+  bool is_arguments(void) const { return m_var->is_arguments(); }
+  bool is_possibly_eval(void) const { return m_var->is_possibly_eval(); }
+};
+
 class CAstNode
 {  
 protected:
@@ -31,21 +85,6 @@ public:
 
   static void Expose(void);
 };
-
-class CAstVisitor;
-
-inline py::str to_python(v8i::Handle<v8i::String> str)
-{ 
-  v8i::Vector<const char> buf = str->ToAsciiVector();
-
-  return py::str(buf.start(), buf.length());
-}
-
-template <typename T>
-inline py::object to_python(T *node);
-
-template <typename T>
-inline py::list to_python(v8i::ZoneList<T *>* lst);
 
 class CAstStatement : public CAstNode
 {
@@ -250,6 +289,13 @@ class CAstVariableProxy : public CAstExpression
 {
 public:
   CAstVariableProxy(v8i::VariableProxy *proxy) : CAstExpression(proxy) {}
+
+  bool IsValidLeftHandSide(void) const { return as<v8i::VariableProxy>()->IsValidLeftHandSide(); }
+  bool IsArguments(void) const { return as<v8i::VariableProxy>()->IsArguments(); }
+  py::object name(void) const { return to_python(as<v8i::VariableProxy>()->name()); }
+  py::object var(void) const { v8i::Variable *var = as<v8i::VariableProxy>()->var(); return var ? py::object(CAstVariable(var)) : py::object();  }
+  bool is_this() const  { return as<v8i::VariableProxy>()->is_this(); }
+  bool inside_with() const  { return as<v8i::VariableProxy>()->inside_with(); }
 };
 
 class CAstSlot : public CAstExpression
@@ -289,7 +335,7 @@ class CAstCallRuntime : public CAstExpression
 public:
   CAstCallRuntime(v8i::CallRuntime *call) : CAstExpression(call) {}
 
-  py::str name(void) const { return to_python(as<v8i::CallRuntime>()->name()); }
+  py::object name(void) const { return to_python(as<v8i::CallRuntime>()->name()); }
   py::list arguments(void) const { return to_python(as<v8i::CallRuntime>()->arguments()); }
   bool is_jsruntime(void) const { return as<v8i::CallRuntime>()->is_jsruntime(); }
 };
@@ -356,33 +402,12 @@ public:
   CAstThrow(v8i::Throw *th) : CAstExpression(th) {}
 };
 
-class CAstScope 
-{
-  v8i::Scope *m_scope;
-public:
-  CAstScope(v8i::Scope *scope) : m_scope(scope) {}
-
-  bool is_eval(void) const { return m_scope->is_eval_scope(); }
-  bool is_func(void) const { return m_scope->is_function_scope(); }
-  bool is_global(void) const { return m_scope->is_global_scope(); }
-
-  bool calls_eval(void) const { return m_scope->calls_eval(); }
-  bool outer_scope_calls_eval(void) const { return m_scope->outer_scope_calls_eval(); }
-
-  bool inside_with(void) const { return m_scope->inside_with(); }
-  bool contains_with(void) const { return m_scope->contains_with(); }
-
-  py::object outer(void) const { return m_scope->outer_scope() ? py::object(CAstScope(m_scope->outer_scope())) : py::object(py::handle<>(py::borrowed(Py_None))); }
-
-  py::list declarations(void) const { return to_python(m_scope->declarations()); }
-};
-
 class CAstFunctionLiteral : public CAstExpression
 {
 public:
   CAstFunctionLiteral(v8i::FunctionLiteral *func) : CAstExpression(func) {}
 
-  py::str name(void) const { return to_python(as<v8i::FunctionLiteral>()->name()); }
+  py::object name(void) const { return to_python(as<v8i::FunctionLiteral>()->name()); }
   CAstScope scope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
   py::list body(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
 
@@ -415,7 +440,7 @@ struct CAstObjectCollector : public v8i::AstVisitor
 template <typename T>
 inline py::object to_python(T *node)
 {
-  if (!node) return py::object(py::handle<>(py::borrowed(Py_None)));
+  if (!node) return py::object();
   
   CAstObjectCollector collector;
 

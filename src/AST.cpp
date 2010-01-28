@@ -2,6 +2,43 @@
 
 void CAstNode::Expose(void)
 {
+  py::class_<CAstScope>("AstScope", py::no_init)
+    .add_property("isEval", &CAstScope::is_eval)
+    .add_property("isFunc", &CAstScope::is_func)
+    .add_property("isGlobal", &CAstScope::is_global)
+
+    .add_property("callsEval", &CAstScope::calls_eval)
+    .add_property("outerScopeCallsEval", &CAstScope::outer_scope_calls_eval)
+
+    .add_property("insideWith", &CAstScope::inside_with)
+    .add_property("containsWith", &CAstScope::contains_with)
+
+    .add_property("outer", &CAstScope::outer)
+
+    .add_property("declarations", &CAstScope::declarations)
+    ;
+
+  py::enum_<v8i::Variable::Mode>("AstVariableMode")
+    .value("VAR", v8i::Variable::VAR)
+    .value("CONST", v8i::Variable::CONST)
+    .value("DYNAMIC", v8i::Variable::DYNAMIC)
+    .value("DYNAMIC_GLOBAL", v8i::Variable::DYNAMIC_GLOBAL)
+    .value("DYNAMIC_LOCAL", v8i::Variable::DYNAMIC_LOCAL)
+    .value("INTERNAL", v8i::Variable::INTERNAL)
+    .value("TEMPORARY", v8i::Variable::TEMPORARY)
+    ;
+
+  py::class_<CAstVariable>("AstVariable", py::no_init)
+    .add_property("scope", &CAstVariable::scope)
+    .add_property("name", &CAstVariable::name)
+    .add_property("mode", &CAstVariable::mode)
+    .add_property("isValidLeftHandSide", &CAstVariable::IsValidLeftHandSide)
+    .add_property("isGlobal", &CAstVariable::is_global)
+    .add_property("isThis", &CAstVariable::is_this)
+    .add_property("isArguments", &CAstVariable::is_arguments)
+    .add_property("isPossiblyEval", &CAstVariable::is_possibly_eval)
+    ;
+
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
     ;
 
@@ -115,6 +152,12 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstVariableProxy, py::bases<CAstExpression> >("AstVariableProxy", py::no_init)
+    .add_property("isValidLeftHandSide", &CAstVariableProxy::IsValidLeftHandSide)
+    .add_property("IsArguments", &CAstVariableProxy::IsArguments)
+    .add_property("name", &CAstVariableProxy::name)
+    .add_property("var", &CAstVariableProxy::var)
+    .add_property("isThis", &CAstVariableProxy::is_this)
+    .add_property("insideWith", &CAstVariableProxy::inside_with)
     ;
 
   py::class_<CAstSlot, py::bases<CAstExpression> >("AstSlot", py::no_init)
@@ -182,22 +225,6 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstThrow, py::bases<CAstExpression> >("AstThrow", py::no_init)
-    ;
-
-  py::class_<CAstScope>("AstScope", py::no_init)
-    .add_property("isEval", &CAstScope::is_eval)
-    .add_property("isFunc", &CAstScope::is_func)
-    .add_property("isGlobal", &CAstScope::is_global)
-
-    .add_property("callsEval", &CAstScope::calls_eval)
-    .add_property("outerScopeCallsEval", &CAstScope::outer_scope_calls_eval)
-
-    .add_property("insideWith", &CAstScope::inside_with)
-    .add_property("containsWith", &CAstScope::contains_with)
-
-    .add_property("outer", &CAstScope::outer)
-
-    .add_property("declarations", &CAstScope::declarations)
     ;
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
