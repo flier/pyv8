@@ -138,7 +138,7 @@ void CAstNode::Expose(void)
   py::class_<CAstCallRuntime, py::bases<CAstExpression> >("AstCallRuntime", py::no_init)
     .add_property("name", &CAstCallRuntime::name)
     .add_property("arguments", &CAstCallRuntime::arguments)
-    .add_property("is_jsruntime", &CAstCallRuntime::is_jsruntime)
+    .add_property("isJsRuntime", &CAstCallRuntime::is_jsruntime)
     ;
 
   py::enum_<v8i::Token::Value>("AstOperation")
@@ -159,11 +159,11 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstCountOperation, py::bases<CAstExpression> >("AstCountOperation", py::no_init)
-    .add_property("is_prefix", &CAstCountOperation::is_prefix)
-    .add_property("is_postfix", &CAstCountOperation::is_postfix)
+    .add_property("isPrefix", &CAstCountOperation::is_prefix)
+    .add_property("isPostfix", &CAstCountOperation::is_postfix)
 
     .add_property("op", &CAstCountOperation::op)
-    .add_property("binary_op", &CAstCountOperation::binary_op)
+    .add_property("binaryOp", &CAstCountOperation::binary_op)
     .add_property("expression", &CAstCountOperation::expression)
     ;
 
@@ -172,7 +172,7 @@ void CAstNode::Expose(void)
     .add_property("left", &CAstBinaryOperation::left)
     .add_property("right", &CAstBinaryOperation::right)
 
-    .add_property("for_loop", &CAstCompareOperation::for_loop)
+    .add_property("forLoop", &CAstCompareOperation::for_loop)
     ;
 
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
@@ -185,15 +185,15 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstScope>("AstScope", py::no_init)
-    .add_property("is_eval", &CAstScope::is_eval)
-    .add_property("is_func", &CAstScope::is_func)
-    .add_property("is_global", &CAstScope::is_global)
+    .add_property("isEval", &CAstScope::is_eval)
+    .add_property("isFunc", &CAstScope::is_func)
+    .add_property("isGlobal", &CAstScope::is_global)
 
-    .add_property("calls_eval", &CAstScope::calls_eval)
-    .add_property("outer_scope_calls_eval", &CAstScope::outer_scope_calls_eval)
+    .add_property("callsEval", &CAstScope::calls_eval)
+    .add_property("outerScopeCallsEval", &CAstScope::outer_scope_calls_eval)
 
-    .add_property("inside_with", &CAstScope::inside_with)
-    .add_property("contains_with", &CAstScope::contains_with)
+    .add_property("insideWith", &CAstScope::inside_with)
+    .add_property("containsWith", &CAstScope::contains_with)
 
     .add_property("outer", &CAstScope::outer)
 
@@ -205,9 +205,9 @@ void CAstNode::Expose(void)
     .add_property("scope", &CAstFunctionLiteral::scope)    
     .add_property("body", &CAstFunctionLiteral::body)
 
-    .add_property("start_pos", &CAstFunctionLiteral::start_position)
-    .add_property("end_pos", &CAstFunctionLiteral::end_position)
-    .add_property("is_expression", &CAstFunctionLiteral::is_expression)    
+    .add_property("startPos", &CAstFunctionLiteral::start_position)
+    .add_property("endPos", &CAstFunctionLiteral::end_position)
+    .add_property("isExpression", &CAstFunctionLiteral::is_expression)    
     ;
 
   py::class_<CAstFunctionBoilerplateLiteral, py::bases<CAstExpression> >("AstFunctionBoilerplateLiteral", py::no_init)
