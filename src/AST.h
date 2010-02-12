@@ -100,7 +100,6 @@ class CAstExpression : public CAstNode
 protected:
   CAstExpression(v8i::Expression *expr) : CAstNode(expr) {}
 public:
-  v8i::Expression::Context context(void) const { return as<v8i::Expression>()->context(); }
 };
 
 class CAstBreakableStatement : public CAstStatement

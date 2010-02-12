@@ -57,8 +57,7 @@ void CAstNode::Expose(void)
     .value("TestValue", v8i::Expression::kTestValue)
     ;
     
-  py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)
-    .add_property("context", &CAstExpression::context)
+  py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
