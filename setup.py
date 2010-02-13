@@ -34,7 +34,10 @@ if not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
     print "ERROR: V8_HOME=\"%s\" isn't valid Google v8 directory" % V8_HOME
     sys.exit()
 
-source_files = ["AST.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
+source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
+
+if '--support-ast' in sys.argv:
+    source_files.append("AST.cpp")
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
