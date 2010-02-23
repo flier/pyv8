@@ -162,9 +162,11 @@ void CEngine::Expose(void)
     .staticmethod("getLogLines")
 
     .add_static_property("paused", &v8::V8::IsProfilerPaused)
-    .def("pause", &v8::V8::PauseProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU))    
+    .def("pause", &v8::V8::PauseProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU,
+                                             py::arg("tag") = 0))
     .staticmethod("pause")
-    .def("resume", &v8::V8::ResumeProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU))    
+    .def("resume", &v8::V8::ResumeProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU,
+                                               py::arg("tag") = 0))
     .staticmethod("resume")
 
     .add_static_property("modules", v8::V8::GetActiveProfilerModules)
