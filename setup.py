@@ -36,9 +36,6 @@ if not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
 
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
 
-if '--support-ast' in sys.argv:
-    source_files.append("AST.cpp")
-
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
     ("V8_NATIVE_REGEXP", None),
@@ -130,7 +127,7 @@ pyv8 = Extension(name = "_PyV8",
 				 )
 
 setup(name='PyV8',
-    version='0.8',
+    version='0.9',
     description='Python Wrapper for Google V8 Engine',
     long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
     platforms="x86",
