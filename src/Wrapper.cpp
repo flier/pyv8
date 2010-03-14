@@ -315,31 +315,33 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
   py::list keys;
-  size_t len = 0;
-  v8::Handle<v8::Array> result;
-
+  
   if (::PyObject_HasAttrString(obj.ptr(), "__dict__"))
   {
     keys = py::dict(obj.attr("__dict__")).keys();
-    len = PyList_GET_SIZE(keys.ptr());
-
-    result = v8::Array::New(len);
   }
   else if (::PyMapping_Check(obj.ptr()))
   {
     keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));
-    len = ::PyMapping_Size(obj.ptr());
-
-    result = v8::Array::New(len);
   }
-  else
+  else if (PyGen_Check(obj.ptr()))
   {
-    result = v8::Array::New(0);
+    py::object iter(py::handle<>(::PyObject_GetIter(obj.ptr())));
+
+    PyObject *item = NULL;
+
+    while (NULL != (item = ::PyIter_Next(iter.ptr())))
+    {
+      keys.append(py::object(py::handle<>(item)));
+    } 
   }
+
+  Py_ssize_t len = PyList_GET_SIZE(keys.ptr());
+  v8::Handle<v8::Array> result = v8::Array::New(len);
 
   if (len > 0)
   {
-    for (size_t i=0; i<len; i++)
+    for (Py_ssize_t i=0; i<len; i++)
     {
       result->Set(v8::Uint32::New(i), 
         Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(keys.ptr(), i))))));
@@ -361,12 +363,41 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  if (index >= ::PySequence_Size(obj.ptr()))
-    return v8::Undefined();
+  if (::PySequence_Check(obj.ptr()) && index < ::PySequence_Size(obj.ptr()))
+  {
+    py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
-  py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
+    return handle_scope.Close(Wrap(ret));  
+  }
+  else if (::PyMapping_Check(obj.ptr()))
+  { 
+    char buf[65];
 
-  return handle_scope.Close(Wrap(ret));  
+    itoa(index, buf, 10);
+
+    PyObject *value = ::PyMapping_GetItemString(obj.ptr(), buf);
+
+    if (!value) 
+    {
+      py::long_ key(index);
+
+      value = ::PyObject_GetItem(obj.ptr(), key.ptr());
+    }
+
+    if (!value) 
+    {      
+      PyObject *key = ::PyInt_FromSsize_t(index);
+
+      value = ::PyObject_GetItem(obj.ptr(), key);
+
+      Py_DECREF(key);
+    }
+
+    if (value)
+    {
+      return handle_scope.Close(Wrap(py::object(py::handle<>(value))));  
+    }
+  }
   
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
@@ -380,10 +411,20 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  int ret = ::PySequence_SetItem(obj.ptr(), index, CJavascriptObject::Wrap(value).ptr());
+  if (::PySequence_Check(obj.ptr()))
+  {
+    if (::PySequence_SetItem(obj.ptr(), index, CJavascriptObject::Wrap(value).ptr()) < 0)
+      v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set indexed value")));
+  }
+  else if (::PyMapping_Check(obj.ptr()))
+  { 
+    char buf[65];
 
-  if (ret < 0) 
-    v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set indexed value")));
+    itoa(index, buf, 10);
+
+    if (::PyMapping_SetItemString(obj.ptr(), buf, CJavascriptObject::Wrap(value).ptr()) < 0)
+      v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set named value")));
+  }
 
   return value;
   
@@ -399,8 +440,25 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  return v8::Boolean::New((Py_ssize_t) index < ::PySequence_Size(obj.ptr()));
-  
+  if (::PySequence_Check(obj.ptr()))
+  {
+    py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
+
+    return v8::Boolean::New((Py_ssize_t) index < ::PySequence_Size(obj.ptr()));
+  }
+  else if (::PyMapping_Check(obj.ptr()))
+  { 
+    char buf[65];
+
+    itoa(index, buf, 10);
+
+    if (::PyMapping_HasKeyString(obj.ptr(), buf) ||
+        ::PyMapping_HasKey(obj.ptr(), py::long_(index).ptr()))
+    {
+      return v8::True();    
+    }
+  }
+
   END_HANDLE_EXCEPTION(v8::False())
 }
 v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
@@ -413,10 +471,19 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  v8::Handle<v8::Value> value = IndexedGetter(index, info);
+  if (::PySequence_Check(obj.ptr()) && index < ::PySequence_Size(obj.ptr()))
+  {
+    return v8::Boolean::New(0 <= ::PySequence_DelItem(obj.ptr(), index));
+  }
+  else if (::PyMapping_Check(obj.ptr()))
+  { 
+    char buf[65];
 
-  return v8::Boolean::New(0 <= ::PySequence_DelItem(obj.ptr(), index));
-  
+    itoa(index, buf, 10);
+
+    return v8::Boolean::New(PyMapping_DelItemString(obj.ptr(), buf) == 0);
+  }
+
   END_HANDLE_EXCEPTION(v8::False())
 }
 
@@ -429,20 +496,7 @@ v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& i
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
-  size_t len = 0;
-
-  if (PyList_Check(obj.ptr()))
-  {
-    len = PyList_GET_SIZE(obj.ptr());
-  }
-  else if (PyTuple_Check(obj.ptr()))
-  {
-    len = PyTuple_GET_SIZE(obj.ptr());
-  }
-  else if (PyDict_Check(obj.ptr()))
-  {
-    len = ::PyDict_Size(obj.ptr());
-  }
+  Py_ssize_t len = ::PySequence_Check(obj.ptr()) ? ::PySequence_Size(obj.ptr()) : 0;
 
   v8::Handle<v8::Array> result = v8::Array::New(len);
 

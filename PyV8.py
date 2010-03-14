@@ -8,7 +8,7 @@ import StringIO
 import _PyV8
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler", "AST"]
+           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -509,7 +509,9 @@ if hasattr(_PyV8, 'AstScope'):
         Function = _PyV8.AstFunctionLiteral
         FunctionBoilerplate = _PyV8.AstFunctionBoilerplateLiteral
         This = _PyV8.AstThisFunction
-    
+        
+    __all__.append('AST')
+        
 import datetime
 import unittest
 import logging
@@ -934,7 +936,7 @@ class TestWrapper(unittest.TestCase):
             
             def __init__(self):
                 self.bar = 2
-                
+
         with JSContext() as ctxt:
             func = ctxt.eval("""(function (k) {
                 var result = [];    
@@ -946,6 +948,8 @@ class TestWrapper(unittest.TestCase):
             
             self.assertEquals(["bar"], list(func(NamedClass())))
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
+            
+            self.assertEquals(["1", "2", "3"], list(func({1:1, 2:2, 3:3})))
             
     def testDict(self):
         import UserDict
