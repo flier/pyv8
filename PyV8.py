@@ -936,6 +936,11 @@ class TestWrapper(unittest.TestCase):
             
             def __init__(self):
                 self.bar = 2
+                
+        def gen(x):
+            yield 0
+            yield 1
+            yield 2
 
         with JSContext() as ctxt:
             func = ctxt.eval("""(function (k) {
@@ -950,6 +955,8 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
             
             self.assertEquals(["1", "2", "3"], list(func({1:1, 2:2, 3:3})))
+        
+            self.assertEquals(["0", "1", "2"], list(func(gen(3))))
             
     def testDict(self):
         import UserDict

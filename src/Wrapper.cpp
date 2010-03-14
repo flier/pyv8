@@ -159,6 +159,8 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   v8::String::AsciiValue name(prop);
 
+  if (PyGen_Check(obj.ptr())) return v8::Undefined();
+
   if (!::PyObject_HasAttrString(obj.ptr(), *name))
   {
     if (::PyMapping_Check(obj.ptr()) && 
@@ -252,10 +254,9 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
 
   v8::String::AsciiValue name(prop);
 
-  bool hasattr = ::PyObject_HasAttrString(obj.ptr(), *name),
-       hasitem = ::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name);
-
-  return v8::Boolean::New(hasattr || hasitem);
+  return v8::Boolean::New(PyGen_Check(obj.ptr()) ||
+                          ::PyObject_HasAttrString(obj.ptr(), *name) || 
+                          ::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
 
   END_HANDLE_EXCEPTION(v8::False())
 }
@@ -363,6 +364,8 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
+  if (PyGen_Check(obj.ptr())) return v8::Undefined();
+
   if (::PySequence_Check(obj.ptr()) && index < ::PySequence_Size(obj.ptr()))
   {
     py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
@@ -439,6 +442,8 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
+
+  if (PyGen_Check(obj.ptr())) return v8::True();
 
   if (::PySequence_Check(obj.ptr()))
   {
