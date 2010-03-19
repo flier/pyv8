@@ -585,6 +585,9 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   assert(v8::Context::InContext());
 
   v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
   CPythonGIL python_gil;
 
   if (obj.ptr() == Py_None) return v8::Null();
@@ -704,6 +707,8 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
     result = instance;
   }
+
+  if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return handle_scope.Close(result);
 }
