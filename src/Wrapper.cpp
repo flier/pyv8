@@ -163,7 +163,9 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   if (PyGen_Check(obj.ptr())) return v8::Undefined();
 
-  if (!::PyObject_HasAttrString(obj.ptr(), *name))
+  PyObject *value = ::PyObject_GetAttrString(obj.ptr(), *name);
+
+  if (!value)
   {
     if (::PyMapping_Check(obj.ptr()) && 
         ::PyMapping_HasKeyString(obj.ptr(), *name)) 
@@ -176,9 +178,9 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
     return v8::Local<v8::Value>();
   }
 
-#ifdef SUPPORT_PROPERTY
-  py::object attr = obj.attr(*name);
+  py::object attr = py::object(py::handle<>(value));
 
+#ifdef SUPPORT_PROPERTY
   if (PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
   {
     py::object getter = attr.attr("fget");
@@ -188,13 +190,10 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 	  
     attr = getter();
   }
+#endif
 
   return handle_scope.Close(Wrap(attr));
-#else
-  v8::Handle<v8::Value> result = Wrap(obj.attr(*name));
 
-  return handle_scope.Close(result);
-#endif
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
 
