@@ -1,5 +1,7 @@
 #include "Wrapper.h"
 
+#include <stdlib.h>
+
 #include <vector>
 
 #include <boost/python/raw_function.hpp>
@@ -256,7 +258,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
 
   return v8::Boolean::New(PyGen_Check(obj.ptr()) ||
                           ::PyObject_HasAttrString(obj.ptr(), *name) || 
-                          ::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
+                          (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name)));
 
   END_HANDLE_EXCEPTION(v8::False())
 }
@@ -366,7 +368,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
   if (PyGen_Check(obj.ptr())) return v8::Undefined();
 
-  if (::PySequence_Check(obj.ptr()) && index < ::PySequence_Size(obj.ptr()))
+  if (::PySequence_Check(obj.ptr()) && (Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
   {
     py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
@@ -376,7 +378,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   { 
     char buf[65];
 
-    itoa(index, buf, 10);
+    snprintf(buf, sizeof(buf), "%d", index);
 
     PyObject *value = ::PyMapping_GetItemString(obj.ptr(), buf);
 
@@ -423,7 +425,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   { 
     char buf[65];
 
-    itoa(index, buf, 10);
+    snprintf(buf, sizeof(buf), "%d", index);
 
     if (::PyMapping_SetItemString(obj.ptr(), buf, CJavascriptObject::Wrap(value).ptr()) < 0)
       v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set named value")));
@@ -455,7 +457,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
   { 
     char buf[65];
 
-    itoa(index, buf, 10);
+    snprintf(buf, sizeof(buf), "%d", index);
 
     if (::PyMapping_HasKeyString(obj.ptr(), buf) ||
         ::PyMapping_HasKey(obj.ptr(), py::long_(index).ptr()))
@@ -476,7 +478,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  if (::PySequence_Check(obj.ptr()) && index < ::PySequence_Size(obj.ptr()))
+  if (::PySequence_Check(obj.ptr()) && (Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
   {
     return v8::Boolean::New(0 <= ::PySequence_DelItem(obj.ptr(), index));
   }
@@ -484,7 +486,7 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   { 
     char buf[65];
 
-    itoa(index, buf, 10);
+    snprintf(buf, sizeof(buf), "%d", index);
 
     return v8::Boolean::New(PyMapping_DelItemString(obj.ptr(), buf) == 0);
   }
@@ -505,7 +507,7 @@ v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& i
 
   v8::Handle<v8::Array> result = v8::Array::New(len);
 
-  for (size_t i=0; i<len; i++)
+  for (Py_ssize_t i=0; i<len; i++)
   {
     result->Set(v8::Uint32::New(i), v8::Int32::New(i)->ToString());
   }
@@ -639,11 +641,11 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
 
   #else
-    int len = PyUnicode_GET_SIZE(obj.ptr());
+    Py_ssize_t len = PyUnicode_GET_SIZE(obj.ptr());
     const uint32_t *p = reinterpret_cast<const uint32_t *>(PyUnicode_AS_UNICODE(obj.ptr()));
     uint16_t *m = PyMem_NEW(uint16_t, len);
 
-    for(int i=0; i<len; i++) m[i] = (uint16_t)(p[i]);
+    for(Py_ssize_t i=0; i<len; i++) m[i] = (uint16_t)(p[i]);
     result = v8::String::New(m, len);
 
     PyMem_FREE(m);

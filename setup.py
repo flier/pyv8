@@ -82,6 +82,7 @@ elif os.name == "posix" and sys.platform == "linux2":
   ]
   
   libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
+  extra_compile_args += ["-Wno-write-strings"]
   
   if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
     extra_link_args += ["-fPIC"]
