@@ -379,8 +379,6 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::CompareOperation>()->op(); }
   py::object left(void) const { return to_python(as<v8i::CompareOperation>()->left()); }
   py::object right(void) const { return to_python(as<v8i::CompareOperation>()->right()); }
-
-  bool for_loop(void) const { return as<v8i::CompareOperation>()->is_for_loop_condition(); }
 };
 
 class CAstConditional : public CAstExpression
@@ -415,10 +413,10 @@ public:
   bool is_expression() const { return as<v8i::FunctionLiteral>()->is_expression(); }
 };
 
-class CAstFunctionBoilerplateLiteral : public CAstExpression
+class CAstSharedFunctionInfoLiteral : public CAstExpression
 {
 public:
-  CAstFunctionBoilerplateLiteral(v8i::FunctionBoilerplateLiteral *func) : CAstExpression(func) {}
+  CAstSharedFunctionInfoLiteral(v8i::SharedFunctionInfoLiteral *func) : CAstExpression(func) {}
 };
 
 class CAstThisFunction : public CAstExpression

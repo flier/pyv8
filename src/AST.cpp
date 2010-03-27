@@ -213,8 +213,6 @@ void CAstNode::Expose(void)
     .add_property("op", &CAstBinaryOperation::op)
     .add_property("left", &CAstBinaryOperation::left)
     .add_property("right", &CAstBinaryOperation::right)
-
-    .add_property("forLoop", &CAstCompareOperation::for_loop)
     ;
 
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
@@ -236,7 +234,7 @@ void CAstNode::Expose(void)
     .add_property("isExpression", &CAstFunctionLiteral::is_expression)    
     ;
 
-  py::class_<CAstFunctionBoilerplateLiteral, py::bases<CAstExpression> >("AstFunctionBoilerplateLiteral", py::no_init)
+  py::class_<CAstSharedFunctionInfoLiteral, py::bases<CAstExpression> >("AstSharedFunctionInfoLiteral", py::no_init)
     ;
 
   py::class_<CAstThisFunction, py::bases<CAstExpression> >("AstThisFunction", py::no_init)
