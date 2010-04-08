@@ -65,6 +65,9 @@ void CEngine::Expose(void)
     .def("setFlags", &CEngine::SetFlags)
     .staticmethod("setFlags")
 
+    .def("collect", v8i::Heap::CollectAllGarbage, (py::arg("force")=true))
+    .staticmethod("collect")
+
   #ifdef SUPPORT_SERIALIZE
     .add_static_property("serializeEnabled", &CEngine::IsSerializeEnabled, &CEngine::SetSerializeEnable)
 
