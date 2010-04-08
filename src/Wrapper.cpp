@@ -874,7 +874,15 @@ void CJavascriptObject::Dump(std::ostream& os) const
   else if (m_obj->IsString())  
     os << *v8::String::Utf8Value(v8::Handle<v8::String>::Cast(m_obj));  
   else 
-    os << *v8::String::Utf8Value(m_obj->ToString());
+  {
+    v8::Handle<v8::String> s = m_obj->ToString();
+
+    if (s.IsEmpty())
+      s = m_obj->ObjectProtoToString();
+
+    if (!s.IsEmpty())
+      os << *v8::String::Utf8Value(s);
+  }
 }
 
 CJavascriptObject::operator long() const 
