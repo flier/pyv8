@@ -431,7 +431,7 @@ class JSContext(_PyV8.JSContext):
             self.lock = JSLocker()
             self.lock.enter()
             
-        _PyV8.JSContext.__init__(self, obj, extensions)
+        _PyV8.JSContext.__init__(self, obj, extensions)        
         
     def __enter__(self):
         self.enter()
@@ -1067,6 +1067,36 @@ class TestWrapper(unittest.TestCase):
             ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
             self.assertEquals('fixed', ctxt.eval("name"))
             
+    def testDestructor(self):
+        owner = self
+        owner.deleted = False
+        
+        class Hello(object):
+            def say(self):
+                print "hello world"
+                
+            def __del__(self):
+                owner.deleted = True
+                
+        with JSContext() as ctxt:
+            fn = ctxt.eval("(function (obj) { obj.say(); })")
+            
+            obj = Hello()
+            
+            self.assert_(2, sys.getrefcount(obj))
+            
+            fn(obj)
+            
+            self.assert_(3, sys.getrefcount(obj))
+            
+            del obj
+            
+        self.assertFalse(owner.deleted)
+        
+        JSEngine.collect()
+        
+        self.assert_(self.deleted)
+            
 class TestMutithread(unittest.TestCase):
     def testLocker(self):        
         self.assertFalse(JSLocker.actived)
@@ -1174,7 +1204,7 @@ class TestMutithread(unittest.TestCase):
         
         self.assertEqual(20, len(g.result))
         
-    def testPreemptionJavascriptThreads(self):
+    def _testPreemptionJavascriptThreads(self):
         import time, thread, threading
         
         class Global:

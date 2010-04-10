@@ -581,23 +581,13 @@ v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
-void CPythonObject::Dispose(v8::Handle<v8::Value> value)
+void CPythonObject::DisposeCallback(v8::Persistent<v8::Value> object, void* parameter)
 {
-  v8::HandleScope handle_scope;
+  assert(v8::Handle<v8::External>::Cast(object)->Value() == parameter);
 
-  v8::TryCatch try_catch;
+  py::object *obj = static_cast<py::object *>(parameter);
 
-  if (!value.IsEmpty() && value->IsObject())
-  {
-    v8::Handle<v8::Object> obj = value->ToObject();
-
-    if (IsWrapped(obj))
-    {
-      v8::Handle<v8::External> payload = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
-
-      std::auto_ptr<py::object> pyobj(static_cast<py::object *>(payload->Value()));
-    }
-  }
+  delete obj;
 }
 
 bool CPythonObject::IsWrapped(v8::Handle<v8::Object> obj)
@@ -607,9 +597,26 @@ bool CPythonObject::IsWrapped(v8::Handle<v8::Object> obj)
 
 py::object CPythonObject::Unwrap(v8::Handle<v8::Object> obj)
 {
+  v8::HandleScope handle_scope;
+
   v8::Handle<v8::External> payload = v8::Handle<v8::External>::Cast(obj->GetInternalField(0));
 
   return *static_cast<py::object *>(payload->Value());
+}
+
+void CPythonObject::Dispose(v8::Handle<v8::Value> value)
+{
+  v8::HandleScope handle_scope;
+
+  if (value->IsObject())
+  {
+    v8::Handle<v8::Object> obj = value->ToObject();
+
+    if (IsWrapped(obj))
+    {
+      Py_DECREF(CPythonObject::Unwrap(obj).ptr());
+    }
+  }
 }
 
 v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
@@ -716,7 +723,10 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   {
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
 
-    func_tmpl->SetCallHandler(Caller, v8::External::New(new py::object(obj)));
+    v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+    v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
+
+    func_tmpl->SetCallHandler(Caller, payload);
 
     if (PyType_Check(obj.ptr()))
     {
@@ -734,6 +744,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     v8::Handle<v8::Object> instance = s_template->NewInstance();
 
     v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+    v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
 
     instance->SetInternalField(0, payload);
 
@@ -790,8 +801,6 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
   if (m_obj->Has(attr_name))
   {
     v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
-
-    CPythonObject::Dispose(attr_value);
   }
 
   if (!m_obj->Set(attr_name, attr_obj)) 
@@ -811,8 +820,6 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   if (!m_obj->Delete(attr_name)) 
     CJavascriptException::ThrowIf(try_catch);
-
-  CPythonObject::Dispose(attr_value);
 }
 py::list CJavascriptObject::GetAttrList(void)
 {
@@ -968,11 +975,11 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 
     return Wrap(new CJavascriptFunction(self, v8::Handle<v8::Function>::Cast(obj)));
   }
-  else if (obj->IsObject() && CPythonObject::IsWrapped(obj))
+  else if (CPythonObject::IsWrapped(obj))
   {
-    return CPythonObject::Unwrap(obj);    
+    return CPythonObject::Unwrap(obj);
   }
-
+  
   return Wrap(new CJavascriptObject(obj));
 }
 
@@ -1133,7 +1140,7 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
   for (size_t i=0; i<params.size(); i++)
   {
     CPythonObject::Dispose(params[i]);
-  }   
+  }
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
