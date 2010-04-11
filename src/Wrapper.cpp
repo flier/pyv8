@@ -1137,11 +1137,6 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
 
   Py_END_ALLOW_THREADS
 
-  for (size_t i=0; i<params.size(); i++)
-  {
-    CPythonObject::Dispose(params[i]);
-  }
-
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return CJavascriptObject::Wrap(result);

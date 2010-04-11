@@ -1068,6 +1068,8 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('fixed', ctxt.eval("name"))
             
     def testDestructor(self):
+        import gc
+        
         owner = self
         owner.deleted = False
         
@@ -1078,22 +1080,26 @@ class TestWrapper(unittest.TestCase):
             def __del__(self):
                 owner.deleted = True
                 
-        with JSContext() as ctxt:
-            fn = ctxt.eval("(function (obj) { obj.say(); })")
-            
-            obj = Hello()
-            
-            self.assert_(2, sys.getrefcount(obj))
-            
-            fn(obj)
-            
-            self.assert_(3, sys.getrefcount(obj))
-            
-            del obj
+        def test():
+            with JSContext() as ctxt:
+                fn = ctxt.eval("(function (obj) { obj.say(); })")
+                
+                obj = Hello()
+                
+                self.assert_(2, sys.getrefcount(obj))
+                
+                fn(obj)
+                
+                self.assert_(3, sys.getrefcount(obj))
+                
+                del obj
+                
+        test()
             
         self.assertFalse(owner.deleted)
         
         JSEngine.collect()
+        gc.collect()
         
         self.assert_(self.deleted)
             
