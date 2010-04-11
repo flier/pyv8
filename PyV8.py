@@ -1075,7 +1075,7 @@ class TestWrapper(unittest.TestCase):
         
         class Hello(object):
             def say(self):
-                print "hello world"
+                pass
                 
             def __del__(self):
                 owner.deleted = True
