@@ -115,6 +115,26 @@ void CPythonObject::ThrowIf(void)
 
     if (extractor.check()) msg = extractor();
   }
+  else if (val)
+  {
+    if (PyString_CheckExact(val))
+    {
+      msg = PyString_AS_STRING(val);
+    }
+    else if (PyTuple_CheckExact(val))
+    {
+      for (int i=0; i<PyTuple_GET_SIZE(val); i++)
+      {
+        PyObject *item = PyTuple_GET_ITEM(val, i);
+
+        if (item && PyString_CheckExact(item))
+        {
+          msg = PyString_AS_STRING(item);
+          break;
+        }
+      }
+    }
+  }
 
   v8::Handle<v8::Value> error;
 

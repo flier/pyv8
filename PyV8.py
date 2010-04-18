@@ -828,28 +828,28 @@ class TestWrapper(unittest.TestCase):
                 int(sys)
                 
             def raiseNotImplementedError(self):
-                raise NotImplementedError()
+                raise NotImplementedError("Not support")
         
         with JSContext(Global()) as ctxt:
             ctxt.eval("try { this.raiseIndexError(); } catch (e) { msg = e; }")
             
-            self.assertEqual("RangeError", str(ctxt.locals.msg))
+            self.assertEqual("RangeError: list index out of range", str(ctxt.locals.msg))
             
             ctxt.eval("try { this.raiseAttributeError(); } catch (e) { msg = e; }")
             
-            self.assertEqual("ReferenceError", str(ctxt.locals.msg))
+            self.assertEqual("ReferenceError: 'NoneType' object has no attribute 'hello'", str(ctxt.locals.msg))
             
             ctxt.eval("try { this.raiseSyntaxError(); } catch (e) { msg = e; }")
             
-            self.assertEqual("SyntaxError", str(ctxt.locals.msg))
+            self.assertEqual("SyntaxError: invalid syntax", str(ctxt.locals.msg))
             
             ctxt.eval("try { this.raiseTypeError(); } catch (e) { msg = e; }")
             
-            self.assertEqual("TypeError", str(ctxt.locals.msg))
+            self.assertEqual("TypeError: int() argument must be a string or a number, not 'module'", str(ctxt.locals.msg))
             
             ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
             
-            self.assertEqual("Error", str(ctxt.locals.msg))
+            self.assertEqual("Error: Not support", str(ctxt.locals.msg))
     def testArray(self):
         with JSContext() as ctxt:
             array = ctxt.eval("""
