@@ -67,7 +67,13 @@ class JSUnlocker(_PyV8.JSUnlocker):
     def __nonzero__(self):
         return self.entered()
         
-class JSClass(object):    
+class JSClass(object):
+    def __getattr__(self, name):        
+        if name == 'constructor':
+            return JSClassConstructor(self.__class__)
+        
+        raise AttributeError(name)
+
     def toString(self):
         "Returns a string representation of an object."
         return "[object %s]" % self.__class__.__name__
@@ -113,7 +119,21 @@ class JSClass(object):
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
         return self.name.fset
-
+        
+class JSClassConstructor(JSClass):
+    def __init__(self, cls):
+        self.cls = cls
+        
+    @property
+    def name(self):
+        return self.cls.__name__
+        
+    def toString(self):
+        return "function %s() {\n  [native code]\n}" % self.name
+    
+    def __call__(self, *args, **kwds):
+        return self.cls(*args, **kwds)
+    
 class JSDebug(object):
     class FrameData(object):
         def __init__(self, frame, count, name, value):
@@ -715,11 +735,10 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('Date', typename('var_date'))
             self.assertEquals('Date', typename('var_time'))            
             
-            # TODO: fill the constructor name of python object
-            self.assertEquals('', typename('var_myint'))
-            self.assertEquals('', typename('var_mystr'))
-            self.assertEquals('', typename('var_myunicode'))
-            self.assertEquals('', typename('var_mytime'))            
+            self.assertEquals('MyInteger', typename('var_myint'))
+            self.assertEquals('MyString', typename('var_mystr'))
+            self.assertEquals('MyUnicode', typename('var_myunicode'))
+            self.assertEquals('MyDateTime', typename('var_mytime'))            
             
             self.assertEquals('object', typeof('var_myint'))
             self.assertEquals('object', typeof('var_mystr'))
