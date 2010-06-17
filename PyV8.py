@@ -1362,7 +1362,7 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(Global.version, str(vars.version))            
             self.assertEquals(Global.version, str(ctxt.eval("version")))
                         
-            self.assertRaises(JSError, JSContext.eval, ctxt, "nonexists")
+            self.assertEquals(None, ctxt.eval("nonexists"))
             
             # setter
             self.assertEquals(2.0, float(ctxt.eval("version = 2.0")))

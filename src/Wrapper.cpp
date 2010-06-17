@@ -197,7 +197,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
       return handle_scope.Close(Wrap(result));
     }
 
-    return v8::Local<v8::Value>();
+    return v8::Undefined();
   }
 
   py::object attr = py::object(py::handle<>(value));
@@ -265,7 +265,7 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   END_HANDLE_EXCEPTION(v8::Undefined());
 }
 
-v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
+v8::Handle<v8::Integer> CPythonObject::NamedQuery(
   v8::Local<v8::String> prop, const v8::AccessorInfo& info)
 {
   TRY_HANDLE_EXCEPTION()
@@ -277,11 +277,12 @@ v8::Handle<v8::Boolean> CPythonObject::NamedQuery(
 
   v8::String::AsciiValue name(prop);
 
-  return v8::Boolean::New(PyGen_Check(obj.ptr()) ||
-                          ::PyObject_HasAttrString(obj.ptr(), *name) || 
-                          (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name)));
+  bool exists = PyGen_Check(obj.ptr()) || ::PyObject_HasAttrString(obj.ptr(), *name) || 
+                (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
 
-  END_HANDLE_EXCEPTION(v8::False())
+  return exists ? handle_scope.Close(v8::Integer::NewFromUnsigned(v8::None)) : v8::Handle<v8::Integer>();
+
+  END_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
 }
 
 v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(

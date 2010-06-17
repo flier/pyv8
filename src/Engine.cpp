@@ -313,7 +313,7 @@ py::object CEngine::PreCompile(const std::string& src)
 
   if (!precompiled.get()) CJavascriptException::ThrowIf(try_catch);
 
-  py::object obj(py::handle<>(::PyBuffer_New(sizeof(unsigned) * precompiled->Length())));
+  py::object obj(py::handle<>(::PyBuffer_New(precompiled->Length())));
 
   void *buf = NULL;
   Py_ssize_t len = 0;
@@ -357,7 +357,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
     if (0 == ::PyObject_AsReadBuffer(precompiled.ptr(), &buf, &len) && buf && len > 0)
     {
-      script_data.reset(v8::ScriptData::New((unsigned *)buf, len/sizeof(unsigned)));
+      script_data.reset(v8::ScriptData::New((const char *)buf, len));
     }
   }
 

@@ -22,7 +22,7 @@ class CPythonObject : public CWrapper
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> NamedSetter(
     v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Boolean> NamedQuery(
+  static v8::Handle<v8::Integer> NamedQuery(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
   static v8::Handle<v8::Boolean> NamedDeleter(
     v8::Local<v8::String> prop, const v8::AccessorInfo& info);
