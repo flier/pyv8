@@ -34,7 +34,8 @@ public:
   void Enter(void) { m_context->Enter(); }
   void Leave(void) { m_context->Exit(); }
 
-  py::object Evaluate(const std::string& src);
+  py::object Evaluate(const std::string& src, const std::string name = std::string(),
+                      int line = -1, int col = -1, py::object precompiled = py::object());
 
   static py::object GetEntered(void);
   static py::object GetCurrent(void);

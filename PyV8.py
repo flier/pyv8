@@ -815,9 +815,33 @@ class TestWrapper(unittest.TestCase):
                                      '    at hello (test:14:35)\n' +
                                      '    at test:17:25', e.stackTrace)
 
-                    st = JSStackTrace.GetCurrentStackTrace(4, JSStackTrace.Options.Detailed)
-
-                    self.assertEqual(1, len(st))
+    def testStackTrace(self):
+        class Global(JSClass):
+            def GetCurrentStackTrace(self, limit):
+                return JSStackTrace.GetCurrentStackTrace(4, JSStackTrace.Options.Detailed)
+                
+        with JSContext(Global()) as ctxt:
+            st = ctxt.eval("""
+                function a()
+                {
+                    return GetCurrentStackTrace(10);
+                }
+                function b()
+                {
+                    return eval("a()");
+                }
+                function c()
+                {
+                    return new b();
+                }                           
+            c();""", "test")
+            
+            self.assertEquals(4, len(st))                        
+            self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (12:28)",
+                              "\n".join(["%s.%s (%d:%d)%s%s" % (
+                                f.scriptName, f.funcName, f.lineNum, f.column,
+                                ' eval' if f.isEval else '',
+                                ' constructor' if f.isConstructor else '') for f in st]))
 
     def testPythonException(self):
         class Global(JSClass):

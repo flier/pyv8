@@ -189,6 +189,8 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   if (!value)
   {
+    ::PyErr_Clear();
+
     if (::PyMapping_Check(obj.ptr()) && 
         ::PyMapping_HasKeyString(obj.ptr(), *name)) 
     {      

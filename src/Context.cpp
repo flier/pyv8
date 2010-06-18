@@ -23,7 +23,11 @@ void CContext::Expose(void)
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
 
-    .def("eval", &CContext::Evaluate)
+    .def("eval", &CContext::Evaluate, (py::arg("source"), 
+                                       py::arg("name") = std::string(),
+                                       py::arg("line") = -1,
+                                       py::arg("col") = -1,
+                                       py::arg("precompiled") = py::object()))
 
     .def("enter", &CContext::Enter, "Enter this context. "
          "After entering a context, all code compiled and "
@@ -143,11 +147,14 @@ py::object CContext::GetCalling(void)
       CContextPtr(new CContext(handle_scope.Close(calling))))));
 }
 
-py::object CContext::Evaluate(const std::string& src) 
+py::object CContext::Evaluate(const std::string& src, 
+                              const std::string name,
+                              int line, int col,
+                              py::object precompiled) 
 { 
   CEngine engine;
 
-  CScriptPtr script = engine.Compile(src);
+  CScriptPtr script = engine.Compile(src, name, line, col, precompiled);
 
   return script->Run(); 
 }
