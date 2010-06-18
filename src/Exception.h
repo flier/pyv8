@@ -3,6 +3,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/iterator/iterator_facade.hpp>
+
 #include <v8.h>
 
 #ifdef _WIN32
@@ -63,7 +65,8 @@ class CJavascriptStackTrace
 {
   v8::Persistent<v8::StackTrace> m_st;
 public:
-  CJavascriptStackTrace(v8::Handle<v8::StackTrace> st) : m_st(st)
+  CJavascriptStackTrace(v8::Handle<v8::StackTrace> st) 
+    : m_st(v8::Persistent<v8::StackTrace>::New(st))
   {
 
   }
@@ -73,13 +76,35 @@ public:
 
   static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit, 
     v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview);
+
+  class FrameIterator 
+    : public boost::iterator_facade<FrameIterator, CJavascriptStackFramePtr const, boost::forward_traversal_tag, CJavascriptStackFramePtr>
+  {
+    CJavascriptStackTrace *m_st;
+    size_t m_idx;
+  public:
+    FrameIterator(CJavascriptStackTrace *st, size_t idx)
+      : m_st(st), m_idx(idx)
+    {
+    }
+
+    void increment() { m_idx++; }
+
+    bool equal(FrameIterator const& other) const { return m_st == other.m_st && m_idx == other.m_idx; }
+
+    reference dereference() const { return m_st->GetFrame(m_idx); }
+  };
+
+  FrameIterator begin(void) { return FrameIterator(this, 0);}
+  FrameIterator end(void) { return FrameIterator(this, GetFrameCount());}
 };
 
 class CJavascriptStackFrame
 {
   v8::Persistent<v8::StackFrame> m_frame;
 public:
-  CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame) : m_frame(frame)
+  CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame) 
+    : m_frame(v8::Persistent<v8::StackFrame>::New(frame))
   {
 
   }

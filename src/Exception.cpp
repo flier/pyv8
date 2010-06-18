@@ -49,6 +49,8 @@ void CJavascriptException::Expose(void)
 
     .def("GetCurrentStackTrace", &CJavascriptStackTrace::GetCurrentStackTrace)
     .staticmethod("GetCurrentStackTrace")
+
+    .def("__iter__", py::range(&CJavascriptStackTrace::begin, &CJavascriptStackTrace::end))
     ;
 
   py::enum_<v8::StackTrace::StackTraceOptions>("JSStackTraceOptions")
@@ -129,12 +131,16 @@ CJavascriptStackFramePtr CJavascriptStackTrace::GetFrame(size_t idx) const
 
 const std::string CJavascriptStackFrame::GetScriptName() const 
 { 
+  v8::HandleScope handle_scope;
+
   v8::String::AsciiValue name(m_frame->GetScriptName());
 
   return std::string(*name, name.length());
 }
 const std::string CJavascriptStackFrame::GetFunctionName() const
 {
+  v8::HandleScope handle_scope;
+
   v8::String::AsciiValue name(m_frame->GetFunctionName());
 
   return std::string(*name, name.length());
