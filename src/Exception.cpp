@@ -43,6 +43,42 @@ std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
 
 void CJavascriptException::Expose(void)
 {
+  py::class_<CJavascriptStackTrace>("JSStackTrace", py::no_init)
+    .def("__len__", &CJavascriptStackTrace::GetFrameCount)
+    .def("__getitem__", &CJavascriptStackTrace::GetFrame)
+
+    .def("GetCurrentStackTrace", &CJavascriptStackTrace::GetCurrentStackTrace)
+    .staticmethod("GetCurrentStackTrace")
+    ;
+
+  py::enum_<v8::StackTrace::StackTraceOptions>("JSStackTraceOptions")
+    .value("LineNumber", v8::StackTrace::kLineNumber)
+    .value("ColumnOffset", v8::StackTrace::kColumnOffset)
+    .value("ScriptName", v8::StackTrace::kScriptName)
+    .value("FunctionName", v8::StackTrace::kFunctionName)
+    .value("IsEval", v8::StackTrace::kIsEval)
+    .value("IsConstructor", v8::StackTrace::kIsConstructor)
+    .value("Overview", v8::StackTrace::kOverview)
+    .value("Detailed", v8::StackTrace::kDetailed)
+    ;
+
+  py::class_<CJavascriptStackFrame>("JSStackFrame", py::no_init)
+    .add_property("lineNum", &CJavascriptStackFrame::GetLineNumber)
+    .add_property("column", &CJavascriptStackFrame::GetColumn)
+    .add_property("scriptName", &CJavascriptStackFrame::GetScriptName)
+    .add_property("funcName", &CJavascriptStackFrame::GetFunctionName)
+    .add_property("isEval", &CJavascriptStackFrame::IsEval)
+    .add_property("isConstructor", &CJavascriptStackFrame::IsConstructor)
+    ;
+
+  py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptStackTrace>, 
+    py::objects::make_ptr_instance<CJavascriptStackTrace, 
+    py::objects::pointer_holder<boost::shared_ptr<CJavascriptStackTrace>, CJavascriptStackTrace> > >();
+
+  py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptStackFrame>, 
+    py::objects::make_ptr_instance<CJavascriptStackFrame, 
+    py::objects::pointer_holder<boost::shared_ptr<CJavascriptStackFrame>, CJavascriptStackFrame> > >();
+
   py::class_<CJavascriptException>("_JSError", py::no_init)
     .def(str(py::self))
 
@@ -62,6 +98,46 @@ void CJavascriptException::Expose(void)
 
   py::converter::registry::push_back(ExceptionTranslator::Convertible,
     ExceptionTranslator::Construct, py::type_id<CJavascriptException>());
+}
+
+CJavascriptStackTracePtr CJavascriptStackTrace::GetCurrentStackTrace(
+  int frame_limit, v8::StackTrace::StackTraceOptions options)
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  v8::Handle<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(frame_limit, options);
+
+  if (st.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+
+  return boost::shared_ptr<CJavascriptStackTrace>(new CJavascriptStackTrace(st));
+}
+
+CJavascriptStackFramePtr CJavascriptStackTrace::GetFrame(size_t idx) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::TryCatch try_catch;
+
+  v8::Handle<v8::StackFrame> frame = m_st->GetFrame(idx);
+
+  if (frame.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+
+  return boost::shared_ptr<CJavascriptStackFrame>(new CJavascriptStackFrame(frame));
+}
+
+const std::string CJavascriptStackFrame::GetScriptName() const 
+{ 
+  v8::String::AsciiValue name(m_frame->GetScriptName());
+
+  return std::string(*name, name.length());
+}
+const std::string CJavascriptStackFrame::GetFunctionName() const
+{
+  v8::String::AsciiValue name(m_frame->GetFunctionName());
+
+  return std::string(*name, name.length());
 }
 const std::string CJavascriptException::GetName(void) 
 {

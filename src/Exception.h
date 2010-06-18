@@ -20,6 +20,8 @@ using std::isnan;
 
 #endif
 
+#include <boost/shared_ptr.hpp>
+
 #include <boost/python.hpp>
 namespace py = boost::python;
 
@@ -49,6 +51,45 @@ struct ExceptionTranslator
 
   static void *Convertible(PyObject* obj);
   static void Construct(PyObject* obj, py::converter::rvalue_from_python_stage1_data* data);
+};
+
+class CJavascriptStackTrace;
+class CJavascriptStackFrame;
+
+typedef boost::shared_ptr<CJavascriptStackTrace> CJavascriptStackTracePtr;
+typedef boost::shared_ptr<CJavascriptStackFrame> CJavascriptStackFramePtr;
+
+class CJavascriptStackTrace
+{
+  v8::Persistent<v8::StackTrace> m_st;
+public:
+  CJavascriptStackTrace(v8::Handle<v8::StackTrace> st) : m_st(st)
+  {
+
+  }
+
+  int GetFrameCount() const { return m_st->GetFrameCount(); }
+  CJavascriptStackFramePtr GetFrame(size_t idx) const;
+
+  static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit, 
+    v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview);
+};
+
+class CJavascriptStackFrame
+{
+  v8::Persistent<v8::StackFrame> m_frame;
+public:
+  CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame) : m_frame(frame)
+  {
+
+  }
+
+  int GetLineNumber() const { return m_frame->GetLineNumber(); }
+  int GetColumn() const { return m_frame->GetColumn(); }
+  const std::string GetScriptName() const;
+  const std::string GetFunctionName() const;
+  bool IsEval() const { return m_frame->IsEval(); }
+  bool IsConstructor() const { return m_frame->IsConstructor(); }
 };
 
 class CJavascriptException : public std::runtime_error
