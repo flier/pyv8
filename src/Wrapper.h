@@ -89,6 +89,9 @@ public:
 
   py::list GetAttrList(void);
 
+  int GetIdentityHash(void) { return m_obj->GetIdentityHash(); }
+  CJavascriptObjectPtr Clone(void);
+
   bool Contains(const std::string& name);
   
   operator long() const;
@@ -179,5 +182,7 @@ public:
   py::object Invoke(py::list args, py::dict kwds);
 
   const std::string GetName(void) const;
+  void SetName(const std::string name);
+
   py::object GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
 };

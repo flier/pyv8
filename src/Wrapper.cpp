@@ -34,6 +34,9 @@ void CWrapper::Expose(void)
     .def("__setattr__", &CJavascriptObject::SetAttr)
     .def("__delattr__", &CJavascriptObject::DelAttr)    
 
+    .def("__hash__", &CJavascriptObject::GetIdentityHash)
+    .def("clone", &CJavascriptObject::Clone)
+
     .add_property("__members__", &CJavascriptObject::GetAttrList)
 
     // Emulating dict object
@@ -76,8 +79,8 @@ void CWrapper::Expose(void)
          (py::arg("self"), 
           py::arg("args") = py::list(), 
           py::arg("kwds") = py::dict()))
-    .add_property("func_name", &CJavascriptFunction::GetName)
-    .add_property("func_owner", &CJavascriptFunction::GetOwner)
+    .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName)
+    .add_property("owner", &CJavascriptFunction::GetOwner)
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
@@ -867,6 +870,13 @@ py::list CJavascriptObject::GetAttrList(void)
   return attrs;
 }
 
+CJavascriptObjectPtr CJavascriptObject::Clone(void)
+{
+  v8::HandleScope handle_scope;
+
+  return CJavascriptObjectPtr(new CJavascriptObject(m_obj->Clone()));
+}
+
 bool CJavascriptObject::Contains(const std::string& name)
 {
   v8::HandleScope handle_scope;
@@ -1189,4 +1199,13 @@ const std::string CJavascriptFunction::GetName(void) const
   v8::String::AsciiValue name(v8::Handle<v8::String>::Cast(func->GetName()));
 
   return std::string(*name, name.length());
+}
+
+void CJavascriptFunction::SetName(const std::string name)
+{
+  v8::HandleScope handle_scope;
+  
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  func->SetName(v8::String::New(name.c_str(), name.size()));
 }

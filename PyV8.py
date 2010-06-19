@@ -8,7 +8,7 @@ import StringIO
 import _PyV8
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSStackTrace", "JSStackTraceOptions", "JSStackFrame", \
+           "JSStackTrace", "JSStackFrame", \
            "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
 
 class JSError(Exception):
@@ -662,6 +662,17 @@ class TestContext(unittest.TestCase):
             self.assertEquals(3, int(env1.locals.prop))
 
 class TestWrapper(unittest.TestCase):
+    def testObject(self):
+        with JSContext() as ctxt:
+            o = ctxt.eval("new Object()")
+            
+            self.assert_(hash(o) > 0)
+            
+            o1 = o.clone()
+            
+            self.assertEquals(hash(o1), hash(o))
+            self.assert_(o != o1)
+    
     def testAutoConverter(self):
         with JSContext() as ctxt:
             ctxt.eval("""
@@ -767,6 +778,16 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals("abc", str(func()))
             self.assert_(func != None)
             self.assertFalse(func == None)
+            
+            func = ctxt.eval("(function test() {})")
+                                    
+            self.assertEquals("test", func.name)
+            
+            #TODO fix me, why the setter doesn't work?
+            
+            func.name = "hello"
+                        
+            #self.assertEquals("hello", func.name)
 
     def testCall(self):
         class Hello(object):
