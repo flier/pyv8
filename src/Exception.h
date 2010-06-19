@@ -77,6 +77,8 @@ public:
   static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit, 
     v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview);
 
+  const std::string ToString(void) const;
+
   class FrameIterator 
     : public boost::iterator_facade<FrameIterator, CJavascriptStackFramePtr const, boost::forward_traversal_tag, CJavascriptStackFramePtr>
   {
