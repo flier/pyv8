@@ -41,6 +41,13 @@ std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
   return os;
 }
 
+std::ostream& operator <<(std::ostream& os, const CJavascriptStackTrace& obj)
+{ 
+  obj.Dump(os);
+
+  return os;
+}
+
 void CJavascriptException::Expose(void)
 {
   py::class_<CJavascriptStackTrace>("JSStackTrace", py::no_init)
@@ -51,7 +58,8 @@ void CJavascriptException::Expose(void)
     .staticmethod("GetCurrentStackTrace")
 
     .def("__iter__", py::range(&CJavascriptStackTrace::begin, &CJavascriptStackTrace::end))
-    .def("__str__", &CJavascriptStackTrace::ToString)
+
+    .def(str(py::self))
     ;
 
   py::enum_<v8::StackTrace::StackTraceOptions>("JSStackTraceOptions")
@@ -130,7 +138,7 @@ CJavascriptStackFramePtr CJavascriptStackTrace::GetFrame(size_t idx) const
   return boost::shared_ptr<CJavascriptStackFrame>(new CJavascriptStackFrame(frame));
 }
 
-const std::string CJavascriptStackTrace::ToString(void) const
+void CJavascriptStackTrace::Dump(std::ostream& os) const
 {
   v8::HandleScope handle_scope;
 
@@ -144,28 +152,26 @@ const std::string CJavascriptStackTrace::ToString(void) const
 
     v8::String::AsciiValue funcName(frame->GetFunctionName()), scriptName(frame->GetScriptName());
 
-    oss << "\tat ";
+    os << "\tat ";
     
     if (funcName.length())
-      oss << std::string(*funcName, funcName.length()) << " (";
+      os << std::string(*funcName, funcName.length()) << " (";
 
     if (frame->IsEval())
     {
-      oss << "(eval)";
+      os << "(eval)";
     }
     else
     {
-      oss << std::string(*scriptName, scriptName.length()) << ":" 
+      os << std::string(*scriptName, scriptName.length()) << ":" 
           << frame->GetLineNumber() << ":" << frame->GetColumn();
     }
 
     if (funcName.length())
-      oss << ")";
+      os << ")";
 
-    oss << std::endl;
+    os << std::endl;
   }
-
-  return oss.str();
 }
 
 const std::string CJavascriptStackFrame::GetScriptName() const 
