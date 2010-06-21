@@ -532,7 +532,7 @@ if hasattr(_PyV8, 'AstScope'):
         Assignment = _PyV8.AstAssignment
         Throw = _PyV8.AstThrow
         Function = _PyV8.AstFunctionLiteral
-        FunctionBoilerplate = _PyV8.AstFunctionBoilerplateLiteral
+        SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
         This = _PyV8.AstThisFunction
 
     __all__.append('AST')
@@ -1553,6 +1553,10 @@ class TestProfile(unittest.TestCase):
 
         # TODO enable profiler with resume
         #self.assertFalse(profiler.paused)
+
+if hasattr(_PyV8, 'AstScope'):
+    class TestAST(unittest.TestCase):
+        pass
 
 if __name__ == '__main__':
     if "-v" in sys.argv:
