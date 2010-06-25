@@ -111,8 +111,15 @@ void CPythonObject::ThrowIf(void)
   {
     py::object args = value.attr("args");
 
-    if (PyTuple_Check(args.ptr()) && PyTuple_GET_SIZE(args.ptr()))
-      msg = py::extract<const std::string>(args[0]);
+    if (PyTuple_Check(args.ptr()))
+    {
+      for (Py_ssize_t i=0; i<PyTuple_GET_SIZE(args.ptr()); i++)
+      {
+        py::extract<const std::string> extractor(args[i]);
+
+        if (extractor.check()) msg += extractor();
+      }
+    }
   }
   else if (::PyObject_HasAttrString(value.ptr(), "message"))
   {
