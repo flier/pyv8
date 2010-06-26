@@ -114,7 +114,7 @@ void CEngine::Expose(void)
     .def("run", &CScript::Run)
 
   #ifdef SUPPORT_AST
-    .def("ast", &CScript::ast, (py::arg("callback") = py::object()))
+    .def("visit", &CScript::visit, (py::arg("handler")))
   #endif
     ;
 
@@ -344,7 +344,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::String> script_source = v8::String::New(src.c_str());
+  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(v8::String::New(src.c_str()));
   v8::Handle<v8::Value> script_name = name.empty() ? v8::Undefined() : v8::String::New(name.c_str());
 
   v8::Handle<v8::Script> script;
@@ -380,7 +380,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
   if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
-  return boost::shared_ptr<CScript>(new CScript(*this, src, script));
+  return boost::shared_ptr<CScript>(new CScript(*this, script_source, script));
 }
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
@@ -414,29 +414,37 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 #ifdef SUPPORT_AST
 
-py::object CScript::ast(py::object callback) const
+void CScript::visit(py::object handler) const
 {
   v8::HandleScope handle_scope;
 
-  v8::Handle<v8::String> source = v8::String::New(m_source.c_str(), m_source.size());
-  v8i::Handle<v8i::Script> script = v8i::Factory::NewScript(v8::Utils::OpenHandle(*source));
+  v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*m_script);
+  v8i::Handle<v8i::SharedFunctionInfo> func = obj->IsSharedFunctionInfo() ?
+    v8i::Handle<v8i::SharedFunctionInfo>(v8i::SharedFunctionInfo::cast(*obj)) :
+    v8i::Handle<v8i::SharedFunctionInfo>(v8i::JSFunction::cast(*obj)->shared());
+  v8i::Handle<v8i::Script> script(v8i::Script::cast(func->script()));
 
-  v8i::CompilationZoneScope zone_scope(callback.ptr() == Py_None ? v8i::DONT_DELETE_ON_EXIT : v8i::DELETE_ON_EXIT);
+  v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone;  
 
-  py::object ast(CAstFunctionLiteral(v8i::MakeAST(true, script, NULL, NULL)));
+  v8i::FunctionLiteral* program = v8i::MakeAST(true, script, NULL, NULL);
 
-  if (callback.ptr() != Py_None)
+  CAstVisitor visitor(handler);
+
+  for (int i=0; i<program->body()->length(); i++)
   {
-    return callback(ast);
-  }
-  else
-  {
-    return ast;
+    visitor.Visit(program->body()->at(i));
   }
 }
 
 #endif
+
+const std::string CScript::GetSource(void) const 
+{ 
+  v8::String::Utf8Value source(m_source); 
+
+  return std::string(*source, source.length());
+}
 
 py::object CScript::Run(void) 
 { 

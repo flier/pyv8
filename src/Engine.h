@@ -55,26 +55,26 @@ public:
 class CScript
 {
   CEngine& m_engine;
-  const std::string m_source;
 
+  v8::Persistent<v8::String> m_source;
   v8::Persistent<v8::Script> m_script;  
 public:
-  CScript(CEngine& engine, const std::string& source, v8::Handle<v8::Script> script) 
-    : m_engine(engine), m_source(source), 
-      m_script(v8::Persistent<v8::Script>::New(script))
+  CScript(CEngine& engine, v8::Persistent<v8::String> source, v8::Handle<v8::Script> script) 
+    : m_engine(engine), m_source(source), m_script(v8::Persistent<v8::Script>::New(script))
   {
 
   }
   ~CScript()
   {
+    m_source.Dispose();
     m_script.Dispose();
   }
 
 #ifdef SUPPORT_AST
-  py::object ast(py::object callback) const;
+  void visit(py::object handler) const;
 #endif
 
-  const std::string GetSource(void) const { return m_source; }
+  const std::string GetSource(void) const;
 
   py::object Run(void);
 };

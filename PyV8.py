@@ -3,7 +3,11 @@
 from __future__ import with_statement
 
 import sys, os
-import StringIO
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 import _PyV8
 
@@ -267,7 +271,7 @@ class JSDebug(object):
             return JSDebug.Frames(self)
 
         def __repr__(self):
-            s = StringIO.StringIO()
+            s = StringIO()
 
             try:
                 for frame in self.frames:
@@ -535,7 +539,26 @@ if hasattr(_PyV8, 'AstScope'):
         SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
         This = _PyV8.AstThisFunction
 
-    __all__.append('AST')
+    __all__ += ['AST']
+
+    class PrettyPrint():
+        def __init__(self):
+            self.out = StringIO()
+            
+        def onFunction(func):
+            print >>self.out, "function ", func.name, "(",
+            
+            for i in range(func.scope.num_parameters):
+                if i > 0: print ", ",
+                
+                print >>self.out, func.scope.parameter(i).name
+                
+            print >>self.out, ")"
+            print >>self.out, "{"
+            print >>self.out, "}"
+            
+        def __str__(self):
+            return self.out.getvalue()
 
 import datetime
 import unittest
@@ -1554,9 +1577,16 @@ class TestProfile(unittest.TestCase):
         # TODO enable profiler with resume
         #self.assertFalse(profiler.paused)
 
-if hasattr(_PyV8, 'AstScope'):
+if 'AST' in __all__:
     class TestAST(unittest.TestCase):
-        pass
+        def testPrettyPrint(self):
+            pp = PrettyPrint()
+            
+            with JSContext() as ctxt:
+                script = JSEngine().compile("function hello(name) { return 'hello ' + name; }")
+                script.visit(pp)
+                
+            self.assertEquals("", str(pp))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:

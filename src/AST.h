@@ -32,6 +32,9 @@ inline py::object to_python(v8i::Handle<v8i::String> str)
   return py::str(buf.start(), buf.length());
 }
 
+class CAstVisitor;
+class CAstVariable;
+
 class CAstScope 
 {
   v8i::Scope *m_scope;
@@ -51,6 +54,9 @@ public:
   py::object outer(void) const { v8i::Scope *scope = m_scope->outer_scope(); return scope ? py::object(CAstScope(scope)) : py::object(); }
 
   py::list declarations(void) const { return to_python(m_scope->declarations()); }
+
+  int num_parameters(void) const { return m_scope->num_parameters(); }
+  CAstVariable parameter(int index) const;
 };
 
 class CAstVariable 
@@ -80,6 +86,8 @@ protected:
 
   template <typename T>
   T *as(void) const { return static_cast<T *>(m_node); }
+
+  void Visit(py::object handler);
 public:
   virtual ~CAstNode() {}
 
@@ -425,6 +433,23 @@ public:
   CAstThisFunction(v8i::ThisFunction *func) : CAstExpression(func) {}
 };
 
+class CAstVisitor : public v8i::AstVisitor
+{
+  py::object m_handler;
+public:
+  CAstVisitor(py::object handler) : m_handler(handler)
+  {
+
+  }
+#define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { \
+  if (PyObject_HasAttrString(m_handler.ptr(), "on"#type)) \
+  { m_handler["on"#type](py::object(CAst##type(node))); } }
+
+  AST_NODE_LIST(DECLARE_VISIT) 
+
+#undef DECLARE_VISIT
+};
+
 struct CAstObjectCollector : public v8i::AstVisitor
 {
   py::object m_obj;
@@ -467,3 +492,7 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
 
   return collector.m_nodes;
 }
+
+inline CAstVariable CAstScope::parameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
+
+inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }

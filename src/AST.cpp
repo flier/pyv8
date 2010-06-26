@@ -16,6 +16,9 @@ void CAstNode::Expose(void)
     .add_property("outer", &CAstScope::outer)
 
     .add_property("declarations", &CAstScope::declarations)
+    
+    .add_property("num_parameters", &CAstScope::num_parameters)
+    .def("parameter", &CAstScope::parameter, (py::args("index")))
     ;
 
   py::enum_<v8i::Variable::Mode>("AstVariableMode")
@@ -40,6 +43,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
+    .def("visit", &CAstNode::Visit, (py::arg("handler")))
     ;
 
   py::class_<CAstStatement, py::bases<CAstNode> >("AstStatement", py::no_init)
