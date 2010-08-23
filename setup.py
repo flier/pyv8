@@ -65,7 +65,7 @@ if os.name == "nt":
     os.path.join(V8_HOME, 'tools\\visual_studio\\Release\\lib'),
     os.path.join(BOOST_HOME, 'stage/lib'),
     os.path.join(PYTHON_HOME, 'libs'),
-  ]  
+  ]
   
   include_dirs += [p for p in INCLUDE.split(';') if p]
   library_dirs += [p for p in LIB.split(';') if p]
@@ -80,6 +80,17 @@ elif os.name == "posix" and sys.platform == "linux2":
   library_dirs += [
     V8_HOME,
   ]
+  if BOOST_HOME:
+    library_dirs += [os.path.join(BOOST_HOME, 'stage/lib')]
+    include_dirs += [BOOST_HOME]
+
+  if PYTHON_HOME:
+    major, minor, _, _, _ = sys.version_info
+    library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
+    include_dirs += [os.path.join(PYTHON_HOME, 'include')]
+
+  include_dirs += [p for p in INCLUDE.split(':') if p]
+  library_dirs += [p for p in LIB.split(':') if p]
   
   libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
   extra_compile_args += ["-Wno-write-strings"]
