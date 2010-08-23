@@ -469,7 +469,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
-v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
+v8::Handle<v8::Integer> CPythonObject::IndexedQuery(
   uint32_t index, const v8::AccessorInfo& info)
 {
   TRY_HANDLE_EXCEPTION()
@@ -479,13 +479,20 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  if (PyGen_Check(obj.ptr())) return v8::True();
+  if (PyGen_Check(obj.ptr())) return v8::Integer::New(v8::ReadOnly);
 
   if (::PySequence_Check(obj.ptr()))
   {
     py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
-    return v8::Boolean::New((Py_ssize_t) index < ::PySequence_Size(obj.ptr()));
+    if ((Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
+    {
+      return v8::Integer::New(v8::None);
+    }    
+    else
+    {
+      return v8::Handle<v8::Integer>();
+    }
   }
   else if (::PyMapping_Check(obj.ptr()))
   { 
@@ -496,11 +503,15 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedQuery(
     if (::PyMapping_HasKeyString(obj.ptr(), buf) ||
         ::PyMapping_HasKey(obj.ptr(), py::long_(index).ptr()))
     {
-      return v8::True();    
+      return v8::Integer::New(v8::None);
     }
-  }
+    else
+    {
+      return v8::Handle<v8::Integer>();
+    }
+  }  
 
-  END_HANDLE_EXCEPTION(v8::False())
+  END_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
 }
 v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   uint32_t index, const v8::AccessorInfo& info)

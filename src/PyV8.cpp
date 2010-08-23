@@ -1,5 +1,6 @@
 // PyV8.cpp : Defines the entry point for the DLL application.
 //
+#include "Config.h"
 #include "Engine.h"
 #include "Debug.h"
 #include "Locker.h"

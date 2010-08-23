@@ -32,7 +32,7 @@ class CPythonObject : public CWrapper
     uint32_t index, const v8::AccessorInfo& info);
   static v8::Handle<v8::Value> IndexedSetter(
     uint32_t index, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Boolean> IndexedQuery(
+  static v8::Handle<v8::Integer> IndexedQuery(
     uint32_t index, const v8::AccessorInfo& info);
   static v8::Handle<v8::Boolean> IndexedDeleter(
     uint32_t index, const v8::AccessorInfo& info);
