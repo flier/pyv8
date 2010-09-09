@@ -57,8 +57,6 @@ void CAstNode::Expose(void)
     .value("Effect", v8i::Expression::kEffect)
     .value("Value", v8i::Expression::kValue)
     .value("Test", v8i::Expression::kTest)
-    .value("ValueTest", v8i::Expression::kValueTest)
-    .value("TestValue", v8i::Expression::kTestValue)
     ;
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    

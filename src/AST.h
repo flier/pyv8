@@ -356,6 +356,12 @@ public:
   py::object expression(void) const { return to_python(as<v8i::UnaryOperation>()->expression()); }
 };
 
+class CAstIncrementOperation : public CAstExpression
+{
+public:
+  CAstIncrementOperation(v8i::IncrementOperation *op) : CAstExpression(op) {}
+};
+
 class CAstBinaryOperation : public CAstExpression
 {
 public:
@@ -425,6 +431,12 @@ class CAstSharedFunctionInfoLiteral : public CAstExpression
 {
 public:
   CAstSharedFunctionInfoLiteral(v8i::SharedFunctionInfoLiteral *func) : CAstExpression(func) {}
+};
+
+class CAstCompareToNull : public CAstExpression
+{
+public:
+  CAstCompareToNull(v8i::CompareToNull *expr) : CAstExpression(expr) {}
 };
 
 class CAstThisFunction : public CAstExpression
