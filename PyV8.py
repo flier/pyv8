@@ -11,6 +11,9 @@ except ImportError:
 
 import _PyV8
 
+__author__ = 'Flier Lu <flier.lu@gmail.com>'
+__version__ = '1.0'
+
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
            "JSStackTrace", "JSStackFrame", \
            "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
@@ -947,6 +950,7 @@ class TestWrapper(unittest.TestCase):
             ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
 
             self.assertEqual("Error: Not support", str(ctxt.locals.msg))
+            
     def testArray(self):
         with JSContext() as ctxt:
             array = ctxt.eval("""
@@ -1199,8 +1203,14 @@ class TestWrapper(unittest.TestCase):
         gc.collect()
 
         self.assert_(self.deleted)
+        
+    def testNullInString(self):
+        with JSContext() as ctxt:
+            fn = ctxt.eval("(function (s) { return s; })")
+            
+            self.assertEquals("hello \0 world", fn("hello \0 world"))
 
-class TestMutithread(unittest.TestCase):
+class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)
         self.assertFalse(JSLocker.locked)
@@ -1364,7 +1374,7 @@ class TestEngine(unittest.TestCase):
                 data = engine.precompile("1+2")
 
                 self.assert_(data)
-                self.assertEquals(16, len(data))
+                self.assertEquals(24, len(data))
 
                 s = engine.compile("1+2", precompiled=data)
 
@@ -1594,8 +1604,13 @@ if __name__ == '__main__':
     else:
         level = logging.WARN
 
+    if "-p" in sys.argv:
+        sys.argv.remove("-p")
+        print "Press any key to continue..."
+        raw_input()
+        
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
-    logging.info("testing PyV8 module with V8 v%s", JSEngine.version)
+    logging.info("testing PyV8 module %s with V8 v%s", __version__, JSEngine.version)
 
     unittest.main()

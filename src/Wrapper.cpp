@@ -716,7 +716,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   }
   else if (PyString_CheckExact(obj.ptr()))
   {
-    result = v8::String::New(PyString_AS_STRING(obj.ptr()));
+    result = v8::String::New(PyString_AS_STRING(obj.ptr()), PyString_GET_SIZE(obj.ptr()));
   }
   else if (PyUnicode_CheckExact(obj.ptr()))
   {
