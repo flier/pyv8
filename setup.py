@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os, os.path
+import sys, os, os.path, platform
 from distutils.core import setup, Extension
 
 # default settings, you can modify it in buildconf.py.
@@ -53,6 +53,12 @@ library_dirs = []
 libraries = []
 extra_compile_args = []
 extra_link_args = []
+
+if INCLUDE:
+  include_dirs += [p for p in INCLUDE.split(os.path.pathsep) if p]
+if LIB:
+  library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
+  
   
 v8_lib = 'v8_g' if DEBUG else 'v8' # contribute by gaussgss
 
@@ -66,9 +72,6 @@ if os.name == "nt":
     os.path.join(BOOST_HOME, 'stage/lib'),
     os.path.join(PYTHON_HOME, 'libs'),
   ]
-  
-  include_dirs += [p for p in INCLUDE.split(';') if p]
-  library_dirs += [p for p in LIB.split(';') if p]
   
   macros += [("V8_TARGET_ARCH_IA32", None), ("WIN32", None)]
   
@@ -89,9 +92,6 @@ elif os.name == "posix" and sys.platform == "linux2":
     library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
     include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-  include_dirs += [p for p in INCLUDE.split(':') if p]
-  library_dirs += [p for p in LIB.split(':') if p]
-  
   libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
   extra_compile_args += ["-Wno-write-strings"]
   
@@ -108,7 +108,10 @@ elif os.name == "mac": # contribute by Artur Ventura
   library_dirs += [os.path.join('/lib')]
   libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "c"]
 
-elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
+elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium and alec
+  # force x64 because Snow Leopard's native Python is 64-bit
+  # scons arch=x64 library=static
+  
   include_dirs += [
     "/opt/local/include", # use MacPorts to install Boost
   ]
@@ -119,10 +122,13 @@ elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium
   
   libraries += ["boost_python-mt", v8_lib]
   
-  if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
+  architecture = platform.architecture()[0]
+  if architecture == '64bit':
+    os.environ['ARCHFLAGS'] = '-arch x86_64'
     extra_link_args += ["-fPIC"]
     macros += [("V8_TARGET_ARCH_X64", None)]
   else:
+    os.environ['ARCHFLAGS'] = '-arch i386'
     macros += [("V8_TARGET_ARCH_IA32", None)]
       
 else:
@@ -139,7 +145,7 @@ pyv8 = Extension(name = "_PyV8",
 				 )
 
 setup(name='PyV8',
-    version='0.9',
+    version='1.0',
     description='Python Wrapper for Google V8 Engine',
     long_description="PyV8? is a python wrapper for Google V8 engine, it act as a bridge between the Python and JavaScript? objects, and support to hosting Google's v8 engine in a python script.",
     platforms="x86",
