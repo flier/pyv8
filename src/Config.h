@@ -24,3 +24,8 @@
 // Enable the script AST supports
 //
 //#define SUPPORT_AST 1
+
+//
+// Trace the object lifecycle
+//
+//#define SUPPORT_TRACE_LIFECYCLE 1

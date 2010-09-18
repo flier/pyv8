@@ -40,7 +40,9 @@ class CPythonObject : public CWrapper
 
   static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
 
+#ifdef SUPPORT_TRACE_LIFECYCLE
   static void DisposeCallback(v8::Persistent<v8::Value> object, void* parameter);
+#endif
 protected:
   static void SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz);
   static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);

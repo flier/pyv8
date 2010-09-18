@@ -627,6 +627,8 @@ v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
+#ifdef SUPPORT_TRACE_LIFECYCLE
+
 void CPythonObject::DisposeCallback(v8::Persistent<v8::Value> object, void* parameter)
 {
   assert(v8::Handle<v8::External>::Cast(object)->Value() == parameter);
@@ -635,6 +637,8 @@ void CPythonObject::DisposeCallback(v8::Persistent<v8::Value> object, void* para
 
   delete obj;
 }
+
+#endif
 
 bool CPythonObject::IsWrapped(v8::Handle<v8::Object> obj)
 {
@@ -770,7 +774,10 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
 
     v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+
+  #ifdef SUPPORT_TRACE_LIFECYCLE
     v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
+  #endif
 
     func_tmpl->SetCallHandler(Caller, payload);
 
@@ -790,7 +797,10 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     v8::Handle<v8::Object> instance = s_template->NewInstance();
 
     v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
+
+  #ifdef SUPPORT_TRACE_LIFECYCLE
     v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
+  #endif
 
     instance->SetInternalField(0, payload);
 
