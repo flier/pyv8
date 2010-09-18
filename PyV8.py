@@ -1374,7 +1374,7 @@ class TestEngine(unittest.TestCase):
                 data = engine.precompile("1+2")
 
                 self.assert_(data)
-                self.assertEquals(24, len(data))
+                self.assertEquals(28, len(data))
 
                 s = engine.compile("1+2", precompiled=data)
 
@@ -1563,7 +1563,7 @@ class TestDebug(unittest.TestCase):
 
         self.assertEquals(4, len(self.events))
 
-class TestProfile(unittest.TestCase):
+class _TestProfile(unittest.TestCase):
     def testStart(self):
         self.assertFalse(profiler.started)
 
