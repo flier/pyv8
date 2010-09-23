@@ -423,8 +423,10 @@ public:
   py::list body(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
 
   int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
-  int end_position() const { return as<v8i::FunctionLiteral>()->end_position(); }
-  bool is_expression() const { return as<v8i::FunctionLiteral>()->is_expression(); }
+  int end_position(void) const { return as<v8i::FunctionLiteral>()->end_position(); }
+  bool is_expression(void) const { return as<v8i::FunctionLiteral>()->is_expression(); }
+
+  int num_parameters(void) const { return as<v8i::FunctionLiteral>()->num_parameters(); }
 };
 
 class CAstSharedFunctionInfoLiteral : public CAstExpression
