@@ -292,7 +292,7 @@ v8::Handle<v8::Integer> CPythonObject::NamedQuery(
   bool exists = PyGen_Check(obj.ptr()) || ::PyObject_HasAttrString(obj.ptr(), *name) || 
                 (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
 
-  return exists ? handle_scope.Close(v8::Integer::NewFromUnsigned(v8::None)) : v8::Handle<v8::Integer>();
+  return exists ? handle_scope.Close(v8::Integer::New(v8::None)) : v8::Handle<v8::Integer>();
 
   END_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
 }
@@ -479,15 +479,13 @@ v8::Handle<v8::Integer> CPythonObject::IndexedQuery(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  if (PyGen_Check(obj.ptr())) return v8::Integer::New(v8::ReadOnly);
+  if (PyGen_Check(obj.ptr())) return handle_scope.Close(v8::Integer::New(v8::ReadOnly));
 
   if (::PySequence_Check(obj.ptr()))
   {
-    py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
-
     if ((Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
     {
-      return v8::Integer::New(v8::None);
+      return handle_scope.Close(v8::Integer::New(v8::None));
     }    
     else
     {
@@ -503,7 +501,7 @@ v8::Handle<v8::Integer> CPythonObject::IndexedQuery(
     if (::PyMapping_HasKeyString(obj.ptr(), buf) ||
         ::PyMapping_HasKey(obj.ptr(), py::long_(index).ptr()))
     {
-      return v8::Integer::New(v8::None);
+      return handle_scope.Close(v8::Integer::New(v8::None));
     }
     else
     {
