@@ -9,6 +9,11 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
 import _PyV8
 
 __author__ = 'Flier Lu <flier.lu@gmail.com>'
@@ -391,6 +396,15 @@ class JSDebug(object):
     onBeforeCompile = None
     onAfterCompile = None
 
+    def __init__(self):
+        self.seq = 0
+
+    def nextSeq(self):
+        seq = self.seq
+        self.seq += 1
+
+        return seq
+
     def isEnabled(self):
         return _PyV8.debug().enabled
 
@@ -398,11 +412,13 @@ class JSDebug(object):
         dbg = _PyV8.debug()
 
         if enable:
-            dbg.onDebugEvent = lambda type, evt: self.onDebugEvent(type, evt)
-            dbg.onDebugMessage = lambda msg: self.onDebugMessage(msg)
+            dbg.onDebugEvent = self.onDebugEvent
+            dbg.onDebugMessage = self.onDebugMessage
+            dbg.onDispatchDebugMessages = self.onDispatchDebugMessages
         else:
             dbg.onDebugEvent = None
             dbg.onDebugMessage = None
+            dbg.onDispatchDebugMessages = None
 
         dbg.enabled = enable
 
@@ -410,7 +426,7 @@ class JSDebug(object):
 
     def onDebugMessage(self, msg):
         if self.onMessage:
-            self.onMessage(msg)
+            self.onMessage(json.loads(msg))
 
     def onDebugEvent(self, type, evt):
         if type == _PyV8.JSDebugEvent.Break:
@@ -423,6 +439,46 @@ class JSDebug(object):
             if self.onBeforeCompile: self.onBeforeCompile(JSDebug.BeforeCompileEvent(evt))
         elif type == _PyV8.JSDebugEvent.AfterCompile:
             if self.onAfterCompile: self.onAfterCompile(JSDebug.AfterCompileEvent(evt))
+
+    def onDispatchDebugMessages(self):
+        return True
+
+    def breakForDebug(self):
+        _PyV8.debug().debugBreak()
+
+    def breakForCommand(self):
+        _PyV8.debug().debugBreakForCommand()
+
+    def sendCommand(self, cmd, *args, **kwds):
+        request = json.dumps({
+            'seq': self.nextSeq(),
+            'type': 'request',
+            'command': cmd,
+            'arguments': kwds
+        })
+
+        _PyV8.debug().sendCommand(request)
+
+        return request
+
+    def debugContinue(self, action='next', steps=1):
+        return self.sendCommand('continue', stepaction=action)
+
+    def stepNext(self, steps=1):
+        """Step to the next statement in the current function."""
+        return self.debugContinue(action='next', steps=steps)
+
+    def stepIn(self, steps=1):
+        """Step into new functions invoked or the next statement in the current function."""
+        return self.debugContinue(action='in', steps=steps)
+
+    def stepOut(self, steps=1):
+        """Step out of the current function."""
+        return self.debugContinue(action='out', steps=steps)
+
+    def stepMin(self, steps=1):
+        """Perform a minimum step in the current function."""
+        return self.debugContinue(action='out', steps=steps)
 
 debugger = JSDebug()
 
@@ -547,19 +603,19 @@ if hasattr(_PyV8, 'AstScope'):
     class PrettyPrint():
         def __init__(self):
             self.out = StringIO()
-            
+
         def onFunction(func):
             print >>self.out, "function ", func.name, "(",
-            
+
             for i in range(func.scope.num_parameters):
                 if i > 0: print ", ",
-                
+
                 print >>self.out, func.scope.parameter(i).name
-                
+
             print >>self.out, ")"
             print >>self.out, "{"
             print >>self.out, "}"
-            
+
         def __str__(self):
             return self.out.getvalue()
 
@@ -691,14 +747,14 @@ class TestWrapper(unittest.TestCase):
     def testObject(self):
         with JSContext() as ctxt:
             o = ctxt.eval("new Object()")
-            
+
             self.assert_(hash(o) > 0)
-            
+
             o1 = o.clone()
-            
+
             self.assertEquals(hash(o1), hash(o))
             self.assert_(o != o1)
-    
+
     def testAutoConverter(self):
         with JSContext() as ctxt:
             ctxt.eval("""
@@ -804,15 +860,15 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals("abc", str(func()))
             self.assert_(func != None)
             self.assertFalse(func == None)
-            
+
             func = ctxt.eval("(function test() {})")
-                                    
+
             self.assertEquals("test", func.name)
-            
+
             #TODO fix me, why the setter doesn't work?
-            
+
             func.name = "hello"
-                        
+
             #self.assertEquals("hello", func.name)
 
     def testCall(self):
@@ -866,7 +922,7 @@ class TestWrapper(unittest.TestCase):
         class Global(JSClass):
             def GetCurrentStackTrace(self, limit):
                 return JSStackTrace.GetCurrentStackTrace(4, JSStackTrace.Options.Detailed)
-                
+
         with JSContext(Global()) as ctxt:
             st = ctxt.eval("""
                 function a()
@@ -880,10 +936,10 @@ class TestWrapper(unittest.TestCase):
                 function c()
                 {
                     return new b();
-                }                           
+                }
             c();""", "test")
-            
-            self.assertEquals(4, len(st))                               
+
+            self.assertEquals(4, len(st))
             self.assertEquals("\tat a (test:4:28)\n\tat (eval)\n\tat b (test:8:28)\n\tat c (test:12:28)\n", str(st))
             self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (12:28)",
                               "\n".join(["%s.%s (%d:%d)%s%s" % (
@@ -950,7 +1006,7 @@ class TestWrapper(unittest.TestCase):
             ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
 
             self.assertEqual("Error: Not support", str(ctxt.locals.msg))
-            
+
     def testArray(self):
         with JSContext() as ctxt:
             array = ctxt.eval("""
@@ -1203,11 +1259,11 @@ class TestWrapper(unittest.TestCase):
         gc.collect()
 
         self.assert_(self.deleted)
-        
+
     def testNullInString(self):
         with JSContext() as ctxt:
             fn = ctxt.eval("(function (s) { return s; })")
-            
+
             self.assertEquals("hello \0 world", fn("hello \0 world"))
 
 class TestMultithread(unittest.TestCase):
@@ -1591,11 +1647,11 @@ if 'AST' in __all__:
     class TestAST(unittest.TestCase):
         def testPrettyPrint(self):
             pp = PrettyPrint()
-            
+
             with JSContext() as ctxt:
                 script = JSEngine().compile("function hello(name) { return 'hello ' + name; }")
                 script.visit(pp)
-                
+
             self.assertEquals("", str(pp))
 
 if __name__ == '__main__':
@@ -1608,7 +1664,7 @@ if __name__ == '__main__':
         sys.argv.remove("-p")
         print "Press any key to continue..."
         raw_input()
-        
+
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
     logging.info("testing PyV8 module %s with V8 v%s", __version__, JSEngine.version)

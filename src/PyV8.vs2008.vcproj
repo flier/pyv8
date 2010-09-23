@@ -229,10 +229,6 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\AST.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Config.h"
 				>
 			</File>
@@ -279,6 +275,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\AST.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

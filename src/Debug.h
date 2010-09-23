@@ -11,13 +11,16 @@ class CDebug
   bool m_enabled;
 
   py::object m_onDebugEvent;
-  static py::object s_onDebugMessage;
+  py::object m_onDebugMessage;
+  py::object m_onDispatchDebugMessages;
 
-  v8::Persistent<v8::Context> m_global_context;
+  v8::Persistent<v8::Context> m_debug_context;
 
   static void OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
     v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data);
-  static void OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data);
+  static void OnDebugMessage(const uint16_t* message, int length, 
+    v8::Debug::ClientData* client_data);
+  static void OnDispatchDebugMessages(void);
 
   void Init(void);
 public:
@@ -28,6 +31,15 @@ public:
 
   bool IsEnabled(void) { return m_enabled; }
   void SetEnable(bool enable);
+
+  void DebugBreak(void) { v8::Debug::DebugBreak(); }
+  void DebugBreakForCommand(void) { v8::Debug::DebugBreakForCommand(); }
+  void ProcessDebugMessages(void) { v8::Debug::ProcessDebugMessages(); }
+  
+  void Listen(const std::string& name, int port, bool wait_for_connection);
+  void SendCommand(const std::string& cmd);
+
+  py::object GetDebugContext(void);
 
   static CDebug& GetInstance(void)
   {
