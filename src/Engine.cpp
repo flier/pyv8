@@ -50,10 +50,6 @@ void CEngine::Expose(void)
   v8::V8::AddMessageListener(ReportMessage);
 #endif
 
-  py::enum_<v8i::Heap::CollectionPolicy>("JSCollectionPolicy")
-    .value("normal", v8i::Heap::NORMAL)
-    .value("aggressive", v8i::Heap::AGGRESSIVE);
-
   void (*terminateThread)(int) = &v8::V8::TerminateExecution;
   void (*terminateAllThreads)(void) = &v8::V8::TerminateExecution;
 
@@ -69,8 +65,7 @@ void CEngine::Expose(void)
     .def("setFlags", &CEngine::SetFlags)
     .staticmethod("setFlags")
 
-    .def("collect", v8i::Heap::CollectAllGarbage, (py::arg("force")=true,
-                                                   py::arg("policy") = v8i::Heap::NORMAL))
+    .def("collect", v8i::Heap::CollectAllGarbage, (py::arg("force")=true))
     .staticmethod("collect")
 
   #ifdef SUPPORT_SERIALIZE

@@ -51,13 +51,6 @@ void CAstNode::Expose(void)
 
     .add_property("pos", &CAstStatement::pos)
     ;
-
-  py::enum_<v8i::Expression::Context>("AstExpressionContext")
-    .value("Uninitialized", v8i::Expression::kUninitialized)
-    .value("Effect", v8i::Expression::kEffect)
-    .value("Value", v8i::Expression::kValue)
-    .value("Test", v8i::Expression::kTest)
-    ;
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
     ;
