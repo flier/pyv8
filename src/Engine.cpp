@@ -424,16 +424,25 @@ void CScript::visit(py::object handler) const
     v8i::Handle<v8i::SharedFunctionInfo>(v8i::JSFunction::cast(*obj)->shared());
   v8i::Handle<v8i::Script> script(v8i::Script::cast(func->script()));
 
+  v8i::CompilationInfo info(script);
+
+  info.MarkAsGlobal();
+
   v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone;  
 
-  v8i::FunctionLiteral* program = v8i::MakeAST(true, script, NULL, NULL);
+  script->set_context_data((*v8i::Top::global_context())->data());
 
-  CAstVisitor visitor(handler);
-
-  for (int i=0; i<program->body()->length(); i++)
+  if (v8i::ParserApi::Parse(&info))
   {
-    visitor.Visit(program->body()->at(i));
+    v8i::FunctionLiteral* program = info.function();
+
+    CAstVisitor visitor(handler);
+
+    for (int i=0; i<program->body()->length(); i++)
+    {
+      visitor.Visit(program->body()->at(i));
+    }
   }
 }
 

@@ -552,7 +552,6 @@ if hasattr(_PyV8, 'AstScope'):
         Node = _PyV8.AstNode
         Statement = _PyV8.AstStatement
         Expression = _PyV8.AstExpression
-        Expression.Context = _PyV8.AstExpressionContext
         Breakable = _PyV8.AstBreakableStatement
         Block = _PyV8.AstBlock
         Declaration = _PyV8.AstDeclaration
