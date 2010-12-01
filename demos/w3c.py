@@ -367,7 +367,7 @@ class Element(Node):
     
     @property
     def tagName(self):
-        return self.tag.name
+        return self.tag.name.upper()
     
     def getAttribute(self, name):
         return self.tag[name] if self.tag.has_key(name) else ""
@@ -1052,7 +1052,7 @@ class HTMLDocument(Document):
     def URL(self):
         raise NotImplementedError()
         
-    body = xpath_property("/html/body[1]", readonly=True)
+    body = xpath_property("/html/body[1]")
     
     images = xpath_property("//img", readonly=True)
     applets = xpath_property("//applet", readonly=True)
@@ -1087,6 +1087,11 @@ class HTMLDocument(Document):
     def getElementById(self, elementId):
         tag = self.doc.find(id=elementId)
         return DOMImplementation.createHTMLElement(self.doc, tag) if tag else None
+
+    def getElementsByName(self, elementName):
+        tags = self.doc.findAll(attrs={'name': elementName})
+        
+        return HTMLCollection(self.doc, tags)
     
 class DOMImplementation(HTMLDocument):
     def hasFeature(self, feature, version):
@@ -1181,7 +1186,7 @@ class DocumentTest(unittest.TestCase):
         
         self.assert_(html)        
         self.assertEquals(Node.ELEMENT_NODE, html.nodeType)
-        self.assertEquals("html", html.nodeName)
+        self.assertEquals("HTML", html.nodeName)
         self.failIf(html.nodeValue)
         
         attr = html.getAttributeNode("xmlns")
@@ -1212,7 +1217,7 @@ class DocumentTest(unittest.TestCase):
         
         body = nodes.item(0)
         
-        self.assertEquals("body", body.tagName)   
+        self.assertEquals("BODY", body.tagName)   
     
     def testDocumentType(self):
         doctype = self.doc.doctype
@@ -1224,7 +1229,7 @@ class DocumentTest(unittest.TestCase):
     def testElement(self):
         html = self.doc.documentElement
         
-        self.assertEquals("html", html.tagName)
+        self.assertEquals("HTML", html.tagName)
         self.assertEquals("http://www.w3.org/1999/xhtml", html.getAttribute("xmlns"))
         self.assert_(html.getAttributeNode("xmlns"))
         
@@ -1234,7 +1239,7 @@ class DocumentTest(unittest.TestCase):
         
         body = nodes.item(0)
         
-        self.assertEquals("body", body.tagName)
+        self.assertEquals("BODY", body.tagName)
         
         div = self.doc.createElement("div")
         
@@ -1387,6 +1392,10 @@ class HTMLDocumentTest(unittest.TestCase):
         p.id = 'test'
         
         self.assertEquals(p, self.doc.getElementById('test'))
+        
+        forms = self.doc.getElementsByName('first')
+        
+        self.assertEquals(1, len(forms))
         
     def testDocument(self):
         self.assertEquals("this is a test", self.doc.title)
