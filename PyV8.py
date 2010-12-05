@@ -1220,7 +1220,7 @@ class TestWrapper(unittest.TestCase):
             ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
             self.assertEquals('fixed', ctxt.eval("name"))
 
-    def testDestructor(self):
+    def _testDestructor(self):
         import gc
 
         owner = self
@@ -1615,8 +1615,8 @@ class TestDebug(unittest.TestCase):
 
         self.assertEquals(4, len(self.events))
 
-class _TestProfile(unittest.TestCase):
-    def testStart(self):
+class TestProfile(unittest.TestCase):
+    def _testStart(self):
         self.assertFalse(profiler.started)
 
         profiler.start()
@@ -1627,7 +1627,7 @@ class _TestProfile(unittest.TestCase):
 
         self.assertFalse(profiler.started)
 
-    def testResume(self):
+    def _testResume(self):
         self.assert_(profiler.paused)
 
         self.assertEquals(profiler.Modules.cpu, profiler.modules)
@@ -1648,6 +1648,33 @@ class TestAST(unittest.TestCase):
             
         def __getattr__(self, name):
             return getattr(self.testcase, name)
+            
+    def testBlock(self):
+        with JSContext() as ctxt:
+            script = JSEngine().compile("var i, j; {i=1;j=2} i=i+j")
+            
+            class BlockChecker(TestAST.Checker):
+                num = 0
+                
+                def onBlock(self, stmt):                    
+                    if self.num == 0:
+                        self.num += 1
+                        
+                        self.assert_(stmt.initializerBlock)
+                        
+                        self.assertEquals(2, len(stmt.statements))
+                        
+                        self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
+                        
+                    elif self.num == 1:
+                        self.assertFalse(stmt.initializerBlock)
+                        
+                        self.assertEquals(2, len(stmt.statements))
+                        
+                        self.assertEquals(['i = 1;', 'j = 2;'], [str(s) for s in stmt.statements])
+                        
+                    
+            script.visit(BlockChecker(self))
 
     def testIfStatement(self):
         with JSContext() as ctxt:
