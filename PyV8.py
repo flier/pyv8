@@ -548,6 +548,7 @@ def convert(obj):
 class AST:
     Scope = _PyV8.AstScope
     Var = _PyV8.AstVariable
+    Type = _PyV8.AstNodeType
     Node = _PyV8.AstNode
     Statement = _PyV8.AstStatement
     Expression = _PyV8.AstExpression
@@ -1656,7 +1657,9 @@ class TestAST(unittest.TestCase):
             class BlockChecker(TestAST.Checker):
                 num = 0
                 
-                def onBlock(self, stmt):                    
+                def onBlock(self, stmt):
+                    self.assertEquals(AST.Type.Block, stmt.type)
+                    
                     if self.num == 0:
                         self.num += 1
                         
@@ -1682,7 +1685,7 @@ class TestAST(unittest.TestCase):
             
             class IfStatementChecker(TestAST.Checker):
                 def onIfStatement(self, stmt):
-                    print "here"
+                    self.assertEquals(AST.Type.IfStatement, stmt.type)
             
                     self.assert_(stmt.hasThenStatement)
                     self.assert_(stmt.hasElseStatement)

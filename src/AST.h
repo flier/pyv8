@@ -96,6 +96,8 @@ public:
 
   static void Expose(void);
 
+  v8i::AstNode::Type GetType(void) const { return m_node->node_type(); }
+
   const std::string ToString(void) const { return v8i::PrettyPrinter().Print(m_node); }
 };
 

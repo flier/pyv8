@@ -42,7 +42,17 @@ void CAstNode::Expose(void)
     .add_property("isPossiblyEval", &CAstVariable::is_possibly_eval)
     ;
 
+  #define DECLARE_TYPE_ENUM(type) .value(#type, v8i::AstNode::k##type)
+
+  py::enum_<v8i::AstNode::Type>("AstNodeType")
+    AST_NODE_LIST(DECLARE_TYPE_ENUM)
+
+    .value("Invalid", v8i::AstNode::kInvalid)    
+    ;
+
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
+    .add_property("type", &CAstNode::GetType)
+
     .def("visit", &CAstNode::Visit, (py::arg("handler")))
 
     .def("__str__", &CAstNode::ToString)
