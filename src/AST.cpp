@@ -44,6 +44,8 @@ void CAstNode::Expose(void)
 
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
     .def("visit", &CAstNode::Visit, (py::arg("handler")))
+
+    .def("__str__", &CAstNode::ToString)
     ;
 
   py::class_<CAstStatement, py::bases<CAstNode> >("AstStatement", py::no_init)
@@ -56,10 +58,14 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
-    .add_property("anonymous", &CAstBreakableStatement::anonymous)
+    .add_property("anonymous", &CAstBreakableStatement::IsAnonymous)
     ;
 
   py::class_<CAstBlock, py::bases<CAstBreakableStatement> >("AstBlock", py::no_init)
+    .add_property("statements", &CAstBlock::GetStatements)
+    .add_property("initializerBlock", &CAstBlock::IsInitializerBlock)
+
+    .def("addStatement", &CAstBlock::AddStatement)
     ;
 
   py::class_<CAstDeclaration, py::bases<CAstNode> >("AstDeclaration", py::no_init)
@@ -81,7 +87,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstExpressionStatement, py::bases<CAstStatement> >("AstExpressionStatement", py::no_init)
-    .add_property("expression", &CAstExpressionStatement::expression)
+    .add_property("expression", &CAstExpressionStatement::GetExpression)
     ;
 
   py::class_<CAstContinueStatement, py::bases<CAstStatement> >("AstContinueStatement", py::no_init)
@@ -107,6 +113,13 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstIfStatement, py::bases<CAstStatement> >("AstIfStatement", py::no_init)
+    .add_property("hasThenStatement", &CAstIfStatement::HasThenStatement)
+    .add_property("hasElseStatement", &CAstIfStatement::HasElseStatement)
+
+    .add_property("condition", &CAstIfStatement::GetCondition)
+
+    .add_property("thenStatement", &CAstIfStatement::GetThenStatement, &CAstIfStatement::SetThenStatement)
+    .add_property("elseStatement", &CAstIfStatement::GetElseStatement, &CAstIfStatement::SetElseStatement)
     ;
 
   py::class_<CAstTargetCollector, py::bases<CAstNode> >("AstTargetCollector", py::no_init)
@@ -220,9 +233,9 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
-    .add_property("name", &CAstFunctionLiteral::name)
-    .add_property("scope", &CAstFunctionLiteral::scope)    
-    .add_property("body", &CAstFunctionLiteral::body)
+    .add_property("name", &CAstFunctionLiteral::GetName)
+    .add_property("scope", &CAstFunctionLiteral::GetScope)    
+    .add_property("body", &CAstFunctionLiteral::GetBody)
 
     .add_property("startPos", &CAstFunctionLiteral::start_position)
     .add_property("endPos", &CAstFunctionLiteral::end_position)

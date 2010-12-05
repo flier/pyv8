@@ -13,6 +13,9 @@
 #include "src/ast.h"
 #include "src/scopes.h"
 
+#define DEBUG
+#include "src/prettyprinter.h"
+
 #include "Wrapper.h"
 
 namespace v8i = v8::internal;
@@ -84,14 +87,16 @@ protected:
 
   CAstNode(v8i::AstNode *node) : m_node(node) {}
 
-  template <typename T>
-  T *as(void) const { return static_cast<T *>(m_node); }
-
   void Visit(py::object handler);
 public:
   virtual ~CAstNode() {}
 
+  template <typename T>
+  T *as(void) const { return static_cast<T *>(m_node); }
+
   static void Expose(void);
+
+  const std::string ToString(void) const { return v8i::PrettyPrinter().Print(m_node); }
 };
 
 class CAstStatement : public CAstNode
@@ -115,13 +120,19 @@ class CAstBreakableStatement : public CAstStatement
 protected:
   CAstBreakableStatement(v8i::BreakableStatement *stat) : CAstStatement(stat) {}
 public:
-  bool anonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }
+  bool IsAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }  
 };
 
 class CAstBlock : public CAstBreakableStatement
 {
 public:
   CAstBlock(v8i::Block *block) : CAstBreakableStatement(block) {}
+
+  void AddStatement(CAstStatement& stmt) { as<v8i::Block>()->AddStatement(stmt.as<v8i::Statement>()); }
+
+  py::list GetStatements(void) { return to_python(as<v8i::Block>()->statements()); }
+
+  bool IsInitializerBlock(void) const { return as<v8i::Block>()->is_initializer_block(); }
 };
 
 class CAstDeclaration : public CAstNode
@@ -165,7 +176,7 @@ class CAstExpressionStatement : public CAstStatement
 public:
   CAstExpressionStatement(v8i::ExpressionStatement *stat) : CAstStatement(stat) {}
 
-  py::object expression(void) const { return to_python(as<v8i::ExpressionStatement>()->expression()); }
+  py::object GetExpression(void) const { return to_python(as<v8i::ExpressionStatement>()->expression()); }
 };
 
 class CAstContinueStatement : public CAstStatement
@@ -217,6 +228,16 @@ class CAstIfStatement : public CAstStatement
 {
 public:
   CAstIfStatement(v8i::IfStatement *stat) : CAstStatement(stat) {}
+
+  bool HasThenStatement(void) const { return as<v8i::IfStatement>()->HasThenStatement(); }
+  bool HasElseStatement(void) const { return as<v8i::IfStatement>()->HasElseStatement(); }
+
+  py::object GetCondition(void) const { return to_python(as<v8i::IfStatement>()->condition()); }
+
+  py::object GetThenStatement(void) const { return to_python(as<v8i::IfStatement>()->then_statement()); }
+  void SetThenStatement(CAstStatement& stmt) const { as<v8i::IfStatement>()->set_then_statement(stmt.as<v8i::Statement>()); }
+  py::object GetElseStatement(void) const { return to_python(as<v8i::IfStatement>()->else_statement()); }
+  void SetElseStatement(CAstStatement& stmt) const { as<v8i::IfStatement>()->set_else_statement(stmt.as<v8i::Statement>()); }
 };
 
 class CAstTargetCollector : public CAstNode
@@ -418,9 +439,9 @@ class CAstFunctionLiteral : public CAstExpression
 public:
   CAstFunctionLiteral(v8i::FunctionLiteral *func) : CAstExpression(func) {}
 
-  py::object name(void) const { return to_python(as<v8i::FunctionLiteral>()->name()); }
-  CAstScope scope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
-  py::list body(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
+  py::object GetName(void) const { return to_python(as<v8i::FunctionLiteral>()->name()); }
+  CAstScope GetScope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
+  py::list GetBody(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
 
   int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
   int end_position(void) const { return as<v8i::FunctionLiteral>()->end_position(); }
@@ -456,8 +477,10 @@ public:
 
   }
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { \
-  if (PyObject_HasAttrString(m_handler.ptr(), "on"#type)) \
-  { m_handler["on"#type](py::object(CAst##type(node))); } }
+  if (::PyObject_HasAttrString(m_handler.ptr(), "on"#type)) { \
+    py::object callback = m_handler.attr("on"#type); \
+    if (::PyCallable_Check(callback.ptr())) { \
+      callback(py::object(CAst##type(node))); }; } }
 
   AST_NODE_LIST(DECLARE_VISIT) 
 

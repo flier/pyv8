@@ -20,8 +20,8 @@ __author__ = 'Flier Lu <flier.lu@gmail.com>'
 __version__ = '1.0'
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSStackTrace", "JSStackFrame", \
-           "JSExtension", "JSLocker", "JSUnlocker", "debugger", "profiler"]
+           "JSStackTrace", "JSStackFrame", "debugger", "profiler", \
+           "JSExtension", "JSLocker", "JSUnlocker", "AST"]
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -545,78 +545,75 @@ def convert(obj):
 
     return obj
 
-if hasattr(_PyV8, 'AstScope'):
-    class AST:
-        Scope = _PyV8.AstScope
-        Var = _PyV8.AstVariable
-        Node = _PyV8.AstNode
-        Statement = _PyV8.AstStatement
-        Expression = _PyV8.AstExpression
-        Breakable = _PyV8.AstBreakableStatement
-        Block = _PyV8.AstBlock
-        Declaration = _PyV8.AstDeclaration
-        Iteration = _PyV8.AstIterationStatement
-        DoWhile = _PyV8.AstDoWhileStatement
-        While = _PyV8.AstWhileStatement
-        For = _PyV8.AstForStatement
-        ForIn = _PyV8.AstForInStatement
-        ExpressionStatement = _PyV8.AstExpressionStatement
-        Continue = _PyV8.AstContinueStatement
-        Break = _PyV8.AstBreakStatement
-        Return = _PyV8.AstReturnStatement
-        WithEnter = _PyV8.AstWithEnterStatement
-        WithExit = _PyV8.AstWithExitStatement
-        Case = _PyV8.AstCaseClause
-        Switch = _PyV8.AstSwitchStatement
-        Try = _PyV8.AstTryStatement
-        TryCatch = _PyV8.AstTryCatchStatement
-        TryFinally = _PyV8.AstTryFinallyStatement
-        Debugger = _PyV8.AstDebuggerStatement
-        Empty = _PyV8.AstEmptyStatement
-        Literal = _PyV8.AstLiteral
-        MaterializedLiteral = _PyV8.AstMaterializedLiteral
-        Object = _PyV8.AstObjectLiteral
-        RegExp = _PyV8.AstRegExpLiteral
-        Array = _PyV8.AstArrayLiteral
-        CatchExtension = _PyV8.AstCatchExtensionObject
-        VarProxy = _PyV8.AstVariableProxy
-        Slot = _PyV8.AstSlot
-        Property = _PyV8.AstProperty
-        Call = _PyV8.AstCall
-        CallNew = _PyV8.AstCallNew
-        CallRuntime = _PyV8.AstCallRuntime
-        Op = _PyV8.AstOperation
-        UnaryOp = _PyV8.AstUnaryOperation
-        BinOp = _PyV8.AstBinaryOperation
-        CountOp = _PyV8.AstCountOperation
-        CompOp = _PyV8.AstCompareOperation
-        Conditional = _PyV8.AstConditional
-        Assignment = _PyV8.AstAssignment
-        Throw = _PyV8.AstThrow
-        Function = _PyV8.AstFunctionLiteral
-        SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
-        This = _PyV8.AstThisFunction
+class AST:
+    Scope = _PyV8.AstScope
+    Var = _PyV8.AstVariable
+    Node = _PyV8.AstNode
+    Statement = _PyV8.AstStatement
+    Expression = _PyV8.AstExpression
+    Breakable = _PyV8.AstBreakableStatement
+    Block = _PyV8.AstBlock
+    Declaration = _PyV8.AstDeclaration
+    Iteration = _PyV8.AstIterationStatement
+    DoWhile = _PyV8.AstDoWhileStatement
+    While = _PyV8.AstWhileStatement
+    For = _PyV8.AstForStatement
+    ForIn = _PyV8.AstForInStatement
+    ExpressionStatement = _PyV8.AstExpressionStatement
+    Continue = _PyV8.AstContinueStatement
+    Break = _PyV8.AstBreakStatement
+    Return = _PyV8.AstReturnStatement
+    WithEnter = _PyV8.AstWithEnterStatement
+    WithExit = _PyV8.AstWithExitStatement
+    Case = _PyV8.AstCaseClause
+    Switch = _PyV8.AstSwitchStatement
+    Try = _PyV8.AstTryStatement
+    TryCatch = _PyV8.AstTryCatchStatement
+    TryFinally = _PyV8.AstTryFinallyStatement
+    Debugger = _PyV8.AstDebuggerStatement
+    Empty = _PyV8.AstEmptyStatement
+    Literal = _PyV8.AstLiteral
+    MaterializedLiteral = _PyV8.AstMaterializedLiteral
+    Object = _PyV8.AstObjectLiteral
+    RegExp = _PyV8.AstRegExpLiteral
+    Array = _PyV8.AstArrayLiteral
+    CatchExtension = _PyV8.AstCatchExtensionObject
+    VarProxy = _PyV8.AstVariableProxy
+    Slot = _PyV8.AstSlot
+    Property = _PyV8.AstProperty
+    Call = _PyV8.AstCall
+    CallNew = _PyV8.AstCallNew
+    CallRuntime = _PyV8.AstCallRuntime
+    Op = _PyV8.AstOperation
+    UnaryOp = _PyV8.AstUnaryOperation
+    BinOp = _PyV8.AstBinaryOperation
+    CountOp = _PyV8.AstCountOperation
+    CompOp = _PyV8.AstCompareOperation
+    Conditional = _PyV8.AstConditional
+    Assignment = _PyV8.AstAssignment
+    Throw = _PyV8.AstThrow
+    Function = _PyV8.AstFunctionLiteral
+    SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
+    This = _PyV8.AstThisFunction
 
-    __all__ += ['AST']
+class PrettyPrint(object):
+    def __init__(self):
+        self.out = StringIO()
 
-    class PrettyPrint():
-        def __init__(self):
-            self.out = StringIO()
+    def onFunctionLiteral(self, func):
+        print >>self.out, "function ", func.name, "(",
 
-        def onFunction(func):
-            print >>self.out, "function ", func.name, "(",
+        for i in range(func.scope.num_parameters):
+            if i > 0: print ", ",
 
-            for i in range(func.scope.num_parameters):
-                if i > 0: print ", ",
+            print >>self.out, func.scope.parameter(i).name
 
-                print >>self.out, func.scope.parameter(i).name
+        print >>self.out, ")"
+        print >>self.out, "{"
+        print >>self.out, "}"
 
-            print >>self.out, ")"
-            print >>self.out, "{"
-            print >>self.out, "}"
-
-        def __str__(self):
-            return self.out.getvalue()
+    def __str__(self):
+        return self.out.getvalue()
 
 import datetime
 import unittest
@@ -1642,16 +1639,41 @@ class _TestProfile(unittest.TestCase):
         # TODO enable profiler with resume
         #self.assertFalse(profiler.paused)
 
-if 'AST' in __all__:
-    class TestAST(unittest.TestCase):
-        def testPrettyPrint(self):
-            pp = PrettyPrint()
 
-            with JSContext() as ctxt:
-                script = JSEngine().compile("function hello(name) { return 'hello ' + name; }")
-                script.visit(pp)
+class TestAST(unittest.TestCase):
 
-            self.assertEquals("", str(pp))
+    class Checker(object):
+        def __init__(self, testcase):
+            self.testcase = testcase
+            
+        def __getattr__(self, name):
+            return getattr(self.testcase, name)
+
+    def testIfStatement(self):
+        with JSContext() as ctxt:
+            script = JSEngine().compile("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }")
+            
+            class IfStatementChecker(TestAST.Checker):
+                def onIfStatement(self, stmt):
+                    print "here"
+            
+                    self.assert_(stmt.hasThenStatement)
+                    self.assert_(stmt.hasElseStatement)
+                    
+                    self.assertEquals("((value%2)==0)", str(stmt.condition))
+                    self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
+                    self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
+                    
+            script.visit(IfStatementChecker(self))
+        
+    def testPrettyPrint(self):
+        pp = PrettyPrint()
+
+        with JSContext() as ctxt:
+            script = JSEngine().compile("function hello(name) { return 'hello ' + name; }")
+            script.visit(pp)
+
+        self.assertEquals("", str(pp))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:
