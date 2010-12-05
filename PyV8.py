@@ -1650,51 +1650,49 @@ class TestAST(unittest.TestCase):
         def __getattr__(self, name):
             return getattr(self.testcase, name)
             
-    def testBlock(self):
-        with JSContext() as ctxt:
-            script = JSEngine().compile("var i, j; {i=1;j=2} i=i+j")
+        def test(self, script):
+            with JSContext() as ctxt:
+                JSEngine().compile(script).visit(self)
             
-            class BlockChecker(TestAST.Checker):
-                num = 0
+    def testBlock(self):
+        class BlockChecker(TestAST.Checker):
+            num = 0
+            
+            def onBlock(self, stmt):
+                self.assertEquals(AST.Type.Block, stmt.type)
                 
-                def onBlock(self, stmt):
-                    self.assertEquals(AST.Type.Block, stmt.type)
+                if self.num == 0:
+                    self.num += 1
                     
-                    if self.num == 0:
-                        self.num += 1
-                        
-                        self.assert_(stmt.initializerBlock)
-                        
-                        self.assertEquals(2, len(stmt.statements))
-                        
-                        self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
-                        
-                    elif self.num == 1:
-                        self.assertFalse(stmt.initializerBlock)
-                        
-                        self.assertEquals(2, len(stmt.statements))
-                        
-                        self.assertEquals(['i = 1;', 'j = 2;'], [str(s) for s in stmt.statements])
+                    self.assert_(stmt.initializerBlock)
+                    
+                    self.assertEquals(2, len(stmt.statements))
+                    
+                    self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
+                    
+                elif self.num == 1:
+                    self.assertFalse(stmt.initializerBlock)
+                    
+                    self.assertEquals(2, len(stmt.statements))
+                    
+                    self.assertEquals(['i = 1;', 'j = 2;'], [str(s) for s in stmt.statements])
                         
                     
-            script.visit(BlockChecker(self))
+        BlockChecker(self).test("var i, j; {i=1;j=2} i=i+j")
 
     def testIfStatement(self):
-        with JSContext() as ctxt:
-            script = JSEngine().compile("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }")
-            
-            class IfStatementChecker(TestAST.Checker):
-                def onIfStatement(self, stmt):
-                    self.assertEquals(AST.Type.IfStatement, stmt.type)
-            
-                    self.assert_(stmt.hasThenStatement)
-                    self.assert_(stmt.hasElseStatement)
+        class IfStatementChecker(TestAST.Checker):
+            def onIfStatement(self, stmt):
+                self.assertEquals(AST.Type.IfStatement, stmt.type)
+        
+                self.assert_(stmt.hasThenStatement)
+                self.assert_(stmt.hasElseStatement)
+                
+                self.assertEquals("((value%2)==0)", str(stmt.condition))
+                self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
+                self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
                     
-                    self.assertEquals("((value%2)==0)", str(stmt.condition))
-                    self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
-                    self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
-                    
-            script.visit(IfStatementChecker(self))
+        IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }")
         
     def testPrettyPrint(self):
         pp = PrettyPrint()
