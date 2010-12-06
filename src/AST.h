@@ -117,6 +117,11 @@ class CAstExpression : public CAstNode
 protected:
   CAstExpression(v8i::Expression *expr) : CAstNode(expr) {}
 public:
+  bool IsTrivial(void) { return as<v8i::Expression>()->IsTrivial(); }
+  bool IsPropertyName(void) { return as<v8i::Expression>()->IsPropertyName(); }
+
+  bool IsLoopCondition(void) { return as<v8i::Expression>()->is_loop_condition(); }
+  void SetLoopCondition(bool flag) { as<v8i::Expression>()->set_is_loop_condition(flag); }
 };
 
 class CAstBreakableStatement : public CAstStatement

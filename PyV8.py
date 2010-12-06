@@ -1696,6 +1696,10 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("((value%2)==0)", str(stmt.condition))
                 self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
                 self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
+                
+                self.assertFalse(stmt.condition.trivial)
+                self.assertFalse(stmt.condition.propertyName)
+                self.assertFalse(stmt.condition.loopCondition)
                     
         IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }")
         

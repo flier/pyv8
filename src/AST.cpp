@@ -65,6 +65,10 @@ void CAstNode::Expose(void)
     ;
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
+    .add_property("trivial", &CAstExpression::IsTrivial)
+    .add_property("propertyName", &CAstExpression::IsPropertyName)
+
+    .add_property("loopCondition", &CAstExpression::IsLoopCondition, &CAstExpression::SetLoopCondition)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
