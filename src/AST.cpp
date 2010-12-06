@@ -105,6 +105,8 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstIterationStatement, py::bases<CAstBreakableStatement> >("AstIterationStatement", py::no_init)
+    .add_property("body", &CAstIterationStatement::GetBody, &CAstIterationStatement::SetBody)
+    .add_property("continueTarget", &CAstIterationStatement::GetContinueTarget)
     ;
 
   py::class_<CAstDoWhileStatement, py::bases<CAstIterationStatement> >("AstDoWhileStatement", py::no_init)
@@ -114,6 +116,10 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstForStatement, py::bases<CAstIterationStatement> >("AstForStatement", py::no_init)
+    .add_property("init", &CAstForStatement::GetInit, &CAstForStatement::SetInit)
+    .add_property("condition", &CAstForStatement::GetCondition, &CAstForStatement::SetCondition)
+    .add_property("next", &CAstForStatement::GetNext, &CAstForStatement::SetNext)
+    .add_property("fastLoop", &CAstForStatement::IsFastLoop)
     ;
 
   py::class_<CAstForInStatement, py::bases<CAstIterationStatement> >("AstForInStatement", py::no_init)

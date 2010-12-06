@@ -69,6 +69,8 @@ class CAstVariable
 public:
   CAstVariable(v8i::Variable *var) : m_var(var) {}
 
+  v8i::Variable *GetVariable(void) const { return m_var; }
+
   bool IsValidLeftHandSide(void) const { return m_var->IsValidLeftHandSide(); }
 
   CAstScope scope(void) const { return CAstScope(m_var->scope()); }
@@ -197,6 +199,11 @@ class CAstIterationStatement : public CAstBreakableStatement
 {
 protected:
   CAstIterationStatement(v8i::IterationStatement *stat) : CAstBreakableStatement(stat) {}
+public:
+  py::object GetBody(void) const { return to_python(as<v8i::IterationStatement>()->body()); }
+  void SetBody(CAstStatement& stmt) { as<v8i::IterationStatement>()->set_body(stmt.as<v8i::Statement>()); }
+
+  CAstBreakTarget GetContinueTarget(void) { return CAstBreakTarget(as<v8i::IterationStatement>()->continue_target()); }
 };
 
 class CAstDoWhileStatement : public CAstIterationStatement
@@ -215,6 +222,20 @@ class CAstForStatement : public CAstIterationStatement
 {
 public:
   CAstForStatement(v8i::ForStatement *stat) : CAstIterationStatement(stat) {}
+
+  py::object GetInit(void) const { return to_python(as<v8i::ForStatement>()->init()); }
+  void SetInit(CAstStatement& stmt) { as<v8i::ForStatement>()->set_init(stmt.as<v8i::Statement>()); }
+
+  py::object GetCondition(void) const { return to_python(as<v8i::ForStatement>()->cond()); }
+  void SetCondition(CAstExpression& expr) { as<v8i::ForStatement>()->set_cond(expr.as<v8i::Expression>()); }
+
+  py::object GetNext(void) const { return to_python(as<v8i::ForStatement>()->next()); }
+  void SetNext(CAstStatement& stmt) { as<v8i::ForStatement>()->set_next(stmt.as<v8i::Statement>()); }
+
+  CAstVariable GetLoopVariable(void) const { return CAstVariable(as<v8i::ForStatement>()->loop_variable()); }
+  void SetLoopVariable(CAstVariable& var) { as<v8i::ForStatement>()->set_loop_variable(var.GetVariable()); }
+  
+  bool IsFastLoop(void) const { return as<v8i::ForStatement>()->is_fast_smi_loop(); }
 };
 
 class CAstForInStatement : public CAstIterationStatement

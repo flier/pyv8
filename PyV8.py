@@ -1646,6 +1646,7 @@ class TestAST(unittest.TestCase):
     class Checker(object):
         def __init__(self, testcase):
             self.testcase = testcase
+            self.called = 0
             
         def __getattr__(self, name):
             return getattr(self.testcase, name)
@@ -1653,50 +1654,44 @@ class TestAST(unittest.TestCase):
         def test(self, script):
             with JSContext() as ctxt:
                 JSEngine().compile(script).visit(self)
+                
+            return self.called
             
     def testBlock(self):
-        class BlockChecker(TestAST.Checker):
-            num = 0
-            
+        class BlockChecker(TestAST.Checker):                        
             def onBlock(self, stmt):
+                self.called += 1
+                
                 self.assertEquals(AST.Type.Block, stmt.type)
                 
-                if self.num == 0:
-                    self.num += 1
+                self.assert_(stmt.initializerBlock)
+                self.assertFalse(stmt.anonymous)
+                
+                target = stmt.breakTarget
+                self.assert_(target)
+                self.assertFalse(target.bound)
+                self.assert_(target.unused)
+                self.assertFalse(target.linked)
+                                    
+                label = stmt.breakTarget.entryLabel
+                
+                self.assert_(label)            
+                self.assertFalse(label.bound)
+                self.assert_(label.unused)
+                self.assertFalse(label.linked)
+                
+                self.assertEquals(2, len(stmt.statements))
+                
+                self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
                     
-                    self.assert_(stmt.initializerBlock)
-                    self.assertFalse(stmt.anonymous)
                     
-                    target = stmt.breakTarget
-                    self.assert_(target)
-                    self.assertFalse(target.bound)
-                    self.assert_(target.unused)
-                    self.assertFalse(target.linked)
-                                        
-                    label = stmt.breakTarget.entryLabel
-                    
-                    self.assert_(label)            
-                    self.assertFalse(label.bound)
-                    self.assert_(label.unused)
-                    self.assertFalse(label.linked)
-                    
-                    self.assertEquals(2, len(stmt.statements))
-                    
-                    self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
-                    
-                elif self.num == 1:
-                    self.assertFalse(stmt.initializerBlock)
-                    
-                    self.assertEquals(2, len(stmt.statements))
-                    
-                    self.assertEquals(['i = 1;', 'j = 2;'], [str(s) for s in stmt.statements])
-                        
-                    
-        BlockChecker(self).test("var i, j; {i=1;j=2} i=i+j")
+        self.assertEquals(1, BlockChecker(self).test("var i, j;"))
 
     def testIfStatement(self):
         class IfStatementChecker(TestAST.Checker):
             def onIfStatement(self, stmt):
+                self.called += 1
+                
                 self.assert_(stmt)                
                 self.assertEquals(AST.Type.IfStatement, stmt.type)
                 
@@ -1715,7 +1710,28 @@ class TestAST(unittest.TestCase):
                 self.assertFalse(stmt.condition.propertyName)
                 self.assertFalse(stmt.condition.loopCondition)
                     
-        IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }")
+        self.assertEquals(1, IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
+        
+    def testForStatement(self):
+        class ForStatementChecker(TestAST.Checker):
+            def onForStatement(self, stmt):
+                self.called += 1
+                
+                self.assertEquals("{ j += i; }", str(stmt.body))
+                
+                self.assertEquals("i = 0;", str(stmt.init))
+                self.assertEquals("(i<10)", str(stmt.condition))
+                self.assertEquals("(i++);", str(stmt.next))
+                
+                target = stmt.continueTarget
+                
+                self.assert_(target)
+                self.assertFalse(target.bound)
+                self.assert_(target.unused)
+                self.assertFalse(target.linked)                
+                self.assertFalse(stmt.fastLoop)
+                
+        self.assertEquals(1, ForStatementChecker(self).test("var j; for (i=0; i<10; i++) { j+=i; }"))
         
     def testPrettyPrint(self):
         pp = PrettyPrint()
