@@ -110,9 +110,12 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstDoWhileStatement, py::bases<CAstIterationStatement> >("AstDoWhileStatement", py::no_init)
+    .add_property("condition", &CAstDoWhileStatement::GetCondition)
+    .add_property("conditionPos", &CAstDoWhileStatement::GetConditionPosition, &CAstDoWhileStatement::SetConditionPosition)
     ;
 
   py::class_<CAstWhileStatement, py::bases<CAstIterationStatement> >("AstWhileStatement", py::no_init)
+    .add_property("condition", &CAstWhileStatement::GetCondition)
     ;
 
   py::class_<CAstForStatement, py::bases<CAstIterationStatement> >("AstForStatement", py::no_init)

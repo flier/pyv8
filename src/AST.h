@@ -210,12 +210,19 @@ class CAstDoWhileStatement : public CAstIterationStatement
 {
 public:
   CAstDoWhileStatement(v8i::DoWhileStatement *stat) : CAstIterationStatement(stat) {}
+
+  py::object GetCondition(void) const { return to_python(as<v8i::DoWhileStatement>()->cond()); }
+
+  int GetConditionPosition(void) { return as<v8i::DoWhileStatement>()->condition_position(); }
+  void SetConditionPosition(int pos) { as<v8i::DoWhileStatement>()->set_condition_position(pos); }
 };
 
 class CAstWhileStatement : public CAstIterationStatement
 {
 public:
   CAstWhileStatement(v8i::WhileStatement *stat) : CAstIterationStatement(stat) {}
+
+  py::object GetCondition(void) const { return to_python(as<v8i::WhileStatement>()->cond()); }
 };
 
 class CAstForStatement : public CAstIterationStatement

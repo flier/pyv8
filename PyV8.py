@@ -1745,6 +1745,29 @@ class TestAST(unittest.TestCase):
                 
         self.assertEquals(1, ForInStatementChecker(self).test("var names = new Array(); var out = ''; for (name in names) { out += name; }"))
                 
+    def testWhileStatement(self):
+        class WhileStatementChecker(TestAST.Checker):
+            def onWhileStatement(self, stmt):
+                self.called += 1
+                
+                self.assertEquals("{ i += 1; }", str(stmt.body))
+                
+                self.assertEquals("(i<10)", str(stmt.condition))
+                
+        self.assertEquals(1, WhileStatementChecker(self).test("var i; while (i<10) { i += 1; }"))
+        
+    def testDoWhileStatement(self):
+        class DoWhileStatementChecker(TestAST.Checker):
+            def onDoWhileStatement(self, stmt):
+                self.called += 1
+                
+                self.assertEquals("{ i += 1; }", str(stmt.body))
+                
+                self.assertEquals("(i<10)", str(stmt.condition))
+                self.assertEquals(28, stmt.conditionPos)
+                
+        self.assertEquals(1, DoWhileStatementChecker(self).test("var i; do { i += 1; } while (i<10);"))
+                
     def testPrettyPrint(self):
         pp = PrettyPrint()
 
