@@ -123,6 +123,8 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstForInStatement, py::bases<CAstIterationStatement> >("AstForInStatement", py::no_init)
+    .add_property("each", &CAstForInStatement::GetEach)
+    .add_property("enumerable", &CAstForInStatement::GetEnumerable)
     ;
 
   py::class_<CAstExpressionStatement, py::bases<CAstStatement> >("AstExpressionStatement", py::no_init)

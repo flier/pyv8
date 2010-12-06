@@ -242,6 +242,9 @@ class CAstForInStatement : public CAstIterationStatement
 {
 public:
   CAstForInStatement(v8i::ForInStatement *stat) : CAstIterationStatement(stat) {}
+
+  py::object GetEach(void) const { return to_python(as<v8i::ForInStatement>()->each()); }
+  py::object GetEnumerable(void) const { return to_python(as<v8i::ForInStatement>()->enumerable()); }
 };
 
 class CAstExpressionStatement : public CAstStatement

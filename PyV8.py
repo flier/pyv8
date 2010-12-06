@@ -1733,6 +1733,18 @@ class TestAST(unittest.TestCase):
                 
         self.assertEquals(1, ForStatementChecker(self).test("var j; for (i=0; i<10; i++) { j+=i; }"))
         
+    def testForInStatement(self):
+        class ForInStatementChecker(TestAST.Checker):
+            def onForInStatement(self, stmt):
+                self.called += 1
+                
+                self.assertEquals("{ out += name; }", str(stmt.body))
+                
+                self.assertEquals("name", str(stmt.each))
+                self.assertEquals("names", str(stmt.enumerable))
+                
+        self.assertEquals(1, ForInStatementChecker(self).test("var names = new Array(); var out = ''; for (name in names) { out += name; }"))
+                
     def testPrettyPrint(self):
         pp = PrettyPrint()
 
