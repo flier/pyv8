@@ -42,6 +42,24 @@ void CAstNode::Expose(void)
     .add_property("isPossiblyEval", &CAstVariable::is_possibly_eval)
     ;
 
+  py::class_<CAstLabel>("AstLabel", py::no_init)
+    .add_property("pos", &CAstLabel::GetPosition)
+    .add_property("bound", &CAstLabel::IsBound)
+    .add_property("unused", &CAstLabel::IsUnused)
+    .add_property("linked", &CAstLabel::IsLinked)
+    ;
+
+  py::class_<CAstJumpTarget>("AstJumpTarget", py::no_init)
+    .add_property("entryLabel", &CAstJumpTarget::GetEntryLabel)
+
+    .add_property("bound", &CAstJumpTarget::IsBound)
+    .add_property("unused", &CAstJumpTarget::IsUnused)
+    .add_property("linked", &CAstJumpTarget::IsLinked)
+    ;
+
+  py::class_<CAstBreakTarget, py::bases<CAstJumpTarget> >("AstBreakTarget", py::no_init)
+    ;
+
   #define DECLARE_TYPE_ENUM(type) .value(#type, v8i::AstNode::k##type)
 
   py::enum_<v8i::AstNode::Type>("AstNodeType")
@@ -72,7 +90,8 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
-    .add_property("anonymous", &CAstBreakableStatement::IsAnonymous)
+    .add_property("anonymous", &CAstBreakableStatement::IsTargetForAnonymous)
+    .add_property("breakTarget", &CAstBreakableStatement::GetBreakTarget)
     ;
 
   py::class_<CAstBlock, py::bases<CAstBreakableStatement> >("AstBlock", py::no_init)

@@ -12,6 +12,7 @@
 #include "src/v8.h"
 #include "src/ast.h"
 #include "src/scopes.h"
+#include "src/assembler.h"
 
 #define DEBUG
 #include "src/prettyprinter.h"
@@ -80,6 +81,46 @@ public:
   bool is_possibly_eval(void) const { return m_var->is_possibly_eval(); }
 };
 
+class CAstLabel
+{
+  v8i::Label *m_label;
+public:
+  CAstLabel(v8i::Label *label) : m_label(label)
+  {
+  }
+
+  int GetPosition(void) const { return m_label->pos(); }
+  bool IsBound(void) const { return m_label->is_bound(); }
+  bool IsUnused(void) const { return m_label->is_unused(); }
+  bool IsLinked(void) const { return m_label->is_linked(); }
+};
+
+class CAstJumpTarget
+{
+protected:
+  v8i::JumpTarget *m_target;
+public:
+  CAstJumpTarget(v8i::JumpTarget *target) : m_target(target)
+  {
+
+  }
+
+  CAstLabel GetEntryLabel(void) { return CAstLabel(m_target->entry_label()); }
+
+  bool IsBound(void) const { return m_target->is_bound(); }
+  bool IsUnused(void) const { return m_target->is_unused(); }
+  bool IsLinked(void) const { return m_target->is_linked(); }
+};
+
+class CAstBreakTarget : public CAstJumpTarget
+{
+public:
+  CAstBreakTarget(v8i::BreakTarget *target) : CAstJumpTarget(target)
+  {
+
+  }
+};
+
 class CAstNode
 {  
 protected:
@@ -129,7 +170,9 @@ class CAstBreakableStatement : public CAstStatement
 protected:
   CAstBreakableStatement(v8i::BreakableStatement *stat) : CAstStatement(stat) {}
 public:
-  bool IsAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }  
+  bool IsTargetForAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }  
+
+  CAstBreakTarget GetBreakTarget(void) { return CAstBreakTarget(as<v8i::BreakableStatement>()->break_target()); }
 };
 
 class CAstBlock : public CAstBreakableStatement

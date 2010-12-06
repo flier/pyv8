@@ -1665,6 +1665,20 @@ class TestAST(unittest.TestCase):
                     self.num += 1
                     
                     self.assert_(stmt.initializerBlock)
+                    self.assertFalse(stmt.anonymous)
+                    
+                    target = stmt.breakTarget
+                    self.assert_(target)
+                    self.assertFalse(target.bound)
+                    self.assert_(target.unused)
+                    self.assertFalse(target.linked)
+                                        
+                    label = stmt.breakTarget.entryLabel
+                    
+                    self.assert_(label)            
+                    self.assertFalse(label.bound)
+                    self.assert_(label.unused)
+                    self.assertFalse(label.linked)
                     
                     self.assertEquals(2, len(stmt.statements))
                     
