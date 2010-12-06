@@ -107,7 +107,9 @@ protected:
   CAstStatement(v8i::Statement *stat) : CAstNode(stat) {}
 public:
   operator bool(void) const { return !as<v8i::Statement>()->IsEmpty(); }
-  int pos(void) const { return as<v8i::Statement>()->statement_pos(); }
+
+  int GetPosition(void) const { return as<v8i::Statement>()->statement_pos(); }
+  void SetPosition(int pos) { as<v8i::Statement>()->set_statement_pos(pos); }
 };
 
 class CAstExpression : public CAstNode

@@ -61,7 +61,7 @@ void CAstNode::Expose(void)
   py::class_<CAstStatement, py::bases<CAstNode> >("AstStatement", py::no_init)
     .def("__nonzero__", &CAstStatement::operator bool)
 
-    .add_property("pos", &CAstStatement::pos)
+    .add_property("pos", &CAstStatement::GetPosition, &CAstStatement::SetPosition)
     ;
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    

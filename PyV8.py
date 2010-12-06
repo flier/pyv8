@@ -1683,7 +1683,12 @@ class TestAST(unittest.TestCase):
     def testIfStatement(self):
         class IfStatementChecker(TestAST.Checker):
             def onIfStatement(self, stmt):
+                self.assert_(stmt)                
                 self.assertEquals(AST.Type.IfStatement, stmt.type)
+                
+                self.assertEquals(7, stmt.pos)
+                stmt.pos = 100
+                self.assertEquals(100, stmt.pos)
         
                 self.assert_(stmt.hasThenStatement)
                 self.assert_(stmt.hasElseStatement)
