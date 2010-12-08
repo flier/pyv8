@@ -170,12 +170,17 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstTryStatement, py::bases<CAstStatement> >("AstTryStatement", py::no_init)
+    .add_property("tryBlock", &CAstTryStatement::GetTryBlock)
+    .add_property("targets", &CAstTryStatement::GetEscapingTargets)
     ;
 
   py::class_<CAstTryCatchStatement, py::bases<CAstTryStatement> >("AstTryCatchStatement", py::no_init)
+    .add_property("catchVar", &CAstTryCatchStatement::GetCatchVariable)
+    .add_property("catchBlock", &CAstTryCatchStatement::GetCatchBlock)
     ;
 
   py::class_<CAstTryFinallyStatement, py::bases<CAstTryStatement> >("AstTryFinallyStatement", py::no_init)
+    .add_property("finallyBlock", &CAstTryFinallyStatement::GetFinallyBlock)
     ;
 
   py::class_<CAstDebuggerStatement, py::bases<CAstStatement> >("AstDebuggerStatement", py::no_init)
@@ -274,6 +279,8 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstThrow, py::bases<CAstExpression> >("AstThrow", py::no_init)
+    .add_property("exception", &CAstThrow::GetException)
+    .add_property("pos", &CAstThrow::GetPosition)
     ;
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)

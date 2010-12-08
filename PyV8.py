@@ -1647,157 +1647,157 @@ class TestAST(unittest.TestCase):
         def __init__(self, testcase):
             self.testcase = testcase
             self.called = 0
-            
+
         def __getattr__(self, name):
             return getattr(self.testcase, name)
-            
+
         def test(self, script):
             with JSContext() as ctxt:
                 JSEngine().compile(script).visit(self)
-                
+
             return self.called
-            
+
     def testBlock(self):
-        class BlockChecker(TestAST.Checker):                        
+        class BlockChecker(TestAST.Checker):
             def onBlock(self, stmt):
                 self.called += 1
-                
+
                 self.assertEquals(AST.Type.Block, stmt.type)
-                
+
                 self.assert_(stmt.initializerBlock)
                 self.assertFalse(stmt.anonymous)
-                
+
                 target = stmt.breakTarget
                 self.assert_(target)
                 self.assertFalse(target.bound)
                 self.assert_(target.unused)
                 self.assertFalse(target.linked)
-                                    
+
                 label = stmt.breakTarget.entryLabel
-                
-                self.assert_(label)            
+
+                self.assert_(label)
                 self.assertFalse(label.bound)
                 self.assert_(label.unused)
                 self.assertFalse(label.linked)
-                
+
                 self.assertEquals(2, len(stmt.statements))
-                
+
                 self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
-                    
-                    
+
+
         self.assertEquals(1, BlockChecker(self).test("var i, j;"))
 
     def testIfStatement(self):
         class IfStatementChecker(TestAST.Checker):
             def onIfStatement(self, stmt):
                 self.called += 1
-                
-                self.assert_(stmt)                
+
+                self.assert_(stmt)
                 self.assertEquals(AST.Type.IfStatement, stmt.type)
-                
+
                 self.assertEquals(7, stmt.pos)
                 stmt.pos = 100
                 self.assertEquals(100, stmt.pos)
-        
+
                 self.assert_(stmt.hasThenStatement)
                 self.assert_(stmt.hasElseStatement)
-                
+
                 self.assertEquals("((value%2)==0)", str(stmt.condition))
                 self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
                 self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
-                
+
                 self.assertFalse(stmt.condition.trivial)
                 self.assertFalse(stmt.condition.propertyName)
                 self.assertFalse(stmt.condition.loopCondition)
-                    
+
         self.assertEquals(1, IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
-        
+
     def testForStatement(self):
         class ForStatementChecker(TestAST.Checker):
             def onForStatement(self, stmt):
                 self.called += 1
-                
+
                 self.assertEquals("{ j += i; }", str(stmt.body))
-                
+
                 self.assertEquals("i = 0;", str(stmt.init))
                 self.assertEquals("(i<10)", str(stmt.condition))
                 self.assertEquals("(i++);", str(stmt.next))
-                
+
                 target = stmt.continueTarget
-                
+
                 self.assert_(target)
                 self.assertFalse(target.bound)
                 self.assert_(target.unused)
-                self.assertFalse(target.linked)                
+                self.assertFalse(target.linked)
                 self.assertFalse(stmt.fastLoop)
-                
+
         self.assertEquals(1, ForStatementChecker(self).test("var j; for (i=0; i<10; i++) { j+=i; }"))
-        
+
     def testForInStatement(self):
         class ForInStatementChecker(TestAST.Checker):
             def onForInStatement(self, stmt):
                 self.called += 1
-                
+
                 self.assertEquals("{ out += name; }", str(stmt.body))
-                
+
                 self.assertEquals("name", str(stmt.each))
                 self.assertEquals("names", str(stmt.enumerable))
-                
+
         self.assertEquals(1, ForInStatementChecker(self).test("var names = new Array(); var out = ''; for (name in names) { out += name; }"))
-                
+
     def testWhileStatement(self):
         class WhileStatementChecker(TestAST.Checker):
             def onWhileStatement(self, stmt):
                 self.called += 1
-                
+
                 self.assertEquals("{ i += 1; }", str(stmt.body))
-                
+
                 self.assertEquals("(i<10)", str(stmt.condition))
-                
+
         self.assertEquals(1, WhileStatementChecker(self).test("var i; while (i<10) { i += 1; }"))
-        
+
     def testDoWhileStatement(self):
         class DoWhileStatementChecker(TestAST.Checker):
             def onDoWhileStatement(self, stmt):
                 self.called += 1
-                
+
                 self.assertEquals("{ i += 1; }", str(stmt.body))
-                
+
                 self.assertEquals("(i<10)", str(stmt.condition))
                 self.assertEquals(28, stmt.conditionPos)
-                
+
         self.assertEquals(1, DoWhileStatementChecker(self).test("var i; do { i += 1; } while (i<10);"))
-                
-    def testCallStatement(self):
+
+    def testCallStatements(self):
         class CallStatementChecker(TestAST.Checker):
             def onBlock(self, block):
                 for stmt in block.statements:
-                    stmt.visit(self)                    
-                
-            def onExpressionStatement(self, stmt):                
+                    stmt.visit(self)
+
+            def onExpressionStatement(self, stmt):
                 stmt.expression.visit(self)
-                
+
             def onCall(self, expr):
                 self.called += 1
-                
+
                 self.assertEquals("hello", str(expr.expression))
                 self.assertEquals(['"flier"'], [str(arg) for arg in expr.args])
                 self.assertEquals(143, expr.pos)
 
             def onCallNew(self, expr):
                 self.called += 1
-                
+
                 self.assertEquals("dog", str(expr.expression))
                 self.assertEquals(['"cat"'], [str(arg) for arg in expr.args])
                 self.assertEquals(171, expr.pos)
 
             def onCallRuntime(self, expr):
                 self.called += 1
-                
+
                 self.assertEquals("InitializeVarGlobal", expr.name)
                 self.assertEquals(['"s"'], [str(arg) for arg in expr.args])
                 self.assertFalse(expr.isJsRuntime)
-                
+
         self.assertEquals(3,  CallStatementChecker(self).test("""
             var s;
             function hello(name) { s = "Hello " + name; }
@@ -1805,7 +1805,58 @@ class TestAST(unittest.TestCase):
             hello("flier");
             new dog("cat");
         """))
-                
+
+    def testTryStatements(self):
+        class TryStatementsChecker(TestAST.Checker):
+            def onBlock(self, block):
+                for stmt in block.statements:
+                    stmt.visit(self)
+
+            def onExpressionStatement(self, stmt):
+                stmt.expression.visit(self)
+
+            def onThrow(self, expr):
+                self.called += 1
+
+                self.assertEquals('"abc"', str(expr.exception))
+                self.assertEquals(54, expr.pos)
+
+            def onTryCatchStatement(self, stmt):
+                self.called += 1
+
+                self.assertEquals("{ throw \"abc\"; }", str(stmt.tryBlock))
+                self.assertEquals([], stmt.targets)
+
+                stmt.tryBlock.visit(self)
+
+                self.assertEquals(".catch-var", str(stmt.catchVar))
+                self.assertEquals("{ <enter with> ({ \"err\": .catch-var })  try { { s = err; } } finally { <exit with> } }", str(stmt.catchBlock))
+
+            def onTryFinallyStatement(self, stmt):
+                self.called += 1
+
+                self.assertEquals("{ throw \"abc\"; }", str(stmt.tryBlock))
+                self.assertEquals([], stmt.targets)
+
+                self.assertEquals("{ s += \".\"; }", str(stmt.finallyBlock))
+
+        self.assertEquals(3, TryStatementsChecker(self).test("""
+            var s;
+            try {
+                throw "abc";
+            }
+            catch (err) {
+                s = err;
+            };
+
+            try {
+                throw "abc";
+            }
+            finally {
+                s += ".";
+            }
+        """))
+
     def testPrettyPrint(self):
         pp = PrettyPrint()
 

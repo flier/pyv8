@@ -38,6 +38,7 @@ inline py::object to_python(v8i::Handle<v8i::String> str)
 
 class CAstVisitor;
 class CAstVariable;
+class CAstVariableProxy;
 
 class CAstScope 
 {
@@ -334,18 +335,25 @@ class CAstTryStatement : public CAstStatement
 protected:
   CAstTryStatement(v8i::TryStatement *stat) : CAstStatement(stat) {}
 public:
+  CAstBlock GetTryBlock(void) const { return CAstBlock(as<v8i::TryStatement>()->try_block()); }
+  py::list GetEscapingTargets(void) const;
 };
 
 class CAstTryCatchStatement : public CAstTryStatement
 {
 public:
   CAstTryCatchStatement(v8i::TryCatchStatement *stat) : CAstTryStatement(stat) {}
+
+  CAstVariableProxy GetCatchVariable(void) const;
+  CAstBlock GetCatchBlock(void) const { return CAstBlock(as<v8i::TryCatchStatement>()->catch_block()); }
 };
 
 class CAstTryFinallyStatement : public CAstTryStatement
 {
 public:
   CAstTryFinallyStatement(v8i::TryFinallyStatement *stat) : CAstTryStatement(stat) {}
+
+  CAstBlock GetFinallyBlock(void) const { return CAstBlock(as<v8i::TryFinallyStatement>()->finally_block()); }
 };
 
 class CAstDebuggerStatement : public CAstStatement
@@ -515,6 +523,9 @@ class CAstThrow : public CAstExpression
 {
 public:
   CAstThrow(v8i::Throw *th) : CAstExpression(th) {}
+
+  py::object GetException(void) const { return to_python(as<v8i::Throw>()->exception()); }
+  int GetPosition(void) const { return as<v8i::Throw>()->position(); }
 };
 
 class CAstFunctionLiteral : public CAstExpression
@@ -613,6 +624,23 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
   return collector.m_nodes;
 }
 
+template <>
+inline py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst)
+{
+  py::list targets;
+
+  for (int i=0; i<lst->length(); i++)
+  {
+    targets.append(CAstBreakTarget(lst->at(i)));
+  }
+
+  return targets;
+}
+
 inline CAstVariable CAstScope::parameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }
+
+inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python(as<v8i::TryStatement>()->escaping_targets()); }
+
+inline CAstVariableProxy CAstTryCatchStatement::GetCatchVariable(void) const { return CAstVariableProxy(as<v8i::TryCatchStatement>()->catch_var()); }
