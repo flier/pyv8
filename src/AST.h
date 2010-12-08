@@ -426,9 +426,9 @@ class CAstCall : public CAstExpression
 public:
   CAstCall(v8i::Call *call) : CAstExpression(call) {}
 
-  py::object expression(void) const { return to_python(as<v8i::Call>()->expression()); }
-  py::list arguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
-  int position(void) const { return as<v8i::Call>()->position(); }
+  py::object GetExpression(void) const { return to_python(as<v8i::Call>()->expression()); }
+  py::list GetArguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
+  int GetPosition(void) const { return as<v8i::Call>()->position(); }
 };
 
 class CAstCallNew : public CAstExpression
@@ -436,9 +436,9 @@ class CAstCallNew : public CAstExpression
 public:
   CAstCallNew(v8i::CallNew *call) : CAstExpression(call) {}
 
-  py::object expression(void) const { return to_python(as<v8i::Call>()->expression()); }
-  py::list arguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
-  int position(void) const { return as<v8i::Call>()->position(); }
+  py::object GetExpression(void) const { return to_python(as<v8i::CallNew>()->expression()); }
+  py::list GetArguments(void) const { return to_python(as<v8i::CallNew>()->arguments()); }
+  int GetPosition(void) const { return as<v8i::CallNew>()->position(); }
 };
 
 class CAstCallRuntime : public CAstExpression
@@ -446,9 +446,9 @@ class CAstCallRuntime : public CAstExpression
 public:
   CAstCallRuntime(v8i::CallRuntime *call) : CAstExpression(call) {}
 
-  py::object name(void) const { return to_python(as<v8i::CallRuntime>()->name()); }
-  py::list arguments(void) const { return to_python(as<v8i::CallRuntime>()->arguments()); }
-  bool is_jsruntime(void) const { return as<v8i::CallRuntime>()->is_jsruntime(); }
+  py::object GetName(void) const { return to_python(as<v8i::CallRuntime>()->name()); }
+  py::list GetArguments(void) const { return to_python(as<v8i::CallRuntime>()->arguments()); }
+  bool IsJSRuntime(void) const { return as<v8i::CallRuntime>()->is_jsruntime(); }
 };
 
 class CAstUnaryOperation : public CAstExpression

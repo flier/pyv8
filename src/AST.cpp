@@ -204,7 +204,7 @@ void CAstNode::Expose(void)
 
   py::class_<CAstVariableProxy, py::bases<CAstExpression> >("AstVariableProxy", py::no_init)
     .add_property("isValidLeftHandSide", &CAstVariableProxy::IsValidLeftHandSide)
-    .add_property("IsArguments", &CAstVariableProxy::IsArguments)
+    .add_property("isArguments", &CAstVariableProxy::IsArguments)
     .add_property("name", &CAstVariableProxy::name)
     .add_property("var", &CAstVariableProxy::var)
     .add_property("isThis", &CAstVariableProxy::is_this)
@@ -218,21 +218,21 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstCall, py::bases<CAstExpression> >("AstCall", py::no_init)
-    .add_property("expression", &CAstCall::expression)
-    .add_property("arguments", &CAstCall::arguments)
-    .add_property("position", &CAstCall::position)
+    .add_property("expression", &CAstCall::GetExpression)
+    .add_property("args", &CAstCall::GetArguments)
+    .add_property("pos", &CAstCall::GetPosition)
     ;
 
   py::class_<CAstCallNew, py::bases<CAstExpression> >("AstCallNew", py::no_init)
-    .add_property("expression", &CAstCallNew::expression)
-    .add_property("arguments", &CAstCallNew::arguments)
-    .add_property("position", &CAstCallNew::position)
+    .add_property("expression", &CAstCallNew::GetExpression)
+    .add_property("args", &CAstCallNew::GetArguments)
+    .add_property("pos", &CAstCallNew::GetPosition)
     ;
 
   py::class_<CAstCallRuntime, py::bases<CAstExpression> >("AstCallRuntime", py::no_init)
-    .add_property("name", &CAstCallRuntime::name)
-    .add_property("arguments", &CAstCallRuntime::arguments)
-    .add_property("isJsRuntime", &CAstCallRuntime::is_jsruntime)
+    .add_property("name", &CAstCallRuntime::GetName)
+    .add_property("args", &CAstCallRuntime::GetArguments)
+    .add_property("isJsRuntime", &CAstCallRuntime::IsJSRuntime)
     ;
 
   py::enum_<v8i::Token::Value>("AstOperation")

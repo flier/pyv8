@@ -937,8 +937,8 @@ class TestWrapper(unittest.TestCase):
             c();""", "test")
 
             self.assertEquals(4, len(st))
-            self.assertEquals("\tat a (test:4:28)\n\tat (eval)\n\tat b (test:8:28)\n\tat c (test:12:28)\n", str(st))
-            self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (12:28)",
+            self.assertEquals("\tat a (test:4:28)\n\tat (eval)\n\tat b (test:8:28)\n\tat c (test:13:17)\n", str(st))
+            self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (13:17)",
                               "\n".join(["%s.%s (%d:%d)%s%s" % (
                                 f.scriptName, f.funcName, f.lineNum, f.column,
                                 ' eval' if f.isEval else '',
@@ -1408,7 +1408,7 @@ class TestMultithread(unittest.TestCase):
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:
-            self.assert_(str(JSEngine.version).startswith("2."))
+            self.assert_(str(JSEngine.version).startswith("3."))
             self.assertFalse(JSEngine.dead)
 
     def testCompile(self):
@@ -1767,6 +1767,44 @@ class TestAST(unittest.TestCase):
                 self.assertEquals(28, stmt.conditionPos)
                 
         self.assertEquals(1, DoWhileStatementChecker(self).test("var i; do { i += 1; } while (i<10);"))
+                
+    def testCallStatement(self):
+        class CallStatementChecker(TestAST.Checker):
+            def onBlock(self, block):
+                for stmt in block.statements:
+                    stmt.visit(self)                    
+                
+            def onExpressionStatement(self, stmt):                
+                stmt.expression.visit(self)
+                
+            def onCall(self, expr):
+                self.called += 1
+                
+                self.assertEquals("hello", str(expr.expression))
+                self.assertEquals(['"flier"'], [str(arg) for arg in expr.args])
+                self.assertEquals(143, expr.pos)
+
+            def onCallNew(self, expr):
+                self.called += 1
+                
+                self.assertEquals("dog", str(expr.expression))
+                self.assertEquals(['"cat"'], [str(arg) for arg in expr.args])
+                self.assertEquals(171, expr.pos)
+
+            def onCallRuntime(self, expr):
+                self.called += 1
+                
+                self.assertEquals("InitializeVarGlobal", expr.name)
+                self.assertEquals(['"s"'], [str(arg) for arg in expr.args])
+                self.assertFalse(expr.isJsRuntime)
+                
+        self.assertEquals(3,  CallStatementChecker(self).test("""
+            var s;
+            function hello(name) { s = "Hello " + name; }
+            function dog(name) { this.name = name; }
+            hello("flier");
+            new dog("cat");
+        """))
                 
     def testPrettyPrint(self):
         pp = PrettyPrint()
