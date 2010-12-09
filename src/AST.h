@@ -14,9 +14,7 @@
 #include "src/scopes.h"
 #include "src/assembler.h"
 
-#define DEBUG
-#include "src/prettyprinter.h"
-
+#include "PrettyPrinter.h"
 #include "Wrapper.h"
 
 namespace v8i = v8::internal;
@@ -542,6 +540,9 @@ public:
   bool is_expression(void) const { return as<v8i::FunctionLiteral>()->is_expression(); }
 
   int num_parameters(void) const { return as<v8i::FunctionLiteral>()->num_parameters(); }
+
+  const std::string ToAST(void) const { return v8i::AstPrinter().PrintProgram(as<v8i::FunctionLiteral>()); }
+  const std::string ToJSON(void) const { return v8i::JsonAstBuilder().BuildProgram(as<v8i::FunctionLiteral>()); }
 };
 
 class CAstSharedFunctionInfoLiteral : public CAstExpression

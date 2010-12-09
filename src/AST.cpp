@@ -291,6 +291,9 @@ void CAstNode::Expose(void)
     .add_property("startPos", &CAstFunctionLiteral::start_position)
     .add_property("endPos", &CAstFunctionLiteral::end_position)
     .add_property("isExpression", &CAstFunctionLiteral::is_expression)    
+
+    .def("toAST", &CAstFunctionLiteral::ToAST)
+    .def("toJSON", &CAstFunctionLiteral::ToJSON)
     ;
 
   py::class_<CAstSharedFunctionInfoLiteral, py::bases<CAstExpression> >("AstSharedFunctionInfoLiteral", py::no_init)

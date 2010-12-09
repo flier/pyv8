@@ -22,7 +22,6 @@
 			IntermediateDirectory="$(SolutionDir)\objs\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(V8_HOME)\tools\visual_studio\common.vsprops;$(V8_HOME)\tools\visual_studio\ia32.vsprops;$(V8_HOME)\tools\visual_studio\debug.vsprops"
-			CharacterSet="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -218,6 +217,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PrettyPrinter.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\PyV8.cpp"
 				>
 			</File>
@@ -257,6 +260,10 @@
 			</File>
 			<File
 				RelativePath=".\Locker.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PrettyPrinter.h"
 				>
 			</File>
 			<File
