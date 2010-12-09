@@ -102,6 +102,9 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstDeclaration, py::bases<CAstNode> >("AstDeclaration", py::no_init)
+    .add_property("proxy", &CAstDeclaration::GetProxy)
+    .add_property("mode", &CAstDeclaration::GetMode)
+    .add_property("function", &CAstDeclaration::GetFunction)
     ;
 
   py::class_<CAstIterationStatement, py::bases<CAstBreakableStatement> >("AstIterationStatement", py::no_init)

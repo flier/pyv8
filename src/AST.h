@@ -37,6 +37,7 @@ inline py::object to_python(v8i::Handle<v8i::String> str)
 class CAstVisitor;
 class CAstVariable;
 class CAstVariableProxy;
+class CAstFunctionLiteral;
 
 class CAstScope 
 {
@@ -192,6 +193,10 @@ class CAstDeclaration : public CAstNode
 {
 public:
   CAstDeclaration(v8i::Declaration *decl) : CAstNode(decl) {}
+
+  CAstVariableProxy GetProxy(void) const;
+  v8i::Variable::Mode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
+  CAstFunctionLiteral GetFunction(void) const;
 };
 
 class CAstIterationStatement : public CAstBreakableStatement
@@ -641,6 +646,10 @@ inline py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst)
 inline CAstVariable CAstScope::parameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }
+
+inline CAstVariableProxy CAstDeclaration::GetProxy(void) const { return CAstVariableProxy(as<v8i::Declaration>()->proxy()); }
+
+inline CAstFunctionLiteral CAstDeclaration::GetFunction(void) const { return CAstFunctionLiteral(as<v8i::Declaration>()->fun()); }
 
 inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python(as<v8i::TryStatement>()->escaping_targets()); }
 
