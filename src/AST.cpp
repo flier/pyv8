@@ -193,15 +193,25 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstLiteral, py::bases<CAstExpression> >("AstLiteral", py::no_init)
+    .add_property("isTrivial", &CAstLiteral::IsTrivial)
+    .add_property("isPropertyName", &CAstLiteral::IsPropertyName)
+    .add_property("isNull", &CAstLiteral::IsNull)
+    .add_property("isTrue", &CAstLiteral::IsTrue)
+    .add_property("isFalse", &CAstLiteral::IsFalse)
     ;
 
   py::class_<CAstMaterializedLiteral, py::bases<CAstExpression> >("AstMaterializedLiteral", py::no_init)
+    .add_property("index", &CAstMaterializedLiteral::GetIndex)
+    .add_property("isSimple", &CAstMaterializedLiteral::IsSimple)
+    .add_property("depth", &CAstMaterializedLiteral::GetDepth)
     ;
 
   py::class_<CAstObjectLiteral, py::bases<CAstMaterializedLiteral> >("AstObjectLiteral", py::no_init)
     ;
 
   py::class_<CAstRegExpLiteral, py::bases<CAstMaterializedLiteral> >("AstRegExpLiteral", py::no_init)
+    .add_property("pattern", &CAstRegExpLiteral::GetPattern)
+    .add_property("flags", &CAstRegExpLiteral::GetFlags)
     ;
 
   py::class_<CAstArrayLiteral, py::bases<CAstMaterializedLiteral> >("AstArrayLiteral", py::no_init)

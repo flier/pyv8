@@ -34,6 +34,15 @@ inline py::object to_python(v8i::Handle<v8i::String> str)
   return py::str(buf.start(), buf.length());
 }
 
+inline const std::string to_string(v8i::Handle<v8i::String> str)
+{ 
+  if (str.is_null()) return std::string();
+
+  v8i::Vector<const char> buf = str->ToAsciiVector();
+
+  return std::string(buf.start(), buf.length());
+}
+
 class CAstVisitor;
 class CAstVariable;
 class CAstVariableProxy;
@@ -375,12 +384,22 @@ class CAstLiteral : public CAstExpression
 {
 public:
   CAstLiteral(v8i::Literal *lit) : CAstExpression(lit) {}
+
+  bool IsTrivial(void) const { return as<v8i::Literal>()->IsTrivial(); }
+  bool IsPropertyName(void) const { return as<v8i::Literal>()->IsPropertyName(); }
+  bool IsNull(void) const { return as<v8i::Literal>()->IsNull(); }
+  bool IsTrue(void) const { return as<v8i::Literal>()->IsTrue(); }
+  bool IsFalse(void) const { return as<v8i::Literal>()->IsFalse(); }
 };
 
 class CAstMaterializedLiteral : public CAstExpression
 {
 protected:
   CAstMaterializedLiteral(v8i::MaterializedLiteral *lit) : CAstExpression(lit) {}
+public:
+  int GetIndex(void) const { return as<v8i::MaterializedLiteral>()->literal_index(); }
+  bool IsSimple(void) const { return as<v8i::MaterializedLiteral>()->is_simple(); }
+  int GetDepth(void) const { return as<v8i::MaterializedLiteral>()->depth(); }
 };
 
 class CAstObjectLiteral : public CAstMaterializedLiteral
@@ -393,6 +412,9 @@ class CAstRegExpLiteral : public CAstMaterializedLiteral
 {
 public:
   CAstRegExpLiteral(v8i::RegExpLiteral *lit) : CAstMaterializedLiteral(lit) {}
+
+  const std::string GetPattern(void) const { return to_string(as<v8i::RegExpLiteral>()->pattern()); }
+  const std::string GetFlags(void) const { return to_string(as<v8i::RegExpLiteral>()->flags()); }
 };
 
 class CAstArrayLiteral : public CAstMaterializedLiteral

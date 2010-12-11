@@ -1857,14 +1857,27 @@ class TestAST(unittest.TestCase):
             }
         """))
 
-    def testPrettyPrint(self):
-        pp = PrettyPrint()
+    def testLiterals(self):
+        class LiteralChecker(TestAST.Checker):
+            def onExpressionStatement(self, stmt):
+                stmt.expression.visit(self)
 
-        with JSContext() as ctxt:
-            script = JSEngine().compile("function hello(name) { return 'hello ' + name; }")
-            script.visit(pp)
+            def onLiteral(self, litr):
+                self.called += 1
 
-        self.assertEquals("", str(pp))
+                self.assert_(litr.isTrivial)
+                self.assertFalse(litr.isPropertyName)
+                self.assertFalse(litr.isNull)
+                self.assertFalse(litr.isTrue)
+                self.assertTrue(litr.isFalse)
+
+            def onRegExpLiteral(self, litr):
+                self.called += 1
+
+                self.assertEquals("test", litr.pattern)
+                self.assertEquals("g", litr.flags)
+
+        self.assertEquals(2, LiteralChecker(self).test("false; /test/g"))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:
