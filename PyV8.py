@@ -1454,7 +1454,7 @@ class TestEngine(unittest.TestCase):
         # test the auto enable property
 
         with JSContext() as ctxt:
-            self.assertRaises(JSError, ctxt.eval, "hello('flier')")
+            self.assertRaises(ReferenceError, ctxt.eval, "hello('flier')")
 
         extJs.autoEnable = True
         self.assertTrue(extJs.autoEnable)
@@ -1466,7 +1466,7 @@ class TestEngine(unittest.TestCase):
         self.assertFalse(extJs.autoEnable)
 
         with JSContext() as ctxt:
-            self.assertRaises(JSError, ctxt.eval, "hello('flier')")
+            self.assertRaises(ReferenceError, ctxt.eval, "hello('flier')")
 
     def testNativeExtension(self):
         extSrc = "native function hello();"
@@ -1522,7 +1522,7 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(Global.version, str(vars.version))
             self.assertEquals(Global.version, str(ctxt.eval("version")))
 
-            self.assertEquals(None, ctxt.eval("nonexists"))
+            self.assertRaises(ReferenceError, ctxt.eval, "nonexists")
 
             # setter
             self.assertEquals(2.0, float(ctxt.eval("version = 2.0")))

@@ -334,6 +334,48 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
   return oss.str();
 }
 
+static struct {
+  const char *name;
+  PyObject *type;
+} SupportErrors[] = {
+  { "RangeError",     ::PyExc_IndexError },
+  { "ReferenceError", ::PyExc_ReferenceError },
+  { "SyntaxError",    ::PyExc_SyntaxError },
+  { "TypeError",      ::PyExc_TypeError }
+};
+
+void CJavascriptException::ThrowIf(v8::TryCatch& try_catch)
+{
+  if (try_catch.HasCaught())
+  {
+    v8::HandleScope handle_scope;
+
+    PyObject *type = NULL;
+    v8::Handle<v8::Value> obj = try_catch.Exception();
+
+    if (obj->IsObject())
+    {
+      v8::Handle<v8::Object> exc = obj->ToObject();
+      v8::Handle<v8::String> name = v8::String::New("name");
+
+      if (exc->Has(name))
+      {
+        v8::String::AsciiValue s(v8::Handle<v8::String>::Cast(exc->Get(name)));
+
+        for (int i=0; i<_countof(SupportErrors); i++)
+        {
+          if (strnicmp(SupportErrors[i].name, *s, s.length()) == 0)
+          {
+            type = SupportErrors[i].type;
+          }
+        }        
+      }      
+    }
+
+    throw CJavascriptException(try_catch, type);    
+  }
+}
+
 void ExceptionTranslator::Translate(CJavascriptException const& ex) 
 {
   CPythonGIL python_gil;

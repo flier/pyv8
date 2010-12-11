@@ -209,6 +209,9 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
       return handle_scope.Close(Wrap(result));
     }
 
+    if (::PyObject_HasAttrString(obj.ptr(), "__is_global_object__"))
+      return v8::ThrowException(v8::Exception::ReferenceError(prop));
+
     return v8::Undefined();
   }
 

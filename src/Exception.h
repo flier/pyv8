@@ -130,8 +130,8 @@ class CJavascriptException : public std::runtime_error
 
   static const std::string Extract(v8::TryCatch& try_catch);
 protected:
-  CJavascriptException(v8::TryCatch& try_catch)
-    : std::runtime_error(Extract(try_catch)), m_type(NULL),
+  CJavascriptException(v8::TryCatch& try_catch, PyObject *type)
+    : std::runtime_error(Extract(try_catch)), m_type(type),
       m_exc(v8::Persistent<v8::Value>::New(try_catch.Exception())),
       m_stack(v8::Persistent<v8::Value>::New(try_catch.StackTrace())),
       m_msg(v8::Persistent<v8::Message>::New(try_catch.Message()))
@@ -163,10 +163,7 @@ public:
   
   void PrintCallStack(py::object file);
 
-  static void ThrowIf(v8::TryCatch& try_catch)
-  {
-    if (try_catch.HasCaught()) throw CJavascriptException(try_catch);    
-  }
+  static void ThrowIf(v8::TryCatch& try_catch);
 
   static void Expose(void);
 };

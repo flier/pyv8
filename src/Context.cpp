@@ -82,6 +82,8 @@ CContext::CContext(py::object global, py::list extensions)
 
   if (global.ptr() != Py_None)
   {    
+    global.attr("__is_global_object__") = true;
+
     m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));  
   }
 }
