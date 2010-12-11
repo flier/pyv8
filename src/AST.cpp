@@ -193,8 +193,6 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstLiteral, py::bases<CAstExpression> >("AstLiteral", py::no_init)
-    .add_property("isTrivial", &CAstLiteral::IsTrivial)
-    .add_property("isPropertyName", &CAstLiteral::IsPropertyName)
     .add_property("isNull", &CAstLiteral::IsNull)
     .add_property("isTrue", &CAstLiteral::IsTrue)
     .add_property("isFalse", &CAstLiteral::IsFalse)
@@ -206,7 +204,24 @@ void CAstNode::Expose(void)
     .add_property("depth", &CAstMaterializedLiteral::GetDepth)
     ;
 
+  py::enum_<v8i::ObjectLiteral::Property::Kind>("CAstPropertyKind")
+    .value("constant", v8i::ObjectLiteral::Property::CONSTANT)
+    .value("computed", v8i::ObjectLiteral::Property::COMPUTED)
+    .value("materialized", v8i::ObjectLiteral::Property::MATERIALIZED_LITERAL)
+    .value("getter", v8i::ObjectLiteral::Property::GETTER)
+    .value("setter", v8i::ObjectLiteral::Property::SETTER)
+    .value("prototype", v8i::ObjectLiteral::Property::PROTOTYPE)
+    ;
+
+  py::class_<CAstObjectProperty>("AstObjectProperty", py::no_init)
+    .add_property("key", &CAstObjectProperty::GetKey)
+    .add_property("value", &CAstObjectProperty::GetValue)
+    .add_property("kind", &CAstObjectProperty::GetKind)
+    .add_property("isCompileTimeValue", &CAstObjectProperty::IsCompileTimeValue)
+    ;
+
   py::class_<CAstObjectLiteral, py::bases<CAstMaterializedLiteral> >("AstObjectLiteral", py::no_init)
+    .add_property("properties", &CAstObjectLiteral::GetProperties)
     ;
 
   py::class_<CAstRegExpLiteral, py::bases<CAstMaterializedLiteral> >("AstRegExpLiteral", py::no_init)
@@ -215,6 +230,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstArrayLiteral, py::bases<CAstMaterializedLiteral> >("AstArrayLiteral", py::no_init)
+    .add_property("values", &CAstArrayLiteral::GetValues)
     ;
 
   py::class_<CAstCatchExtensionObject, py::bases<CAstExpression> >("AstCatchExtensionObject", py::no_init)

@@ -1859,14 +1859,21 @@ class TestAST(unittest.TestCase):
 
     def testLiterals(self):
         class LiteralChecker(TestAST.Checker):
+            def onBlock(self, block):
+                for stmt in block.statements:
+                    stmt.visit(self)
+
             def onExpressionStatement(self, stmt):
                 stmt.expression.visit(self)
+
+            def onCallRuntime(self, expr):
+                expr.args[1].visit(self)
 
             def onLiteral(self, litr):
                 self.called += 1
 
-                self.assert_(litr.isTrivial)
-                self.assertFalse(litr.isPropertyName)
+                self.assert_(litr.trivial)
+                self.assertFalse(litr.propertyName)
                 self.assertFalse(litr.isNull)
                 self.assertFalse(litr.isTrue)
                 self.assertTrue(litr.isFalse)
@@ -1877,7 +1884,24 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("test", litr.pattern)
                 self.assertEquals("g", litr.flags)
 
-        self.assertEquals(2, LiteralChecker(self).test("false; /test/g"))
+            def onObjectLiteral(self, litr):
+                self.called += 1
+
+                self.assertEquals('constant:"name"="flier",constant:"sex"=true',
+                                  ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
+
+            def onArrayLiteral(self, litr):
+                self.called += 1
+
+                self.assertEquals('"hello","world",42',
+                                  ",".join([str(value) for value in litr.values]))
+
+        self.assertEquals(4, LiteralChecker(self).test("""
+            false;
+            /test/g;
+            var o = { name: 'flier', sex: true };
+            var a = ['hello', 'world', 42];
+        """))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:

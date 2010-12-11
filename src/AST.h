@@ -25,6 +25,9 @@ inline py::object to_python(T *node);
 template <typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst);
 
+py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst);
+py::list to_python(v8i::ZoneList<v8i::ObjectLiteral::Property *>* lst);
+
 inline py::object to_python(v8i::Handle<v8i::String> str)
 { 
   if (str.is_null()) return py::object();
@@ -402,10 +405,28 @@ public:
   int GetDepth(void) const { return as<v8i::MaterializedLiteral>()->depth(); }
 };
 
+class CAstObjectProperty
+{
+  v8i::ObjectLiteral::Property *m_prop;
+public:
+  CAstObjectProperty(v8i::ObjectLiteral::Property *prop) : m_prop(prop)
+  {
+
+  }
+
+  py::object GetKey(void) { return to_python(m_prop->key()); }
+  py::object GetValue(void) { return to_python(m_prop->value()); }
+  v8i::ObjectLiteral::Property::Kind GetKind(void) { return m_prop->kind(); }
+
+  bool IsCompileTimeValue(void) { return m_prop->IsCompileTimeValue(); }
+};
+
 class CAstObjectLiteral : public CAstMaterializedLiteral
 {
 public:
   CAstObjectLiteral(v8i::ObjectLiteral *lit) : CAstMaterializedLiteral(lit) {}
+
+  py::list GetProperties(void) const { return to_python(as<v8i::ObjectLiteral>()->properties()); }
 };
 
 class CAstRegExpLiteral : public CAstMaterializedLiteral
@@ -421,6 +442,8 @@ class CAstArrayLiteral : public CAstMaterializedLiteral
 {
 public:
   CAstArrayLiteral(v8i::ArrayLiteral *lit) : CAstMaterializedLiteral(lit) {}
+
+  py::list GetValues(void) const { return to_python(as<v8i::ArrayLiteral>()->values()); }
 };
 
 class CAstCatchExtensionObject : public CAstExpression
@@ -652,7 +675,6 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
   return collector.m_nodes;
 }
 
-template <>
 inline py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst)
 {
   py::list targets;
@@ -660,6 +682,18 @@ inline py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst)
   for (int i=0; i<lst->length(); i++)
   {
     targets.append(CAstBreakTarget(lst->at(i)));
+  }
+
+  return targets;
+}
+
+inline py::list to_python(v8i::ZoneList<v8i::ObjectLiteral::Property *>* lst)
+{
+  py::list targets;
+
+  for (int i=0; i<lst->length(); i++)
+  {
+    targets.append(CAstObjectProperty(lst->at(i)));
   }
 
   return targets;
