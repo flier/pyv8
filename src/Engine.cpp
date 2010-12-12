@@ -435,13 +435,9 @@ void CScript::visit(py::object handler) const
 
   if (v8i::ParserApi::Parse(&info))
   {
-    v8i::FunctionLiteral* program = info.function();
-
-    CAstVisitor visitor(handler);
-
-    for (int i=0; i<program->body()->length(); i++)
+    if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
     {
-      visitor.Visit(program->body()->at(i));
+      handler.attr("onProgram")(CAstFunctionLiteral(info.function()));
     }
   }
 }

@@ -20,6 +20,12 @@
 namespace v8i = v8::internal;
 
 template <typename T>
+inline py::object to_python(T& obj)
+{
+  return py::object(py::handle<>(py::to_python_value<T&>()(obj)));
+}
+
+template <typename T>
 inline py::object to_python(T *node);
 
 template <typename T>
@@ -57,22 +63,25 @@ class CAstScope
 public:
   CAstScope(v8i::Scope *scope) : m_scope(scope) {}
 
-  bool is_eval(void) const { return m_scope->is_eval_scope(); }
-  bool is_func(void) const { return m_scope->is_function_scope(); }
-  bool is_global(void) const { return m_scope->is_global_scope(); }
+  bool IsEval(void) const { return m_scope->is_eval_scope(); }
+  bool IsFunction(void) const { return m_scope->is_function_scope(); }
+  bool IsGlobal(void) const { return m_scope->is_global_scope(); }
 
-  bool calls_eval(void) const { return m_scope->calls_eval(); }
-  bool outer_scope_calls_eval(void) const { return m_scope->outer_scope_calls_eval(); }
+  bool CallsEval(void) const { return m_scope->calls_eval(); }
+  bool OuterScopeCallsEval(void) const { return m_scope->outer_scope_calls_eval(); }
 
-  bool inside_with(void) const { return m_scope->inside_with(); }
-  bool contains_with(void) const { return m_scope->contains_with(); }
+  bool InsideWith(void) const { return m_scope->inside_with(); }
+  bool ContainsWith(void) const { return m_scope->contains_with(); }
 
-  py::object outer(void) const { v8i::Scope *scope = m_scope->outer_scope(); return scope ? py::object(CAstScope(scope)) : py::object(); }
+  py::object GetOuter(void) const { v8i::Scope *scope = m_scope->outer_scope(); return scope ? py::object(CAstScope(scope)) : py::object(); }
 
-  py::list declarations(void) const { return to_python(m_scope->declarations()); }
+  py::list GetDeclarations(void) const { return to_python(m_scope->declarations()); }
 
-  int num_parameters(void) const { return m_scope->num_parameters(); }
-  CAstVariable parameter(int index) const;
+  py::object GetReceiver(void) const;
+  py::object GetFunction(void) const;
+  int GetParametersNumer(void) const { return m_scope->num_parameters(); }
+  CAstVariable GetParameter(int index) const;
+  py::object GetArguments(void) const;
 };
 
 class CAstVariable 
@@ -208,7 +217,7 @@ public:
 
   CAstVariableProxy GetProxy(void) const;
   v8i::Variable::Mode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
-  CAstFunctionLiteral GetFunction(void) const;
+  py::object GetFunction(void) const;
 };
 
 class CAstIterationStatement : public CAstBreakableStatement
@@ -585,11 +594,10 @@ public:
   CAstScope GetScope(void) const { return CAstScope(as<v8i::FunctionLiteral>()->scope()); }
   py::list GetBody(void) const { return to_python(as<v8i::FunctionLiteral>()->body()); }
 
-  int start_position(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
-  int end_position(void) const { return as<v8i::FunctionLiteral>()->end_position(); }
-  bool is_expression(void) const { return as<v8i::FunctionLiteral>()->is_expression(); }
-
-  int num_parameters(void) const { return as<v8i::FunctionLiteral>()->num_parameters(); }
+  int GetStartPosition(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
+  int GetEndPosition(void) const { return as<v8i::FunctionLiteral>()->end_position(); }
+  bool IsExpression(void) const { return as<v8i::FunctionLiteral>()->is_expression(); }
+  bool ContainsLoops(void) const { return as<v8i::FunctionLiteral>()->contains_loops(); }
 
   const std::string ToAST(void) const { return v8i::AstPrinter().PrintProgram(as<v8i::FunctionLiteral>()); }
   const std::string ToJSON(void) const { return v8i::JsonAstBuilder().BuildProgram(as<v8i::FunctionLiteral>()); }
@@ -699,13 +707,16 @@ inline py::list to_python(v8i::ZoneList<v8i::ObjectLiteral::Property *>* lst)
   return targets;
 }
 
-inline CAstVariable CAstScope::parameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
+inline py::object CAstScope::GetReceiver(void) const { return m_scope->receiver() ? to_python(CAstVariableProxy(m_scope->receiver())) : py::object(); }
+inline py::object CAstScope::GetFunction(void) const { return m_scope->function() ? to_python(CAstVariable(m_scope->function())) : py::object(); }
+inline CAstVariable CAstScope::GetParameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
+inline py::object CAstScope::GetArguments(void) const { return m_scope->arguments() ? to_python(CAstVariable(m_scope->arguments())) : py::object(); }
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }
 
 inline CAstVariableProxy CAstDeclaration::GetProxy(void) const { return CAstVariableProxy(as<v8i::Declaration>()->proxy()); }
 
-inline CAstFunctionLiteral CAstDeclaration::GetFunction(void) const { return CAstFunctionLiteral(as<v8i::Declaration>()->fun()); }
+inline py::object CAstDeclaration::GetFunction(void) const { return as<v8i::Declaration>()->fun() ? to_python(CAstFunctionLiteral(as<v8i::Declaration>()->fun())) : py::object(); }
 
 inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python(as<v8i::TryStatement>()->escaping_targets()); }
 

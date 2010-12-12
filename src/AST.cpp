@@ -3,32 +3,32 @@
 void CAstNode::Expose(void)
 {
   py::class_<CAstScope>("AstScope", py::no_init)
-    .add_property("isEval", &CAstScope::is_eval)
-    .add_property("isFunc", &CAstScope::is_func)
-    .add_property("isGlobal", &CAstScope::is_global)
+    .add_property("isEval", &CAstScope::IsEval)
+    .add_property("isFunc", &CAstScope::IsFunction)
+    .add_property("isGlobal", &CAstScope::IsGlobal)
 
-    .add_property("callsEval", &CAstScope::calls_eval)
-    .add_property("outerScopeCallsEval", &CAstScope::outer_scope_calls_eval)
+    .add_property("callsEval", &CAstScope::CallsEval)
+    .add_property("outerScopeCallsEval", &CAstScope::OuterScopeCallsEval)
 
-    .add_property("insideWith", &CAstScope::inside_with)
-    .add_property("containsWith", &CAstScope::contains_with)
+    .add_property("insideWith", &CAstScope::InsideWith)
+    .add_property("containsWith", &CAstScope::ContainsWith)
 
-    .add_property("outer", &CAstScope::outer)
+    .add_property("outer", &CAstScope::GetOuter)
 
-    .add_property("declarations", &CAstScope::declarations)
+    .add_property("declarations", &CAstScope::GetDeclarations)
     
-    .add_property("num_parameters", &CAstScope::num_parameters)
-    .def("parameter", &CAstScope::parameter, (py::args("index")))
+    .add_property("num_parameters", &CAstScope::GetParametersNumer)
+    .def("parameter", &CAstScope::GetParameter, (py::args("index")))
     ;
 
   py::enum_<v8i::Variable::Mode>("AstVariableMode")
-    .value("VAR", v8i::Variable::VAR)
-    .value("CONST", v8i::Variable::CONST)
-    .value("DYNAMIC", v8i::Variable::DYNAMIC)
-    .value("DYNAMIC_GLOBAL", v8i::Variable::DYNAMIC_GLOBAL)
-    .value("DYNAMIC_LOCAL", v8i::Variable::DYNAMIC_LOCAL)
-    .value("INTERNAL", v8i::Variable::INTERNAL)
-    .value("TEMPORARY", v8i::Variable::TEMPORARY)
+    .value("var", v8i::Variable::VAR)
+    .value("const", v8i::Variable::CONST)
+    .value("dynamic", v8i::Variable::DYNAMIC)
+    .value("global", v8i::Variable::DYNAMIC_GLOBAL)
+    .value("local", v8i::Variable::DYNAMIC_LOCAL)
+    .value("internal", v8i::Variable::INTERNAL)
+    .value("temporary", v8i::Variable::TEMPORARY)
     ;
 
   py::class_<CAstVariable>("AstVariable", py::no_init)
@@ -204,7 +204,7 @@ void CAstNode::Expose(void)
     .add_property("depth", &CAstMaterializedLiteral::GetDepth)
     ;
 
-  py::enum_<v8i::ObjectLiteral::Property::Kind>("CAstPropertyKind")
+  py::enum_<v8i::ObjectLiteral::Property::Kind>("AstPropertyKind")
     .value("constant", v8i::ObjectLiteral::Property::CONSTANT)
     .value("computed", v8i::ObjectLiteral::Property::COMPUTED)
     .value("materialized", v8i::ObjectLiteral::Property::MATERIALIZED_LITERAL)
@@ -317,9 +317,10 @@ void CAstNode::Expose(void)
     .add_property("scope", &CAstFunctionLiteral::GetScope)    
     .add_property("body", &CAstFunctionLiteral::GetBody)
 
-    .add_property("startPos", &CAstFunctionLiteral::start_position)
-    .add_property("endPos", &CAstFunctionLiteral::end_position)
-    .add_property("isExpression", &CAstFunctionLiteral::is_expression)    
+    .add_property("startPos", &CAstFunctionLiteral::GetStartPosition)
+    .add_property("endPos", &CAstFunctionLiteral::GetEndPosition)
+    .add_property("isExpression", &CAstFunctionLiteral::IsExpression)    
+    .add_property("containsLoops", &CAstFunctionLiteral::ContainsLoops)    
 
     .def("toAST", &CAstFunctionLiteral::ToAST)
     .def("toJSON", &CAstFunctionLiteral::ToJSON)

@@ -1348,12 +1348,16 @@ case Slot::LOOKUP:
 
 
 void JsonAstBuilder::VisitVariableProxy(VariableProxy* expr) {
-  if (expr->var()->rewrite() == NULL) {
+  if (expr->var() == NULL || expr->var()->rewrite() == NULL) {
     TagScope tag(this, "VariableProxy");
     {
       AttributesScope attributes(this);
       AddAttribute("name", expr->name());
-      AddAttribute("mode", Variable::Mode2String(expr->var()->mode()));
+
+      if (expr->var())
+      {
+        AddAttribute("mode", Variable::Mode2String(expr->var()->mode()));
+      }      
     }
   } else {
     Visit(expr->var()->rewrite());

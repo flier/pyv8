@@ -547,9 +547,12 @@ def convert(obj):
 
 class AST:
     Scope = _PyV8.AstScope
+    VarMode = _PyV8.AstVariableMode
     Var = _PyV8.AstVariable
-    Type = _PyV8.AstNodeType
+    Label = _PyV8.AstLabel
+    NodeType = _PyV8.AstNodeType
     Node = _PyV8.AstNode
+    JumpTarget = _PyV8.AstJumpTarget
     Statement = _PyV8.AstStatement
     Expression = _PyV8.AstExpression
     Breakable = _PyV8.AstBreakableStatement
@@ -575,6 +578,8 @@ class AST:
     Empty = _PyV8.AstEmptyStatement
     Literal = _PyV8.AstLiteral
     MaterializedLiteral = _PyV8.AstMaterializedLiteral
+    PropertyKind = _PyV8.AstPropertyKind
+    ObjectProperty = _PyV8.AstObjectProperty
     Object = _PyV8.AstObjectLiteral
     RegExp = _PyV8.AstRegExpLiteral
     Array = _PyV8.AstArrayLiteral
@@ -596,25 +601,6 @@ class AST:
     Function = _PyV8.AstFunctionLiteral
     SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
     This = _PyV8.AstThisFunction
-
-class PrettyPrint(object):
-    def __init__(self):
-        self.out = StringIO()
-
-    def onFunctionLiteral(self, func):
-        print >>self.out, "function ", func.name, "(",
-
-        for i in range(func.scope.num_parameters):
-            if i > 0: print ", ",
-
-            print >>self.out, func.scope.parameter(i).name
-
-        print >>self.out, ")"
-        print >>self.out, "{"
-        print >>self.out, "}"
-
-    def __str__(self):
-        return self.out.getvalue()
 
 import datetime
 import unittest
@@ -1657,12 +1643,29 @@ class TestAST(unittest.TestCase):
 
             return self.called
 
+        def onProgram(self, prog):
+            #print prog.toAST()
+            #print prog.toJSON()
+
+            for decl in prog.scope.declarations:
+                decl.visit(self)
+
+            for stmt in prog.body:
+                stmt.visit(self)
+
+        def onBlock(self, block):
+            for stmt in block.statements:
+                stmt.visit(self)
+
+        def onExpressionStatement(self, stmt):
+            stmt.expression.visit(self)
+
     def testBlock(self):
         class BlockChecker(TestAST.Checker):
             def onBlock(self, stmt):
                 self.called += 1
 
-                self.assertEquals(AST.Type.Block, stmt.type)
+                self.assertEquals(AST.NodeType.Block, stmt.type)
 
                 self.assert_(stmt.initializerBlock)
                 self.assertFalse(stmt.anonymous)
@@ -1693,7 +1696,7 @@ class TestAST(unittest.TestCase):
                 self.called += 1
 
                 self.assert_(stmt)
-                self.assertEquals(AST.Type.IfStatement, stmt.type)
+                self.assertEquals(AST.NodeType.IfStatement, stmt.type)
 
                 self.assertEquals(7, stmt.pos)
                 stmt.pos = 100
@@ -1770,12 +1773,27 @@ class TestAST(unittest.TestCase):
 
     def testCallStatements(self):
         class CallStatementChecker(TestAST.Checker):
-            def onBlock(self, block):
-                for stmt in block.statements:
-                    stmt.visit(self)
+            def onDeclaration(self, decl):
+                self.called += 1
 
-            def onExpressionStatement(self, stmt):
-                stmt.expression.visit(self)
+                var = decl.proxy
+
+                if var.name == 's':
+                    self.assertEquals(AST.VarMode.var, decl.mode)
+                    self.assertEquals(None, decl.function)
+
+                    self.assert_(var.isValidLeftHandSide)
+                    self.assertFalse(var.isArguments)
+                    self.assertFalse(var.isThis)
+                    self.assertFalse(var.insideWith)
+                elif var.name == 'hello':
+                    self.assertEquals(AST.VarMode.var, decl.mode)
+                    self.assert_(decl.function)
+                    self.assertEquals('(function hello(name) { s = ("Hello "+name); })', str(decl.function))
+                elif var.name == 'dog':
+                    self.assertEquals(AST.VarMode.var, decl.mode)
+                    self.assert_(decl.function)
+                    self.assertEquals('(function dog(name) { (this).name = name; })', str(decl.function))
 
             def onCall(self, expr):
                 self.called += 1
@@ -1798,7 +1816,7 @@ class TestAST(unittest.TestCase):
                 self.assertEquals(['"s"'], [str(arg) for arg in expr.args])
                 self.assertFalse(expr.isJsRuntime)
 
-        self.assertEquals(3,  CallStatementChecker(self).test("""
+        self.assertEquals(6,  CallStatementChecker(self).test("""
             var s;
             function hello(name) { s = "Hello " + name; }
             function dog(name) { this.name = name; }
@@ -1808,13 +1826,6 @@ class TestAST(unittest.TestCase):
 
     def testTryStatements(self):
         class TryStatementsChecker(TestAST.Checker):
-            def onBlock(self, block):
-                for stmt in block.statements:
-                    stmt.visit(self)
-
-            def onExpressionStatement(self, stmt):
-                stmt.expression.visit(self)
-
             def onThrow(self, expr):
                 self.called += 1
 
@@ -1859,13 +1870,6 @@ class TestAST(unittest.TestCase):
 
     def testLiterals(self):
         class LiteralChecker(TestAST.Checker):
-            def onBlock(self, block):
-                for stmt in block.statements:
-                    stmt.visit(self)
-
-            def onExpressionStatement(self, stmt):
-                stmt.expression.visit(self)
-
             def onCallRuntime(self, expr):
                 expr.args[1].visit(self)
 
