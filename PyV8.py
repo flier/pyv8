@@ -592,9 +592,11 @@ class AST:
     CallRuntime = _PyV8.AstCallRuntime
     Op = _PyV8.AstOperation
     UnaryOp = _PyV8.AstUnaryOperation
+    IncOp = _PyV8.AstIncrementOperation
     BinOp = _PyV8.AstBinaryOperation
     CountOp = _PyV8.AstCountOperation
     CompOp = _PyV8.AstCompareOperation
+    CompNull = _PyV8.AstCompareToNull
     Conditional = _PyV8.AstConditional
     Assignment = _PyV8.AstAssignment
     Throw = _PyV8.AstThrow
@@ -1660,6 +1662,8 @@ class TestAST(unittest.TestCase):
         def onExpressionStatement(self, stmt):
             stmt.expression.visit(self)
 
+            #print type(stmt.expression), stmt.expression
+
     def testBlock(self):
         class BlockChecker(TestAST.Checker):
             def onBlock(self, stmt):
@@ -1734,10 +1738,6 @@ class TestAST(unittest.TestCase):
                 self.assertFalse(target.linked)
                 self.assertFalse(stmt.fastLoop)
 
-        self.assertEquals(1, ForStatementChecker(self).test("var j; for (i=0; i<10; i++) { j+=i; }"))
-
-    def testForInStatement(self):
-        class ForInStatementChecker(TestAST.Checker):
             def onForInStatement(self, stmt):
                 self.called += 1
 
@@ -1746,10 +1746,6 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("name", str(stmt.each))
                 self.assertEquals("names", str(stmt.enumerable))
 
-        self.assertEquals(1, ForInStatementChecker(self).test("var names = new Array(); var out = ''; for (name in names) { out += name; }"))
-
-    def testWhileStatement(self):
-        class WhileStatementChecker(TestAST.Checker):
             def onWhileStatement(self, stmt):
                 self.called += 1
 
@@ -1757,19 +1753,28 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals("(i<10)", str(stmt.condition))
 
-        self.assertEquals(1, WhileStatementChecker(self).test("var i; while (i<10) { i += 1; }"))
-
-    def testDoWhileStatement(self):
-        class DoWhileStatementChecker(TestAST.Checker):
             def onDoWhileStatement(self, stmt):
                 self.called += 1
 
                 self.assertEquals("{ i += 1; }", str(stmt.body))
 
                 self.assertEquals("(i<10)", str(stmt.condition))
-                self.assertEquals(28, stmt.conditionPos)
+                self.assertEquals(253, stmt.conditionPos)
 
-        self.assertEquals(1, DoWhileStatementChecker(self).test("var i; do { i += 1; } while (i<10);"))
+        self.assertEquals(4, ForStatementChecker(self).test("""
+            var i, j;
+
+            for (i=0; i<10; i++) { j+=i; }
+
+            var names = new Array();
+            var out = '';
+
+            for (name in names) { out += name; }
+
+            while (i<10) { i += 1; }
+
+            do { i += 1; } while (i<10);
+        """))
 
     def testCallStatements(self):
         class CallStatementChecker(TestAST.Checker):
@@ -1905,6 +1910,100 @@ class TestAST(unittest.TestCase):
             /test/g;
             var o = { name: 'flier', sex: true };
             var a = ['hello', 'world', 42];
+        """))
+
+    def testOperations(self):
+        class OperationChecker(TestAST.Checker):
+            def onUnaryOperation(self, expr):
+                self.called += 1
+
+                self.assertEquals(AST.Op.BIT_NOT, expr.op)
+                self.assertEquals("i", expr.expression.name)
+
+                #print "unary", expr
+
+            def onIncrementOperation(self, expr):
+                self.fail()
+
+            def onBinaryOperation(self, expr):
+                self.called += 1
+
+                self.assertEquals(AST.Op.ADD, expr.op)
+                self.assertEquals("i", str(expr.left))
+                self.assertEquals("j", str(expr.right))
+                self.assertEquals(28, expr.pos)
+
+                #print "bin", expr
+
+            def onAssignment(self, expr):
+                self.called += 1
+
+                self.assertEquals(AST.Op.ASSIGN_ADD, expr.op)
+                self.assertEquals(AST.Op.ADD, expr.binop)
+
+                self.assertEquals("i", str(expr.target))
+                self.assertEquals("1", str(expr.value))
+                self.assertEquals(41, expr.pos)
+
+                self.assertEquals("(i+1)", str(expr.binOperation))
+
+                self.assert_(expr.compound)
+
+            def onCountOperation(self, expr):
+                self.called += 1
+
+                self.assertFalse(expr.prefix)
+                self.assert_(expr.postfix)
+
+                self.assertEquals(AST.Op.INC, expr.op)
+                self.assertEquals(AST.Op.ADD, expr.binop)
+                self.assertEquals(55, expr.pos)
+                self.assertEquals("i", expr.expression.name)
+
+                self.assertEquals(AST.Op.INC, expr.increment.op)
+                self.assertEquals("i", expr.increment.expression.name)
+                self.assert_(expr.increment.increment)
+
+                #print "count", expr
+
+            def onCompareOperation(self, expr):
+                self.called += 1
+
+                self.assertEquals(AST.Op.EQ, expr.op)
+                self.assertEquals("i", str(expr.left))
+                self.assertEquals("j", str(expr.right))
+                self.assertEquals(68, expr.pos)
+
+                #print "comp", expr
+
+            def onCompareToNull(self, expr):
+                self.called += 1
+
+                self.assertEquals(AST.Op.EQ_STRICT, expr.op)
+                self.assertEquals("i", expr.expression.name)
+                self.assert_(expr.strict)
+
+                #print "compnull", expr
+
+            def onConditional(self, expr):
+                self.called += 1
+
+                self.assertEquals("(i>j)", str(expr.condition))
+                self.assertEquals("i", str(expr.thenExpr))
+                self.assertEquals("j", str(expr.elseExpr))
+
+                self.assertEquals(115, expr.thenExprPos)
+                self.assertEquals(117, expr.elseExprPos)
+
+        self.assertEquals(7, OperationChecker(self).test("""
+        var i, j;
+        i+j;
+        i+=1;
+        i++;
+        i==j;
+        i===null;
+        ~i;
+        i>j?i:j;
         """))
 
 if __name__ == '__main__':

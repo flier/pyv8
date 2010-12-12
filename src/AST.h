@@ -529,6 +529,10 @@ class CAstIncrementOperation : public CAstExpression
 {
 public:
   CAstIncrementOperation(v8i::IncrementOperation *op) : CAstExpression(op) {}
+
+  v8i::Token::Value op(void) const { return as<v8i::IncrementOperation>()->op(); }
+  py::object expression(void) const { return to_python(as<v8i::IncrementOperation>()->expression()); }
+  bool is_increment(void) const { return as<v8i::IncrementOperation>()->is_increment(); }
 };
 
 class CAstBinaryOperation : public CAstExpression
@@ -539,6 +543,7 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::BinaryOperation>()->op(); }
   py::object left(void) const { return to_python(as<v8i::BinaryOperation>()->left()); }
   py::object right(void) const { return to_python(as<v8i::BinaryOperation>()->right()); }
+  int position(void) const { return as<v8i::BinaryOperation>()->position(); }
 };
 
 class CAstCountOperation : public CAstExpression
@@ -550,8 +555,11 @@ public:
   bool is_postfix(void) const { return as<v8i::CountOperation>()->is_postfix(); }
 
   v8i::Token::Value op(void) const { return as<v8i::CountOperation>()->op(); }
-  v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }
+  v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }  
+
   py::object expression(void) const { return to_python(as<v8i::CountOperation>()->expression()); }
+  CAstIncrementOperation increment(void) const { return CAstIncrementOperation(as<v8i::CountOperation>()->increment()); }
+  int position(void) const { return as<v8i::CountOperation>()->position(); }
 };
 
 class CAstCompareOperation : public CAstExpression
@@ -562,18 +570,47 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::CompareOperation>()->op(); }
   py::object left(void) const { return to_python(as<v8i::CompareOperation>()->left()); }
   py::object right(void) const { return to_python(as<v8i::CompareOperation>()->right()); }
+  int position(void) const { return as<v8i::CompareOperation>()->position(); }
+};
+
+class CAstCompareToNull : public CAstExpression
+{
+public:
+  CAstCompareToNull(v8i::CompareToNull *op) : CAstExpression(op) {}
+
+  v8i::Token::Value op(void) const { return as<v8i::CompareToNull>()->op(); }
+  py::object expression(void) const { return to_python(as<v8i::CompareToNull>()->expression()); }
+
+  bool is_strict(void) const { return as<v8i::CompareToNull>()->is_strict(); }
 };
 
 class CAstConditional : public CAstExpression
 {
 public:
   CAstConditional(v8i::Conditional *cond) : CAstExpression(cond) {}
+
+  py::object condition(void) const { return to_python(as<v8i::Conditional>()->condition()); }
+  py::object then_expression(void) const { return to_python(as<v8i::Conditional>()->then_expression()); }
+  py::object else_expression(void) const { return to_python(as<v8i::Conditional>()->else_expression()); }
+
+  int then_expression_position(void) const { return as<v8i::Conditional>()->then_expression_position(); }
+  int else_expression_position(void) const { return as<v8i::Conditional>()->else_expression_position(); }
 };
 
 class CAstAssignment : public CAstExpression
 {
 public:
   CAstAssignment(v8i::Assignment *assignment) : CAstExpression(assignment) {}
+
+  v8i::Token::Value binary_op(void) const { return as<v8i::Assignment>()->binary_op(); }
+
+  v8i::Token::Value op(void) const { return as<v8i::Assignment>()->op(); }
+  py::object target(void) const { return to_python(as<v8i::Assignment>()->target()); }
+  py::object value(void) const { return to_python(as<v8i::Assignment>()->value()); }
+  int position(void) const { return as<v8i::Assignment>()->position(); }
+  CAstBinaryOperation binary_operation(void) const { return CAstBinaryOperation(as<v8i::Assignment>()->binary_operation()); }
+
+  int is_compound(void) const { return as<v8i::Assignment>()->is_compound(); }
 };
 
 class CAstThrow : public CAstExpression
@@ -607,12 +644,6 @@ class CAstSharedFunctionInfoLiteral : public CAstExpression
 {
 public:
   CAstSharedFunctionInfoLiteral(v8i::SharedFunctionInfoLiteral *func) : CAstExpression(func) {}
-};
-
-class CAstCompareToNull : public CAstExpression
-{
-public:
-  CAstCompareToNull(v8i::CompareToNull *expr) : CAstExpression(expr) {}
 };
 
 class CAstThisFunction : public CAstExpression

@@ -280,31 +280,65 @@ void CAstNode::Expose(void)
     .add_property("expression", &CAstUnaryOperation::expression)
     ;
 
+  py::class_<CAstIncrementOperation, py::bases<CAstExpression> >("AstIncrementOperation", py::no_init)
+    .add_property("op", &CAstIncrementOperation::op)
+    .add_property("expression", &CAstIncrementOperation::expression)
+    .add_property("increment", &CAstIncrementOperation::is_increment)
+    ;
+
   py::class_<CAstBinaryOperation, py::bases<CAstExpression> >("AstBinaryOperation", py::no_init)
     .add_property("op", &CAstBinaryOperation::op)
     .add_property("left", &CAstBinaryOperation::left)
     .add_property("right", &CAstBinaryOperation::right)
+    .add_property("pos", &CAstBinaryOperation::position)
     ;
 
   py::class_<CAstCountOperation, py::bases<CAstExpression> >("AstCountOperation", py::no_init)
-    .add_property("isPrefix", &CAstCountOperation::is_prefix)
-    .add_property("isPostfix", &CAstCountOperation::is_postfix)
+    .add_property("prefix", &CAstCountOperation::is_prefix)
+    .add_property("postfix", &CAstCountOperation::is_postfix)
 
     .add_property("op", &CAstCountOperation::op)
-    .add_property("binaryOp", &CAstCountOperation::binary_op)
+    .add_property("binop", &CAstCountOperation::binary_op)
+
     .add_property("expression", &CAstCountOperation::expression)
+    .add_property("increment", &CAstCountOperation::increment)
+    .add_property("pos", &CAstCountOperation::position)
     ;
 
   py::class_<CAstCompareOperation, py::bases<CAstExpression> >("AstCompareOperation", py::no_init)
-    .add_property("op", &CAstBinaryOperation::op)
-    .add_property("left", &CAstBinaryOperation::left)
-    .add_property("right", &CAstBinaryOperation::right)
+    .add_property("op", &CAstCompareOperation::op)
+    .add_property("left", &CAstCompareOperation::left)
+    .add_property("right", &CAstCompareOperation::right)
+    .add_property("pos", &CAstCompareOperation::position)
+    ;
+
+  py::class_<CAstCompareToNull, py::bases<CAstExpression> >("AstCompareToNull", py::no_init)
+    .add_property("strict", &CAstCompareToNull::is_strict)
+
+    .add_property("op", &CAstCompareToNull::op)
+    .add_property("expression", &CAstCompareToNull::expression)
     ;
 
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
+    .add_property("condition", &CAstConditional::condition)
+    .add_property("thenExpr", &CAstConditional::then_expression)
+    .add_property("elseExpr", &CAstConditional::else_expression)
+
+    .add_property("thenExprPos", &CAstConditional::then_expression_position)
+    .add_property("elseExprPos", &CAstConditional::else_expression_position)
     ;
 
   py::class_<CAstAssignment, py::bases<CAstExpression> >("AstAssignment", py::no_init)
+    .add_property("op", &CAstAssignment::op)
+    .add_property("binop", &CAstAssignment::binary_op)
+
+    .add_property("target", &CAstAssignment::target)
+    .add_property("value", &CAstAssignment::value)
+    .add_property("pos", &CAstAssignment::position)
+
+    .add_property("binOperation", &CAstAssignment::binary_operation)
+
+    .add_property("compound", &CAstAssignment::is_compound)
     ;
 
   py::class_<CAstThrow, py::bases<CAstExpression> >("AstThrow", py::no_init)
