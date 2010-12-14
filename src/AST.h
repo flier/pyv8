@@ -31,8 +31,8 @@ inline py::object to_python(T *node);
 template <typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst);
 
-py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst);
-py::list to_python(v8i::ZoneList<v8i::ObjectLiteral::Property *>* lst);
+template <typename C, typename T>
+inline py::list to_python(v8i::ZoneList<T *>* lst);
 
 inline py::object to_python(v8i::Handle<v8i::String> str)
 { 
@@ -226,7 +226,6 @@ protected:
   CAstIterationStatement(v8i::IterationStatement *stat) : CAstBreakableStatement(stat) {}
 public:
   py::object GetBody(void) const { return to_python(as<v8i::IterationStatement>()->body()); }
-  void SetBody(CAstStatement& stmt) { as<v8i::IterationStatement>()->set_body(stmt.as<v8i::Statement>()); }
 
   CAstBreakTarget GetContinueTarget(void) { return CAstBreakTarget(as<v8i::IterationStatement>()->continue_target()); }
 };
@@ -256,13 +255,8 @@ public:
   CAstForStatement(v8i::ForStatement *stat) : CAstIterationStatement(stat) {}
 
   py::object GetInit(void) const { return to_python(as<v8i::ForStatement>()->init()); }
-  void SetInit(CAstStatement& stmt) { as<v8i::ForStatement>()->set_init(stmt.as<v8i::Statement>()); }
-
   py::object GetCondition(void) const { return to_python(as<v8i::ForStatement>()->cond()); }
-  void SetCondition(CAstExpression& expr) { as<v8i::ForStatement>()->set_cond(expr.as<v8i::Expression>()); }
-
   py::object GetNext(void) const { return to_python(as<v8i::ForStatement>()->next()); }
-  void SetNext(CAstStatement& stmt) { as<v8i::ForStatement>()->set_next(stmt.as<v8i::Statement>()); }
 
   CAstVariable GetLoopVariable(void) const { return CAstVariable(as<v8i::ForStatement>()->loop_variable()); }
   void SetLoopVariable(CAstVariable& var) { as<v8i::ForStatement>()->set_loop_variable(var.GetVariable()); }
@@ -291,12 +285,16 @@ class CAstContinueStatement : public CAstStatement
 {
 public:
   CAstContinueStatement(v8i::ContinueStatement *stat) : CAstStatement(stat) {}
+
+  py::object GetTarget(void) const { return to_python(as<v8i::ContinueStatement>()->target()); }
 };
 
 class CAstBreakStatement : public CAstStatement
 {
 public:
   CAstBreakStatement(v8i::BreakStatement *stat) : CAstStatement(stat) {}
+
+  py::object GetTarget(void) const { return to_python(as<v8i::BreakStatement>()->target()); }
 };
 
 class CAstReturnStatement : public CAstStatement
@@ -311,6 +309,10 @@ class CAstWithEnterStatement : public CAstStatement
 {
 public:
   CAstWithEnterStatement(v8i::WithEnterStatement *stat) : CAstStatement(stat) {}
+
+  py::object expression(void) const { return to_python(as<v8i::WithEnterStatement>()->expression()); }
+
+  bool is_catch_block(void) const { return as<v8i::WithEnterStatement>()->is_catch_block(); }
 };
 
 class CAstWithExitStatement : public CAstStatement
@@ -330,6 +332,10 @@ class CAstSwitchStatement : public CAstBreakableStatement
 {
 public:
   CAstSwitchStatement(v8i::SwitchStatement *stat) : CAstBreakableStatement(stat) {}
+
+  py::object tag(void) const { return to_python(as<v8i::SwitchStatement>()->tag()); }
+
+  py::object cases(void) const { return to_python<CAstCaseClause>(as<v8i::SwitchStatement>()->cases()); }
 };
 
 class CAstIfStatement : public CAstStatement
@@ -343,15 +349,15 @@ public:
   py::object GetCondition(void) const { return to_python(as<v8i::IfStatement>()->condition()); }
 
   py::object GetThenStatement(void) const { return to_python(as<v8i::IfStatement>()->then_statement()); }
-  void SetThenStatement(CAstStatement& stmt) const { as<v8i::IfStatement>()->set_then_statement(stmt.as<v8i::Statement>()); }
   py::object GetElseStatement(void) const { return to_python(as<v8i::IfStatement>()->else_statement()); }
-  void SetElseStatement(CAstStatement& stmt) const { as<v8i::IfStatement>()->set_else_statement(stmt.as<v8i::Statement>()); }
 };
 
 class CAstTargetCollector : public CAstNode
 {
 public:
   CAstTargetCollector(v8i::TargetCollector *collector) : CAstNode(collector) {}
+
+  py::list GetTargets(void) const;
 };
 
 class CAstTryStatement : public CAstStatement
@@ -435,7 +441,7 @@ class CAstObjectLiteral : public CAstMaterializedLiteral
 public:
   CAstObjectLiteral(v8i::ObjectLiteral *lit) : CAstMaterializedLiteral(lit) {}
 
-  py::list GetProperties(void) const { return to_python(as<v8i::ObjectLiteral>()->properties()); }
+  py::list GetProperties(void) const { return to_python<CAstObjectProperty>(as<v8i::ObjectLiteral>()->properties()); }
 };
 
 class CAstRegExpLiteral : public CAstMaterializedLiteral
@@ -714,25 +720,14 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
   return collector.m_nodes;
 }
 
-inline py::list to_python(v8i::ZoneList<v8i::BreakTarget *>* lst)
+template <typename C, typename T>
+inline py::list to_python(v8i::ZoneList<T *>* lst)
 {
   py::list targets;
 
   for (int i=0; i<lst->length(); i++)
   {
-    targets.append(CAstBreakTarget(lst->at(i)));
-  }
-
-  return targets;
-}
-
-inline py::list to_python(v8i::ZoneList<v8i::ObjectLiteral::Property *>* lst)
-{
-  py::list targets;
-
-  for (int i=0; i<lst->length(); i++)
-  {
-    targets.append(CAstObjectProperty(lst->at(i)));
+    targets.append(C(lst->at(i)));
   }
 
   return targets;
@@ -749,6 +744,8 @@ inline CAstVariableProxy CAstDeclaration::GetProxy(void) const { return CAstVari
 
 inline py::object CAstDeclaration::GetFunction(void) const { return as<v8i::Declaration>()->fun() ? to_python(CAstFunctionLiteral(as<v8i::Declaration>()->fun())) : py::object(); }
 
-inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python(as<v8i::TryStatement>()->escaping_targets()); }
+inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstBreakTarget>(as<v8i::TargetCollector>()->targets()); }
+
+inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python<CAstBreakTarget>(as<v8i::TryStatement>()->escaping_targets()); }
 
 inline CAstVariableProxy CAstTryCatchStatement::GetCatchVariable(void) const { return CAstVariableProxy(as<v8i::TryCatchStatement>()->catch_var()); }

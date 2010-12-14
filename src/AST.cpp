@@ -108,7 +108,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstIterationStatement, py::bases<CAstBreakableStatement> >("AstIterationStatement", py::no_init)
-    .add_property("body", &CAstIterationStatement::GetBody, &CAstIterationStatement::SetBody)
+    .add_property("body", &CAstIterationStatement::GetBody)
     .add_property("continueTarget", &CAstIterationStatement::GetContinueTarget)
     ;
 
@@ -122,9 +122,9 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstForStatement, py::bases<CAstIterationStatement> >("AstForStatement", py::no_init)
-    .add_property("init", &CAstForStatement::GetInit, &CAstForStatement::SetInit)
-    .add_property("condition", &CAstForStatement::GetCondition, &CAstForStatement::SetCondition)
-    .add_property("next", &CAstForStatement::GetNext, &CAstForStatement::SetNext)
+    .add_property("init", &CAstForStatement::GetInit)
+    .add_property("condition", &CAstForStatement::GetCondition)
+    .add_property("next", &CAstForStatement::GetNext)
     .add_property("fastLoop", &CAstForStatement::IsFastLoop)
     ;
 
@@ -138,9 +138,11 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstContinueStatement, py::bases<CAstStatement> >("AstContinueStatement", py::no_init)
+    .add_property("target", &CAstContinueStatement::GetTarget)
     ;
 
   py::class_<CAstBreakStatement, py::bases<CAstStatement> >("AstBreakStatement", py::no_init)
+    .add_property("target", &CAstBreakStatement::GetTarget)
     ;
 
   py::class_<CAstReturnStatement, py::bases<CAstStatement> >("AstReturnStatement", py::no_init)
@@ -148,6 +150,9 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstWithEnterStatement, py::bases<CAstStatement> >("AstWithEnterStatement", py::no_init)
+    .add_property("expression", &CAstWithEnterStatement::expression)
+
+    .add_property("isCacheBlock", &CAstWithEnterStatement::is_catch_block)
     ;
 
   py::class_<CAstWithExitStatement, py::bases<CAstStatement> >("AstWithExitStatement", py::no_init)
@@ -165,11 +170,12 @@ void CAstNode::Expose(void)
 
     .add_property("condition", &CAstIfStatement::GetCondition)
 
-    .add_property("thenStatement", &CAstIfStatement::GetThenStatement, &CAstIfStatement::SetThenStatement)
-    .add_property("elseStatement", &CAstIfStatement::GetElseStatement, &CAstIfStatement::SetElseStatement)
+    .add_property("thenStatement", &CAstIfStatement::GetThenStatement)
+    .add_property("elseStatement", &CAstIfStatement::GetElseStatement)
     ;
 
   py::class_<CAstTargetCollector, py::bases<CAstNode> >("AstTargetCollector", py::no_init)
+    .add_property("targets", &CAstTargetCollector::GetTargets)
     ;
 
   py::class_<CAstTryStatement, py::bases<CAstStatement> >("AstTryStatement", py::no_init)
