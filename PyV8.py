@@ -81,9 +81,29 @@ class JSUnlocker(_PyV8.JSUnlocker):
         return self.entered()
 
 class JSClass(object):
+    __properties__ = {}
+
     def __getattr__(self, name):
         if name == 'constructor':
             return JSClassConstructor(self.__class__)
+
+        if name == 'prototype':
+            return JSClassPrototype(self.__class__)
+
+        prop = self.__dict__.setdefault('__properties__', {}).get(name, None)
+
+        if prop and callable(prop[0]):
+            return prop[0]()
+
+        raise AttributeError(name)
+
+    def __setattr__(self, name, value):
+        prop = self.__dict__.setdefault('__properties__', {}).get(name, None)
+
+        if prop and callable(prop[1]):
+            return prop[1](value)
+        else:
+            return object.__setattr__(self, name, value)
 
         raise AttributeError(name)
 
@@ -109,29 +129,19 @@ class JSClass(object):
 
     def __defineGetter__(self, name, getter):
         "Binds an object's property to a function to be called when that property is looked up."
-        if hasattr(type(self), name):
-            setter = getattr(type(self), name).fset
-        else:
-            setter = None
-
-        setattr(type(self), name, property(fget=getter, fset=setter))
+        self.__properties__[name] = (getter, self.__lookupSetter__(name))
 
     def __lookupGetter__(self, name):
         "Return the function bound as a getter to the specified property."
-        return self.name.fget
+        return self.__properties__.get(name, (None, None))[0]
 
     def __defineSetter__(self, name, setter):
         "Binds an object's property to a function to be called when an attempt is made to set that property."
-        if hasattr(type(self), name):
-            getter = getattr(type(self), name).fget
-        else:
-            getter = None
-
-        setattr(type(self), name, property(fget=getter, fset=setter))
+        self.__properties__[name] = (self.__lookupGetter__(name), setter)
 
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
-        return self.name.fset
+        return self.__properties__.get(name, (None, None))[1]
 
 class JSClassConstructor(JSClass):
     def __init__(self, cls):
@@ -146,6 +156,18 @@ class JSClassConstructor(JSClass):
 
     def __call__(self, *args, **kwds):
         return self.cls(*args, **kwds)
+
+class JSClassPrototype(JSClass):
+    def __init__(self, cls):
+        self.cls = cls
+
+    @property
+    def constructor(self):
+        return JSClassConstructor(self.cls)
+
+    @property
+    def name(self):
+        return self.cls.__name__
 
 class JSDebug(object):
     class FrameData(object):
@@ -955,6 +977,9 @@ class TestWrapper(unittest.TestCase):
             self.assertEqual("catch Error: Hello;finally", str(ctxt.locals.msg))
 
     def testExceptionMapping(self):
+        class TestException(Exception):
+            pass
+
         class Global(JSClass):
             def raiseIndexError(self):
                 return [1, 2, 3][5]
@@ -970,6 +995,9 @@ class TestWrapper(unittest.TestCase):
 
             def raiseNotImplementedError(self):
                 raise NotImplementedError("Not support")
+
+            def raiseExceptions(self):
+                raise TestException()
 
         with JSContext(Global()) as ctxt:
             ctxt.eval("try { this.raiseIndexError(); } catch (e) { msg = e; }")
@@ -991,6 +1019,8 @@ class TestWrapper(unittest.TestCase):
             ctxt.eval("try { this.raiseNotImplementedError(); } catch (e) { msg = e; }")
 
             self.assertEqual("Error: Not support", str(ctxt.locals.msg))
+
+            self.assertRaises(TestException, ctxt.eval, "this.raiseExceptions();")
 
     def testArray(self):
         with JSContext() as ctxt:
@@ -1200,14 +1230,55 @@ class TestWrapper(unittest.TestCase):
 
             name = property(getname, setname, delname)
 
-        with JSContext(Global('world')) as ctxt:
+        g = Global('world')
+
+        with JSContext(g) as ctxt:
             self.assertEquals('world', ctxt.eval("name"))
-            self.assertEquals('flier', ctxt.eval("name = 'flier';"))
+            self.assertEquals('flier', ctxt.eval("this.name = 'flier';"))
             self.assertEquals('flier', ctxt.eval("name"))
-            self.assert_(ctxt.eval("delete name")) # FIXME
+            self.assert_(ctxt.eval("delete name"))
+            ###
+            # FIXME replace the global object with Python object
+            #
             #self.assertEquals('deleted', ctxt.eval("name"))
-            ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
-            self.assertEquals('fixed', ctxt.eval("name"))
+            #ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
+            #self.assertEquals('fixed', ctxt.eval("name"))
+
+    def _testGetterAndSetter(self):
+        class Global(JSClass):
+           def __init__(self, testval):
+               self.testval = testval
+
+        contextA = None
+        contextB = None
+
+        with JSContext(Global("Test Value A")) as ctx:
+           contextA = ctx
+           self.assertEquals("Test Value A", ctx.locals.testval)
+           ctx.eval("""
+               this.__defineGetter__("test", function() {
+                   return "Test A";
+               });
+           """)
+           self.assertEquals("Test A",  ctx.locals.test)
+
+           with JSContext(Global("Test Value B")) as ctx:
+               contextB = ctx
+               self.assertEquals("Test Value B", ctx.locals.testval)
+               ctx.eval("""
+                   this.__defineGetter__("test", function() {
+                       return "Test B";
+                   });
+               """)
+               self.assertEquals("Test B",  ctx.locals.test)
+
+        with contextA:
+           self.assertEquals("Test Value A", contextA.locals.testval)
+           self.assertEquals("Test A", contextA.locals.test)
+
+        with contextB:
+           self.assertEquals("Test Value B", contextB.locals.testval)
+           self.assertEquals("Test B", contextB.locals.test)
 
     def _testDestructor(self):
         import gc

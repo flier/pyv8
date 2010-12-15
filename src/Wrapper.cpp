@@ -171,6 +171,14 @@ void CPythonObject::ThrowIf(void)
     error = v8::Exception::Error(v8::String::New(msg.c_str(), msg.size()));
   }
 
+  if (error->IsObject())
+  {
+    // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
+
+    error->ToObject()->SetHiddenValue(v8::String::New("exc_type"), v8::External::New(new py::object(type)));
+    error->ToObject()->SetHiddenValue(v8::String::New("exc_value"), v8::External::New(new py::object(value)));
+  }
+
   v8::ThrowException(error);
 }
 
@@ -383,8 +391,19 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
   {
     for (Py_ssize_t i=0; i<len; i++)
     {
-      result->Set(v8::Uint32::New(i), 
-        Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(keys.ptr(), i))))));
+      PyObject *item = PyList_GET_ITEM(keys.ptr(), i);
+
+      if (PyString_CheckExact(item))
+      {
+        py::str name(py::handle<>(py::borrowed(item)));
+
+        // FIXME Are there any methods to avoid such a dirty work?
+
+        if (name.startswith("__") && name.endswith("__"))
+          continue;
+      }
+
+      result->Set(v8::Uint32::New(i), Wrap(py::object(py::handle<>(py::borrowed(item)))));
     }
 
     return handle_scope.Close(result);

@@ -384,8 +384,31 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
   {
     ::PyErr_SetString(ex.m_type, ex.what());
   }
-  else
+  else 
   {
+    if (ex.GetException()->IsObject())
+    {
+      v8::HandleScope handle_scope;
+
+      v8::Handle<v8::Object> obj = ex.GetException()->ToObject();
+
+      v8::Handle<v8::Value> exc_type = obj->GetHiddenValue(v8::String::New("exc_type"));
+      v8::Handle<v8::Value> exc_value = obj->GetHiddenValue(v8::String::New("exc_value"));
+
+      if (!exc_type.IsEmpty() && !exc_value.IsEmpty())
+      {
+        std::auto_ptr<py::object> type(static_cast<py::object *>(v8::Handle<v8::External>::Cast(exc_type)->Value())),
+                                  value(static_cast<py::object *>(v8::Handle<v8::External>::Cast(exc_value)->Value()));
+
+        ::PyErr_SetObject(type->ptr(), value->ptr());
+
+        obj->DeleteHiddenValue(v8::String::New("exc_type"));
+        obj->DeleteHiddenValue(v8::String::New("exc_value"));
+
+        return;
+      }
+    }
+
     // Boost::Python doesn't support inherite from Python class,
     // so, just use some workaround to throw our custom exception
     //

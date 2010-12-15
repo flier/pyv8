@@ -150,6 +150,7 @@ public:
     if (!m_msg.IsEmpty()) m_msg.Dispose();
   }
 
+  v8::Persistent<v8::Value> GetException(void) const { return m_exc; }
   const std::string GetName(void);
   const std::string GetMessage(void);
   const std::string GetScriptName(void);
