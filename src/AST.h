@@ -733,16 +733,59 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
   return targets;
 }
 
-inline py::object CAstScope::GetReceiver(void) const { return m_scope->receiver() ? to_python(CAstVariableProxy(m_scope->receiver())) : py::object(); }
-inline py::object CAstScope::GetFunction(void) const { return m_scope->function() ? to_python(CAstVariable(m_scope->function())) : py::object(); }
-inline CAstVariable CAstScope::GetParameter(int index) const { return CAstVariable(m_scope->parameter(index)); }
-inline py::object CAstScope::GetArguments(void) const { return m_scope->arguments() ? to_python(CAstVariable(m_scope->arguments())) : py::object(); }
+inline py::object CAstScope::GetReceiver(void) const 
+{ 
+  if (m_scope->receiver())
+  {
+    CAstVariableProxy proxy(m_scope->receiver());
+
+    return to_python(proxy);
+  }
+  
+  return py::object(); 
+}
+inline py::object CAstScope::GetFunction(void) const 
+{ 
+  if (m_scope->function())
+  {
+    CAstVariable var(m_scope->function());
+
+    return to_python(var);
+  }
+
+  return py::object(); 
+}
+inline CAstVariable CAstScope::GetParameter(int index) const 
+{ 
+  return CAstVariable(m_scope->parameter(index)); 
+}
+inline py::object CAstScope::GetArguments(void) const 
+{ 
+  if (m_scope->arguments())
+  {
+    CAstVariable var(m_scope->arguments());
+
+    return to_python(var);
+  }
+  
+  return py::object(); 
+}
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }
 
 inline CAstVariableProxy CAstDeclaration::GetProxy(void) const { return CAstVariableProxy(as<v8i::Declaration>()->proxy()); }
 
-inline py::object CAstDeclaration::GetFunction(void) const { return as<v8i::Declaration>()->fun() ? to_python(CAstFunctionLiteral(as<v8i::Declaration>()->fun())) : py::object(); }
+inline py::object CAstDeclaration::GetFunction(void) const 
+{ 
+  if (as<v8i::Declaration>()->fun())
+  {
+    CAstFunctionLiteral func(as<v8i::Declaration>()->fun());
+
+    return to_python(func);
+  }
+  
+  return py::object(); 
+}
 
 inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstBreakTarget>(as<v8i::TargetCollector>()->targets()); }
 

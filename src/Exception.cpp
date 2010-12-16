@@ -10,6 +10,11 @@
   #define isfinite(val) (val <= std::numeric_limits<double>::max())
 #endif
 
+#include <linux/string.h>
+#define strnicmp strncasecmp
+ 
+#define _countof(array) (sizeof(array)/sizeof(array[0]))
+
 #endif
 
 #include "src/v8.h"
