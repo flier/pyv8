@@ -188,3 +188,59 @@ public:
 
   py::object GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
 };
+
+#ifdef SUPPORT_TRACE_LIFECYCLE
+
+class ObjectTracer
+{
+  v8::Persistent<v8::Value> m_handle;
+  std::auto_ptr<py::object> m_object;
+public:
+  ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
+    : m_handle(v8::Persistent<v8::Value>::New(handle)), m_object(object)
+  {
+
+  }
+
+  ~ObjectTracer()
+  {
+    if (!m_handle.IsEmpty())
+    {
+      assert(m_handle.IsNearDeath());
+
+      m_handle.ClearWeak();
+      m_handle.Dispose();
+      m_handle.Clear();
+
+      m_object.reset();
+    }
+  }
+
+  v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
+  py::object *Object(void) const { return m_object.get(); }
+
+  void MakeWeak(void)
+  {
+    m_handle.MakeWeak(this, WeakCallback);
+  }
+
+  static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object)
+  {
+    ObjectTracer *tracer = new ObjectTracer(handle, object);
+    
+    tracer->MakeWeak();
+
+    return *tracer;
+  }
+
+  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter)
+  {
+    assert(value.IsNearDeath());
+
+    std::auto_ptr<ObjectTracer> tracer(static_cast<ObjectTracer *>(parameter));
+
+    assert(value == tracer->m_handle);
+  }
+};
+
+#endif

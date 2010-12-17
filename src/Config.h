@@ -28,4 +28,4 @@
 //
 // Trace the object lifecycle
 //
-//#define SUPPORT_TRACE_LIFECYCLE 1
+#define SUPPORT_TRACE_LIFECYCLE 1

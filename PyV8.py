@@ -1280,7 +1280,7 @@ class TestWrapper(unittest.TestCase):
            self.assertEquals("Test Value B", contextB.locals.testval)
            self.assertEquals("Test B", contextB.locals.test)
 
-    def _testDestructor(self):
+    def testDestructor(self):
         import gc
 
         owner = self

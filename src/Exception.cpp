@@ -407,9 +407,6 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
 
         ::PyErr_SetObject(type->ptr(), value->ptr());
 
-        obj->DeleteHiddenValue(v8::String::New("exc_type"));
-        obj->DeleteHiddenValue(v8::String::New("exc_value"));
-
         return;
       }
     }

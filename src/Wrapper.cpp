@@ -175,8 +175,13 @@ void CPythonObject::ThrowIf(void)
   {
     // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
 
+  #ifdef SUPPORT_TRACE_LIFECYCLE
+    error->ToObject()->SetHiddenValue(v8::String::New("exc_type"), v8::External::New(ObjectTracer::Trace(error, new py::object(type)).Object()));
+    error->ToObject()->SetHiddenValue(v8::String::New("exc_value"), v8::External::New(ObjectTracer::Trace(error, new py::object(value)).Object()));
+  #else
     error->ToObject()->SetHiddenValue(v8::String::New("exc_type"), v8::External::New(new py::object(type)));
     error->ToObject()->SetHiddenValue(v8::String::New("exc_value"), v8::External::New(new py::object(value)));
+  #endif
   }
 
   v8::ThrowException(error);
@@ -647,19 +652,6 @@ v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
   return v8::Persistent<v8::ObjectTemplate>::New(clazz);
 }
 
-#ifdef SUPPORT_TRACE_LIFECYCLE
-
-void CPythonObject::DisposeCallback(v8::Persistent<v8::Value> object, void* parameter)
-{
-  assert(v8::Handle<v8::External>::Cast(object)->Value() == parameter);
-
-  py::object *obj = static_cast<py::object *>(parameter);
-
-  delete obj;
-}
-
-#endif
-
 bool CPythonObject::IsWrapped(v8::Handle<v8::Object> obj)
 {
   return obj->InternalFieldCount() == 1;
@@ -792,14 +784,9 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
   else if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
   {
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
+    py::object *object = new py::object(obj);
 
-    v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
-
-  #ifdef SUPPORT_TRACE_LIFECYCLE
-    v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
-  #endif
-
-    func_tmpl->SetCallHandler(Caller, payload);
+    func_tmpl->SetCallHandler(Caller, v8::External::New(object));
 
     if (PyType_Check(obj.ptr()))
     {
@@ -809,22 +796,25 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
     }
 
     result = func_tmpl->GetFunction();
+
+  #ifdef SUPPORT_TRACE_LIFECYCLE
+    ObjectTracer::Trace(result, object);
+  #endif
   }
   else
   {
     static v8::Persistent<v8::ObjectTemplate> s_template = CreateObjectTemplate();
 
     v8::Handle<v8::Object> instance = s_template->NewInstance();
+    py::object *object = new py::object(obj);
 
-    v8::Handle<v8::External> payload = v8::External::New(new py::object(obj));
-
-  #ifdef SUPPORT_TRACE_LIFECYCLE
-    v8::Persistent<v8::External>::New(payload).MakeWeak(payload->Value(), DisposeCallback);
-  #endif
-
-    instance->SetInternalField(0, payload);
+    instance->SetInternalField(0, v8::External::New(object));
 
     result = instance;
+
+  #ifdef SUPPORT_TRACE_LIFECYCLE
+    ObjectTracer::Trace(result, object);
+  #endif
   }
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
