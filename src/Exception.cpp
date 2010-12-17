@@ -391,7 +391,7 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
   }
   else 
   {
-    if (ex.GetException()->IsObject())
+    if (!ex.GetException().IsEmpty() && ex.GetException()->IsObject())
     {
       v8::HandleScope handle_scope;
 
