@@ -102,8 +102,9 @@ void CPythonObject::ThrowIf(void)
   ::PyErr_NormalizeException(&exc, &val, &trb);
 
   py::object type(py::handle<>(py::allow_null(exc))),
-             value(py::handle<>(py::allow_null(val))),
-             traceback(py::handle<>(py::allow_null(trb)));
+             value(py::handle<>(py::allow_null(val)));
+
+  if (trb) py::decref(trb);
   
   std::string msg;
 
