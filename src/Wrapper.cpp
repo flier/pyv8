@@ -1000,7 +1000,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
   v8::HandleScope handle_scope;
 
-  if (value.IsEmpty() || value->IsNull()) return py::object();
+  if (value.IsEmpty() || value->IsNull() || value->IsUndefined()) return py::object();
   if (value->IsTrue()) return py::object(py::handle<>(py::borrowed(Py_True)));
   if (value->IsFalse()) return py::object(py::handle<>(py::borrowed(Py_False)));
 
