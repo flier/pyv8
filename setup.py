@@ -192,7 +192,15 @@ class build(_build):
 	def build_v8(self):
 		import pkg_resources
 
-		pkg_resources.require("scons>=2.0")
+		pkg_resources.resolve("scons>=2.0")
+
+		proc = subprocess.Popen(["scons"], cwd=V8_HOME,
+								stdout=sys.stdout, stderr=sys.stderr)
+
+		proc.communicate()
+
+		if proc.returncode != 0:
+			print "WARN: fail to build Google v8 code from SVN, error code: ", proc.returncode
 
 	def run(self):
 		self.checkout_v8()
