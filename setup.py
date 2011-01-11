@@ -37,6 +37,14 @@ INCLUDE = os.environ.get('INCLUDE', INCLUDE)
 LIB = os.environ.get('LIB', LIB)
 DEBUG = os.environ.get('DEBUG', DEBUG)
 
+if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
+	print "WARN: V8_HOME doesn't exists or point to a wrong folder, ",
+	print "we will try to checkout and build a private build from <http://code.google.com/p/v8/>."
+
+	V8_HOME = os.path.join(PYV8_HOME, 'build', 'v8')
+else:
+	print "Found Google v8 base on V8_HOME <%s>, update it to latest SVN trunk" % V8_HOME
+
 source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
 				"Debug.cpp", "Locker.cpp", "AST.cpp", "PrettyPrinter.cpp", "PyV8.cpp"]
 
@@ -164,14 +172,6 @@ else:
 
 class build(_build):
 	def checkout_v8(self):
-		if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
-			print "WARN: V8_HOME doesn't exists or point to a wrong folder, ",
-			print "we will try to checkout and build a private build from <http://code.google.com/p/v8/>."
-
-			V8_HOME = os.path.join(PYV8_HOME, 'build', 'v8')
-		else:
-			print "Found Google v8 base on V8_HOME <%s>, update it to latest SVN trunk" % V8_HOME
-
 		import subprocess
 
 		if not os.path.isdir(V8_HOME):
