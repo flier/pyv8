@@ -7,7 +7,7 @@ Index: SConstruct
      'all': {
        'CCFLAGS':      ['$DIALECTFLAGS', '$WARNINGFLAGS'],
 -      'CXXFLAGS':     ['$CCFLAGS', '-fno-rtti', '-fno-exceptions'],
-+      #'CXXFLAGS':     ['$CCFLAGS', '-fno-rtti', '-fno-exceptions'],
++      'CXXFLAGS':     ['$CCFLAGS'],
      },
      'visibility:hidden': {
        # Use visibility=default to disable this.
@@ -16,7 +16,7 @@ Index: SConstruct
      'all': {
        'LIBPATH': ['.'],
 -      'CCFLAGS': ['-fno-rtti', '-fno-exceptions']
-+      #'CCFLAGS': ['-fno-rtti', '-fno-exceptions']
++      'CCFLAGS': []
      },
      'os:linux': {
        'LIBS':         ['pthread'],

@@ -189,13 +189,19 @@ class build(_build):
 			print "WARN: fail to checkout or update Google v8 code from SVN, error code: ", proc.returncode
 
 	def build_v8(self):
-		proc = subprocess.Popen(["patch", os.path.join(V8_HOME, "SConstruct"), "SConstruct.patch"],
-								stdout=sys.stdout, stderr=sys.stderr)
+		scons = os.path.join(V8_HOME, "SConstruct")
 
-		proc.communicate()
+		with open(scons, 'r') as f:
+			build_script = f.read()
 
-		if proc.returncode != 0:
-			print "WARN: fail to patch Google v8 SConstruct, error code: ", proc.returncode
+		if build_script.find('-fno-rtti') > 0 or build_script.find('-fno-exceptions') > 0:
+			proc = subprocess.Popen(["patch", os.path.join(V8_HOME, "SConstruct"), "SConstruct.patch"],
+									stdout=sys.stdout, stderr=sys.stderr)
+
+			proc.communicate()
+
+			if proc.returncode != 0:
+				print "WARN: fail to patch Google v8 SConstruct, error code: ", proc.returncode
 
 		proc = subprocess.Popen(["scons"], cwd=V8_HOME,
 								stdout=sys.stdout, stderr=sys.stderr)
