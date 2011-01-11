@@ -206,9 +206,14 @@ class build(_build):
 			with open(scons, 'w') as f:
 				f.write(build_script)
 
-		print "INFO: building Google v8 with SCons"
+		arch = 'x64' if [k for k, v in macros if k == 'V8_TARGET_ARCH_X64'] else 'ia32'
 
-		proc = subprocess.Popen(["scons"], cwd=V8_HOME, shell=True,
+		print "INFO: building Google v8 with SCons for %s platform" % arch
+
+		if arch == 'x64' and os.name != 'nt':
+			os.putenv("CCFLAGS", "-fPIC")
+
+		proc = subprocess.Popen(["scons", "arch="+arch], cwd=V8_HOME, shell=True,
 								stdout=sys.stdout, stderr=sys.stderr)
 
 		proc.communicate()
