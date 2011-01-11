@@ -194,16 +194,21 @@ class build(_build):
 		with open(scons, 'r') as f:
 			build_script = f.read()
 
-		if build_script.find('-fno-rtti') > 0 or build_script.find('-fno-exceptions') > 0:
-			proc = subprocess.Popen(["patch", os.path.join(V8_HOME, "SConstruct"), "SConstruct.patch"],
-									stdout=sys.stdout, stderr=sys.stderr)
+		fixed_build_script = build_script.replace('-fno-rtti', '').replace('-fno-exceptions', '')
 
-			proc.communicate()
+		if build_script == fixed_build_script:
+			print "INFO: skip to patch the Google v8 SConstruct file "
+		else:
+			print "INFO: patch the Google v8 SConstruct file to enable RTTI and C++ Exceptions"
 
-			if proc.returncode != 0:
-				print "WARN: fail to patch Google v8 SConstruct, error code: ", proc.returncode
+			os.rename(scons, scons + '.bak')
 
-		proc = subprocess.Popen(["scons"], cwd=V8_HOME,
+			with open(scons, 'w') as f:
+				f.write(build_script)
+
+		print "INFO: building Google v8 with SCons"
+
+		proc = subprocess.Popen(["scons"], cwd=V8_HOME, shell=True,
 								stdout=sys.stdout, stderr=sys.stderr)
 
 		proc.communicate()
