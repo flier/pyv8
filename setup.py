@@ -190,7 +190,9 @@ class build(_build):
 			print "WARN: fail to checkout or update Google v8 code from SVN, error code: ", proc.returncode
 
 	def build_v8(self):
-		pass
+		import pkg_resources
+
+		pkg_resources.require("scons>=2.0")
 
 	def run(self):
 		self.checkout_v8()
@@ -219,7 +221,6 @@ setup(name='PyV8',
 	  url='http://code.google.com/p/pyv8/',
 	  download_url='http://code.google.com/p/pyv8/downloads/list',
 	  license="Apache Software License",
-	  requires=["scons >= 2.0"],
 	  py_modules=['PyV8'],
 	  ext_modules=[pyv8],
 	  classifiers=classifiers)
