@@ -1268,6 +1268,13 @@ void CJavascriptFunction::SetName(const std::string name)
 
 #ifdef SUPPORT_TRACE_LIFECYCLE
 
+ObjectTracer::ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
+  : m_handle(v8::Persistent<v8::Value>::New(handle)), 
+    m_object(object), m_living(GetLivingMapping())
+{
+
+}
+
 ObjectTracer::~ObjectTracer()
 {
   if (!m_handle.IsEmpty())
@@ -1288,11 +1295,16 @@ ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *obje
 {
   ObjectTracer *tracer = new ObjectTracer(handle, object);
 
-  tracer->m_living->insert(std::make_pair(object->ptr(), &tracer->m_handle));
-
   tracer->MakeWeak();
 
   return *tracer;
+}
+
+void ObjectTracer::MakeWeak(void)
+{
+  m_handle.MakeWeak(this, WeakCallback);
+
+  m_living->insert(std::make_pair(m_object->ptr(), &m_handle));
 }
 
 void ObjectTracer::WeakCallback(v8::Persistent<v8::Value> value, void* parameter)

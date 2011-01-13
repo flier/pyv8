@@ -205,22 +205,13 @@ class ObjectTracer
 
   static LivingMap *GetLivingMapping(void);
 public:
-  ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
-    : m_handle(v8::Persistent<v8::Value>::New(handle)), 
-      m_object(object), m_living(GetLivingMapping())
-  {
-
-  }
-
+  ObjectTracer(v8::Handle<v8::Value> handle, py::object *object);
   ~ObjectTracer();
 
   v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
   py::object *Object(void) const { return m_object.get(); }
 
-  void MakeWeak(void)
-  {
-    m_handle.MakeWeak(this, WeakCallback);
-  }
+  void MakeWeak(void);
 
   static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object);
   static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
