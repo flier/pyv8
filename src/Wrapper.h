@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <sstream>
 
 #include <boost/shared_ptr.hpp>
@@ -46,6 +47,8 @@ class CPythonObject : public CWrapper
 protected:
   static void SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz);
   static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);
+
+  static v8::Handle<v8::Value> WrapInternal(py::object obj);
 public:
   static bool IsWrapped(v8::Handle<v8::Object> obj);
   static v8::Handle<v8::Value> Wrap(py::object obj);
@@ -195,26 +198,21 @@ class ObjectTracer
 {
   v8::Persistent<v8::Value> m_handle;
   std::auto_ptr<py::object> m_object;
+
+  typedef std::map<PyObject *, void *> LivingMap;
+
+  LivingMap *m_living;
+
+  static LivingMap *GetLivingMapping(void);
 public:
   ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
-    : m_handle(v8::Persistent<v8::Value>::New(handle)), m_object(object)
+    : m_handle(v8::Persistent<v8::Value>::New(handle)), 
+      m_object(object), m_living(GetLivingMapping())
   {
 
   }
 
-  ~ObjectTracer()
-  {
-    if (!m_handle.IsEmpty())
-    {
-      assert(m_handle.IsNearDeath());
-
-      m_handle.ClearWeak();
-      m_handle.Dispose();
-      m_handle.Clear();
-
-      m_object.reset();
-    }
-  }
+  ~ObjectTracer();
 
   v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
   py::object *Object(void) const { return m_object.get(); }
@@ -224,23 +222,10 @@ public:
     m_handle.MakeWeak(this, WeakCallback);
   }
 
-  static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object)
-  {
-    ObjectTracer *tracer = new ObjectTracer(handle, object);
-    
-    tracer->MakeWeak();
+  static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object);
+  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
 
-    return *tracer;
-  }
-
-  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter)
-  {
-    assert(value.IsNearDeath());
-
-    std::auto_ptr<ObjectTracer> tracer(static_cast<ObjectTracer *>(parameter));
-
-    assert(value == tracer->m_handle);
-  }
+  static v8::Persistent<v8::Value> FindCache(py::object obj);
 };
 
 #endif

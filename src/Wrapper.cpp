@@ -684,6 +684,23 @@ void CPythonObject::Dispose(v8::Handle<v8::Value> value)
 
 v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 {
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Value> value;
+  
+#ifdef SUPPORT_TRACE_LIFECYCLE
+  value = ObjectTracer::FindCache(obj);
+
+  if (value.IsEmpty()) 
+#endif
+
+  value = WrapInternal(obj);  
+
+  return handle_scope.Close(value);
+}
+
+v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
+{
   assert(v8::Context::InContext());
 
   v8::HandleScope handle_scope;
@@ -1248,3 +1265,82 @@ void CJavascriptFunction::SetName(const std::string name)
 
   func->SetName(v8::String::New(name.c_str(), name.size()));
 }
+
+#ifdef SUPPORT_TRACE_LIFECYCLE
+
+ObjectTracer::~ObjectTracer()
+{
+  if (!m_handle.IsEmpty())
+  {
+    assert(m_handle.IsNearDeath());
+
+    m_handle.ClearWeak();
+    m_handle.Dispose();
+    m_handle.Clear();
+
+    m_living->erase(m_object->ptr());
+
+    m_object.reset();
+  }
+}
+
+ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *object)
+{
+  ObjectTracer *tracer = new ObjectTracer(handle, object);
+
+  tracer->m_living->insert(std::make_pair(object->ptr(), &tracer->m_handle));
+
+  tracer->MakeWeak();
+
+  return *tracer;
+}
+
+void ObjectTracer::WeakCallback(v8::Persistent<v8::Value> value, void* parameter)
+{
+  assert(value.IsNearDeath());
+
+  std::auto_ptr<ObjectTracer> tracer(static_cast<ObjectTracer *>(parameter));
+
+  assert(value == tracer->m_handle);
+}
+
+ObjectTracer::LivingMap * ObjectTracer::GetLivingMapping(void)
+{
+  if (!v8::Context::InContext()) return NULL;
+
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Value> value = v8::Context::GetCurrent()->Global()->GetHiddenValue(v8::String::NewSymbol("__living__"));
+
+  if (!value.IsEmpty())
+  {
+    LivingMap *living = (LivingMap *) v8::External::Unwrap(value);
+
+    if (living) return living;
+  }
+
+  std::auto_ptr<LivingMap> living(new LivingMap());
+
+  v8::Context::GetCurrent()->Global()->SetHiddenValue(v8::String::NewSymbol("__living__"), v8::External::Wrap(living.get()));
+
+  return living.release();
+}
+
+v8::Persistent<v8::Value> ObjectTracer::FindCache(py::object obj)
+{
+  LivingMap *living = GetLivingMapping();
+
+  if (living)
+  {
+    LivingMap::const_iterator it = living->find(obj.ptr());
+
+    if (it != living->end())
+    {
+      return *((v8::Persistent<v8::Value> *)it->second);    
+    }
+  }
+
+  return v8::Persistent<v8::Value>();
+}
+
+#endif // SUPPORT_TRACE_LIFECYCLE

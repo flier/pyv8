@@ -1322,6 +1322,17 @@ class TestWrapper(unittest.TestCase):
 
             self.assertEquals("hello \0 world", fn("hello \0 world"))
 
+    def testLivingObjectCache(self):
+        class Global(JSClass):
+            i = 1
+            b = True
+            o = object()
+
+        with JSContext(Global()) as ctxt:
+            self.assert_(ctxt.eval("i == i"))
+            self.assert_(ctxt.eval("b == b"))
+            self.assert_(ctxt.eval("o == o"))
+
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)
