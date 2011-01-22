@@ -3,6 +3,11 @@ from __future__ import with_statement
 
 import sys, re
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import logging
 
 import BeautifulSoup
@@ -112,7 +117,10 @@ class Node(PyV8.JSClass):
     
     def insertBefore(self, newChild, refChild):
         raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
-    
+
+    def insertAfter(self, newChild, refChild):
+        raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
+
     def replaceChild(self, newChild, oldChild):
         raise DOMException(DOMException.HIERARCHY_REQUEST_ERR)
     
@@ -261,6 +269,12 @@ class Element(Node):
         Node.__init__(self, doc)
         
         self.tag = tag
+
+    def __str__(self):
+        return str(self.tag)
+
+    def __unicode__(self):
+        return unicode(self.tag)
         
     def __repr__(self):
         return "<Element %s at 0x%08X>" % (self.tag.name, id(self))
@@ -329,6 +343,19 @@ class Element(Node):
         else:        
             self.tag.insert(index, newChild.tag)
         
+        return newChild
+
+    def insertAfter(self, newChild, refChild):
+        self.checkChild(newChild)
+        self.checkChild(refChild)
+
+        index = self.findChild(refChild)
+
+        if index < 0:
+            self.tag.append(newChild.tag)
+        else:
+            self.tag.insert(index+1, newChild.tag)
+
         return newChild
 
     def replaceChild(self, newChild, oldChild):
@@ -444,7 +471,10 @@ class Comment(CharacterData):
     pass
 
 class DocumentFragment(Node):
-    pass
+    def __init__(self, doc, tags):
+        Node.__init__(self, doc)
+        
+        self.tags = tags
 
 class DocumentType(Node):
     RE_DOCTYPE = re.compile("^DOCTYPE (\w+)", re.M + re.S)
@@ -512,6 +542,15 @@ class ProcessingInstruction(Node):
         return self._target   
 
 class Document(Node):
+    def __str__(self):
+        return str(self.doc)
+
+    def __unicode__(self):
+        return unicode(self.doc)
+
+    def __repr__(self):
+        return "<Document at 0x%08X>" % id(self)
+
     @property
     def nodeType(self):
         return Node.DOCUMENT_NODE
@@ -1035,11 +1074,32 @@ def xpath_property(xpath, readonly=False):
                 
         tag.append(value)
 
-    return property(getter) if readonly else property(getter, setter) 
-        
+    return property(getter) if readonly else property(getter, setter)
+
 class HTMLDocument(Document):
-    title = xpath_property("/html/head/title/text()")    
-    
+    title = xpath_property("/html/head/title/text()")
+    body = xpath_property("/html/body[1]")
+
+    images = xpath_property("//img", readonly=True)
+    applets = xpath_property("//applet", readonly=True)
+    links = xpath_property("//a", readonly=True)
+    forms = xpath_property("//form", readonly=True)
+
+    def __init__(self, doc):
+        Document.__init__(self, doc)
+
+        self._html = None
+
+        self.cookie = ""
+        self.current = self.doc.contents[0]
+
+    @property
+    def context(self):
+        if not hasattr(self, "_context"):
+            self._context = PyV8.JSContext(self)
+
+        return self._context
+
     @property
     def referrer(self):
         raise NotImplementedError()
@@ -1051,36 +1111,36 @@ class HTMLDocument(Document):
     @property
     def URL(self):
         raise NotImplementedError()
-        
-    body = xpath_property("/html/body[1]")
-    
-    images = xpath_property("//img", readonly=True)
-    applets = xpath_property("//applet", readonly=True)
-    links = xpath_property("//a", readonly=True)
-    forms = xpath_property("//form", readonly=True)
-        
+
     @property    
     def anchors(self):
         raise NotImplementedError()
-            
-    cookie = ""
-    
-    def open(self):
-        pass
+
+    def open(self, mimetype='text/html', replace=False):
+        self._html = StringIO()
+
+        return self
     
     def close(self):
-        pass
-    
-    onDocumentWrite = None
-    
+        html = self._html.getvalue()
+        self._html.close()
+        self._html = None
+
+        self.doc = BeautifulSoup.BeautifulSoup(html)
+
     def write(self, html):
-        tag = BeautifulSoup.BeautifulSoup(html)
-        
-        if self.onDocumentWrite:
-            self.onDocumentWrite(DOMImplementation.createHTMLElement(self.doc, tag))
-        
-        self.body.tag.append(tag)
-    
+        if self._html:
+            self._html.write(html)
+        else:
+            tag = self.current.tag
+            parent = tag.parent
+            pos = parent.contents.index(tag) + 1
+
+            for tag in BeautifulSoup.BeautifulSoup(html).contents:
+                parent.insert(pos, tag)
+
+                pos += 1
+
     def writeln(self, text):
         self.write(text + "\n")
     
@@ -1092,7 +1152,26 @@ class HTMLDocument(Document):
         tags = self.doc.findAll(attrs={'name': elementName})
         
         return HTMLCollection(self.doc, tags)
-    
+
+    def evalScript(self, script):
+        if isinstance(script, unicode):
+            script = script.encode('utf-8')
+
+        print "executing script ", type(script), script
+
+        with self.context as ctxt:
+            ctxt.eval(script)
+
+    def fireOnloadEvents(self):
+        for tag in self.doc.find('script'):
+            self.evalScript(tag.string)
+
+        if self.body.tag.has_key('onload'):
+            self.evalScript(self.body.tag['onload'])
+
+        if hasattr(self, 'onload'):
+            self.evalScript(self.onload)
+
 class DOMImplementation(HTMLDocument):
     def hasFeature(self, feature, version):
         return feature == "HTML" and version == "1.0"
@@ -1422,6 +1501,20 @@ class HTMLDocumentTest(unittest.TestCase):
         self.assert_(isinstance(forms[0], HTMLFormElement))
         self.assertEquals("first", forms[0].name)
         self.assertEquals("second", forms[1].name)
+
+    def testWrite(self):
+        self.assertEquals("this is a test", self.doc.title)
+
+        doc = self.doc.open()
+        doc.write("<html><head><title>Hello World</title></head><body></body></html>")
+        doc.close()
+
+        self.assertEquals("Hello World", doc.title)
+
+        doc.current = doc.getElementsByTagName('title')[0]
+        doc.write("<meta/>")
+
+        self.assertEquals("<head><title>Hello World</title><meta /></head>", str(doc.getElementsByTagName('head')[0]))
         
 class CSSStyleDeclarationTest(unittest.TestCase):
     def testParse(self):

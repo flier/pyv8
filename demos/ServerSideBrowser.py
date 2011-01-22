@@ -5,274 +5,6 @@ import sys, traceback, os, os.path
 import xml.dom.minidom
 import logging
 
-import urllib2, urlparse
-
-import BeautifulSoup
-import PyV8, w3c
-
-class JavaLibrary(PyV8.JSClass):
-    class LangLibrary(PyV8.JSClass):
-        def Runnable(self, args):
-            logging.debug("new java.lang.Runnable(%s)" % args)
-            
-        def Thread(self, runnable):
-            logging.debug("new java.lang.Thread(%s)" % runnable)
-            
-    lang = LangLibrary()
-    
-    class UtilLibrary(PyV8.JSClass):
-        def HashMap(self):
-            logging.debug("new java.util.HashMap()")
-            
-            class HashMapWrapper(PyV8.JSClass):
-                map = {}
-                
-                def get(self, key):
-                    return self.map[key]
-                
-                def put(self, key, value):
-                    self.map[key] = value
-                    
-                def containsKey(self, key):
-                    return self.map.has_key(key)
-                    
-            return HashMapWrapper()
-    
-    util = UtilLibrary()
-    
-    class IoLibrary(PyV8.JSClass):
-        def File(self, filename):
-            logging.debug("new java.io.File(%s)" % filename)
-            
-            class FileWrapper(PyV8.JSClass):
-                def __init__(self, filename):
-                    self.filename = filename
-                    
-                def toURL(self):
-                    pass
-            
-            return FileWrapper(filename)
-    
-    io = IoLibrary()
-    
-    class NetLibrary(PyV8.JSClass):
-        def URL(self, location, url):
-            logging.debug("new java.net.URL(%s, %s)" % (location, url))
-        
-    net = NetLibrary()    
-
-class HtmlStyle(PyV8.JSClass):
-    def __init__(self, node):
-        self._node = node
-        self._attrs = self.parse(node.getAttribute("style"))        
-        
-    def parse(self, style):
-        attrs = {}
-                
-        try:
-            for attr in style.split(';'):
-                if attr == '': continue
-                
-                strs = attr.split(':')
-                
-                if len(strs) == 2:
-                    attrs[strs[0]] = strs[1]
-                else:
-                    attrs[attr] = None
-        except:
-            logging.warn("fail to parse the style attribute: %s", sys.exc_info()[1])            
-        
-        return attrs
-    
-    def __getattr__(self, name):
-        try:
-            try:            
-                return object.__getattribute__(self, name)
-            except AttributeError:            
-                return object.__getattribute__(self, "_attrs")[name]
-        except:
-            logging.error(sys.exc_info())                
-        
-    def __setattr__(self, name, value):
-        try:
-            if name[0] == '_':
-                return object.__setattr__(self, name, value)
-            else:
-                node = object.__getattribute__(self, "_node")
-                attrs = object.__getattribute__(self, "_attrs")
-                style = ";".join(["%s:%s" % (k, v) if v else k for k, v in attrs.items()])
-                
-                if node.hasAttribute("style") and len(style) == 0:
-                    node.removeAttribute("style")
-                elif len(style) > 0:
-                    node.setAttribute("style", style)
-        except:
-            logging.error(sys.exc_info())
-            
-class HtmlLocation(PyV8.JSClass):
-    def __init__(self, page):
-        self.page = page
-        
-    @property
-    def parts(self):
-        return urlparse.urlparse(self.page.url)
-    
-    @property
-    def href(self):
-        return self.page.url
-        
-    @property
-    def protocol(self):
-        return self.parts.scheme
-    
-    @property
-    def host(self):
-        return self.parts.netloc
-    
-    @property
-    def hostname(self):
-        return self.parts.hostname
-    
-    @property
-    def port(self):
-        return self.parts.port
-        
-    @property
-    def pathname(self):
-        return self.parts.path
-    
-    @property
-    def search(self):
-        return self.parts.query
-        
-    @property
-    def hash(self):
-        return self.parts.fragment
-    
-    def assign(self, url):
-        """Loads a new HTML document."""
-        pass
-    
-    def reload(self, bReloadSource=False):
-        """Reloads the current page."""
-        pass
-    
-    def replace(self, url):
-        """Replaces the current document by loading another document at the specified URL."""
-        pass
-
-class HtmlWindow(PyV8.JSClass):
-    timers = []
-    
-    class Object(PyV8.JSClass):
-        def __init__(self, name):            
-            self.name = name
-            
-        def __getattribute__(self, name):
-            try:
-                return object.__getattribute__(self, name)
-            except:
-                pass
-            
-            me = object.__getattribute__(self, "name")
-            
-            return HtmlWindow.Object("%s.%s" % (me, name))
-            
-        def __setattr__(self, name, value):
-            object.__setattr__(self, name, value)
-        
-        def __str__(self):
-            logging.info("get %s", self.name)
-            
-            return ""
-        
-        def __repr__(self):
-            return "<Object %s at 0x%08X>" % (self.name, id(self))
-                
-    def __init__(self, page, dom):
-        self.page = page
-        self.doc = w3c.getDOMImplementation(dom)
-        self.doc.location = self.location
-        self.ctxt = PyV8.JSContext(self)
-    """
-    def __getattribute__(self, name):
-        try:
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            pass
-                
-        logging.warn("missing global variable: %s", name)
-        
-        return HtmlWindow.Object(name)
-    """
-    @property
-    def window(self):
-        return self
-    
-    @property
-    def document(self):
-        return self.doc
-    
-    @property
-    def navigator(self):
-        return InternetExplorer()
-    
-    def getLocation(self):
-        return HtmlLocation(self.page)
-    
-    def setLocation(self, url):
-        pass
-    
-    location = property(getLocation, setLocation)
-    
-    def Image(self):
-        return self.doc.createElement('img')
-    """
-    def ActiveXObject(self, name, server=None):
-        return HtmlWindow.Object(name)
-    """
-    
-    def setTimeout(self, code, interval, lang="JavaScript"):
-        self.timers.append((interval, code))
-        
-        return len(self.timers)-1
-        
-    def clearTimeout(self, idx):
-        self.timers[idx] = None
-        
-    def eval(self, code):
-        logging.debug("evalute script: %s...", code[:20])
-
-        return PyV8.JSEngine().compile(str(code)).run()
-        
-    def execute(self, func):
-        logging.debug("evalute function: %s...", str(func)[:20])
-        
-        return func()
-        
-class Navigator(PyV8.JSClass):
-    @property
-    def appCodeName(self):
-        return "Mozilla"
-    
-    def javaEnabled(self):
-        return "false"
-    
-class InternetExplorer(Navigator):    
-    @property
-    def appName(self):
-        return "Microsoft Internet Explorer"
-    
-    @property
-    def userAgent(self):
-        return "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
-    
-    @property
-    def userLanguage(self):
-        import locale
-        
-        return locale.getdefaultlocale()[0]
-        
 class Task(object):
     @staticmethod
     def waitAll(tasks):
@@ -364,7 +96,55 @@ class WebScript(WebObject):
                 self.result = self.page.window.eval(self.script)
             else:
                 self.result = self.page.window.execute(self.func)
-   
+
+class HtmlStyle(PyV8.JSClass):
+    def __init__(self, node):
+        self._node = node
+        self._attrs = self.parse(node.getAttribute("style"))
+
+    def parse(self, style):
+        attrs = {}
+
+        try:
+            for attr in style.split(';'):
+                if attr == '': continue
+
+                strs = attr.split(':')
+
+                if len(strs) == 2:
+                    attrs[strs[0]] = strs[1]
+                else:
+                    attrs[attr] = None
+        except:
+            logging.warn("fail to parse the style attribute: %s", sys.exc_info()[1])
+
+        return attrs
+
+    def __getattr__(self, name):
+        try:
+            try:
+                return object.__getattribute__(self, name)
+            except AttributeError:
+                return object.__getattribute__(self, "_attrs")[name]
+        except:
+            logging.error(sys.exc_info())
+
+    def __setattr__(self, name, value):
+        try:
+            if name[0] == '_':
+                return object.__setattr__(self, name, value)
+            else:
+                node = object.__getattribute__(self, "_node")
+                attrs = object.__getattribute__(self, "_attrs")
+                style = ";".join(["%s:%s" % (k, v) if v else k for k, v in attrs.items()])
+
+                if node.hasAttribute("style") and len(style) == 0:
+                    node.removeAttribute("style")
+                elif len(style) > 0:
+                    node.setAttribute("style", style)
+        except:
+            logging.error(sys.exc_info())
+
 class WebCss(WebObject):
     def __init__(self, parent, value, url):
         WebObject.__init__(self, parent, url)

@@ -32,7 +32,7 @@ class JSError(Exception):
     def __str__(self):
         return str(self._impl)
 
-    def __unicode__(self):
+    def __unicode__(self, *args, **kwargs):
         return unicode(self._impl)
 
     def __getattribute__(self, attr):
@@ -102,10 +102,8 @@ class JSClass(object):
 
         if prop and callable(prop[1]):
             return prop[1](value)
-        else:
-            return object.__setattr__(self, name, value)
 
-        raise AttributeError(name)
+        return object.__setattr__(self, name, value)
 
     def toString(self):
         "Returns a string representation of an object."
@@ -222,7 +220,6 @@ class JSDebug(object):
         def arguments(self):
             return FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
 
-        @property
         def localCount(self, idx):
             return int(self.frame.localCount())
 
@@ -536,12 +533,12 @@ JSStackTrace.Options = _PyV8.JSStackTraceOptions
 JSStackFrame = _PyV8.JSStackFrame
 
 class JSContext(_PyV8.JSContext):
-    def __init__(self, obj=None, extensions=[]):
+    def __init__(self, obj=None, extensions=None):
         if JSLocker.actived:
             self.lock = JSLocker()
             self.lock.enter()
 
-        _PyV8.JSContext.__init__(self, obj, extensions)
+        _PyV8.JSContext.__init__(self, obj, extensions or [])
 
     def __enter__(self):
         self.enter()
