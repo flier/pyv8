@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 
-import sys, re
+import sys, re, string
+
+from urlparse import urlparse
 
 try:
     from cStringIO import StringIO
@@ -997,7 +999,7 @@ class HTMLIFrameElement(HTMLElement):
     width = attr_property("width")
 
 def xpath_property(xpath, readonly=False):
-    RE_INDEXED = re.compile("(\w+)\[(\d+)\]")
+    RE_INDEXED = re.compile("(\w+)\[([^\]]+)\]")
     
     parts = xpath.split('/')
     
@@ -1017,33 +1019,41 @@ def xpath_property(xpath, readonly=False):
         
         if m:
             name = m.group(1)
-            idx = int(m.group(2))
-            
-            return [tag.findAll(name, recursive=recursive)[idx-1]]
-        
+            idx = m.group(2)
+        else:
+            name = part
+            idx = None
+
         children = []
+
+        tags = tag.findAll(name, recursive=recursive)
+
+        if idx:
+            if idx[0] == '@':
+                tags = [tag for tag in tags if tag.has_key(idx[1:])]
+            else:
+                tags = [tags[int(idx)-1]]
         
-        for child in tag.findAll(part, recursive=recursive):
+        for child in tags:
             children += getChildren(child, parts[1:])
             
         return children
         
     def getter(self):
-        children = []
-        
-        if xpath.startswith("//"):
-            for child in self.doc.findAll(parts[2]):                
-                children += getChildren(child, parts[3:])
-        elif xpath.startswith("/"):
-            children += getChildren(self.doc, parts[1:])
-        else:
-            children += getChildren(self.doc, parts)
+        children = getChildren(self.doc, parts)
         
         if parts[-1] == 'text()':
             return "".join(children)
-            
-        if RE_INDEXED.match(parts[-1]):
-            return DOMImplementation.createHTMLElement(self.doc, children[0]) if len(children) > 0 else None        
+
+        m = RE_INDEXED.match(parts[-1])
+
+        if m:
+            try:
+                string.atoi(m.group(2))
+
+                return DOMImplementation.createHTMLElement(self.doc, children[0]) if len(children) > 0 else None
+            except ValueError: 
+                pass
                 
         return HTMLCollection(self.doc, children)
         
@@ -1082,39 +1092,43 @@ class HTMLDocument(Document):
 
     images = xpath_property("//img", readonly=True)
     applets = xpath_property("//applet", readonly=True)
-    links = xpath_property("//a", readonly=True)
     forms = xpath_property("//form", readonly=True)
+    links = xpath_property("//a[@href]", readonly=True)
+    anchors = xpath_property("//a[@name]", readonly=True)
 
-    def __init__(self, doc):
+    def __init__(self, doc, win=None, referer=None, lastModified=None, cookie=''):
         Document.__init__(self, doc)
+
+        self._win = win
+        self._referer = referer
+        self._lastModified = lastModified
+        self._cookie = cookie
 
         self._html = None
 
-        self.cookie = ""
-        self.current = self.doc.contents[0]
-
     @property
-    def context(self):
-        if not hasattr(self, "_context"):
-            self._context = PyV8.JSContext(self)
-
-        return self._context
+    def window(self):
+        return self._win
 
     @property
     def referrer(self):
-        raise NotImplementedError()
+        return self._referer
+
+    @property
+    def lastModified(self):
+        raise self._lastModified
+
+    @property
+    def cookie(self):
+        return self._cookie
         
     @property
     def domain(self):
-        raise NotImplementedError()
+        return urlparse(self._win.url).hostname if self._win else ''
         
     @property
     def URL(self):
-        raise NotImplementedError()
-
-    @property    
-    def anchors(self):
-        raise NotImplementedError()
+        return self._win.url if self._win else ''
 
     def open(self, mimetype='text/html', replace=False):
         self._html = StringIO()
@@ -1152,25 +1166,6 @@ class HTMLDocument(Document):
         tags = self.doc.findAll(attrs={'name': elementName})
         
         return HTMLCollection(self.doc, tags)
-
-    def evalScript(self, script):
-        if isinstance(script, unicode):
-            script = script.encode('utf-8')
-
-        print "executing script ", type(script), script
-
-        with self.context as ctxt:
-            ctxt.eval(script)
-
-    def fireOnloadEvents(self):
-        for tag in self.doc.find('script'):
-            self.evalScript(tag.string)
-
-        if self.body.tag.has_key('onload'):
-            self.evalScript(self.body.tag['onload'])
-
-        if hasattr(self, 'onload'):
-            self.evalScript(self.onload)
 
 class DOMImplementation(HTMLDocument):
     def hasFeature(self, feature, version):
@@ -1247,6 +1242,8 @@ TEST_HTML = """
         <p id="hello">Hello World!</p>
         <form name="first"></form>
         <form name="second"></form>
+        <a href="#">link</a>
+        <a name="#">anchor</a>
     </body>
 </html>"""
 
@@ -1501,6 +1498,9 @@ class HTMLDocumentTest(unittest.TestCase):
         self.assert_(isinstance(forms[0], HTMLFormElement))
         self.assertEquals("first", forms[0].name)
         self.assertEquals("second", forms[1].name)
+
+        self.assertEquals(1, len(self.doc.links))
+        self.assertEquals(1, len(self.doc.anchors))
 
     def testWrite(self):
         self.assertEquals("this is a test", self.doc.title)
