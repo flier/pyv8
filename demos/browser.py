@@ -2,12 +2,22 @@ import sys
 import logging
 from urllib2 import Request, urlopen, HTTPError
 from urlparse import urlparse
+from email.utils import formatdate
 
 import PyV8, w3c
 
 import BeautifulSoup
 
 class Navigator(PyV8.JSClass):
+    log = logging.getLogger("navigator.base")
+
+    def __init__(self, win=None):
+        self._win = win
+
+    @property
+    def window(self):
+        return self._win
+
     @property
     def appCodeName(self):
         """the code name of the browser"""
@@ -47,15 +57,31 @@ class Navigator(PyV8.JSClass):
         raise NotImplementedError()
 
     def fetch(self, url):
+        self.log.debug("fetching HTML from %s", url)
+        
         request = Request(url)
         request.add_header('User-Agent', self.userAgent)
+        request.add_header('Referer', self._win.url)
+        if self._win.doc.cookie:
+            request.add_header('Cookie', self._win.doc.cookie)
 
         response = urlopen(request)
 
         if response.code != 200:
+            self.log.warn("fail to fetch HTML from %s, code=%d, msg=%s", url, response.code, response.msg)
+            
             raise HTTPError(url, response.code, "fail to fetch HTML", response.info(), 0)
 
-        return response.read()
+        headers = response.info()
+        kwds = { 'referer': self._win.url }
+
+        if headers.has_key('set-cookie'):
+            kwds['cookie'] = headers['set-cookie']
+
+        if headers.has_key('last-modified'):
+            kwds['lastModified'] = headers['last-modified']
+
+        return response.read(), kwds
 
 class InternetExplorer(Navigator):
     @property
@@ -95,13 +121,13 @@ class InternetExplorer(Navigator):
 
         return locale.getdefaultlocale()[0]
 
-class HtmlLocation(PyV8.JSClass):
+class Location(PyV8.JSClass):
     def __init__(self, win):
         self.win = win
 
     @property
     def parts(self):
-        return urlparse.urlparse(self.win.url)
+        return urlparse(self.win.url)
 
     @property
     def href(self):
@@ -181,7 +207,55 @@ class Screen(PyV8.JSClass):
     def pixelDepth(self):
         return self._depth
 
+class History(PyV8.JSClass):
+    def __init__(self, win):
+        self._win = win
+        self.urls = []
+        self.pos = None
+
+    @property
+    def window(self):
+        return self._win
+
+    @property
+    def length(self):
+        """the number of URLs in the history list"""
+        return len(self.urls)
+
+    def back(self):
+        """Loads the previous URL in the history list"""
+        return self.go(-1)
+
+    def forward(self):
+        """Loads the next URL in the history list"""
+        return self.go(1)
+
+    def go(self, num_or_url):
+        """Loads a specific URL from the history list"""
+        try:
+            off = int(num_or_url)
+
+            self.pos += off
+            self.pos = min(max(0, self.pos), len(self.urls)-1)
+
+            self._win.open(self.urls[self.pos])
+        except ValueError:
+            self._win.open(num_or_url)
+
+    def update(self, url, replace=False):
+        if self.pos is None:
+            self.urls.append(url)
+            self.pos = 0
+        elif replace:
+            self.urls[self.pos] = url
+        elif self.urls[self.pos] != url:
+            self.urls = self.urls[:self.pos+1]
+            self.urls.append(url)
+            self.pos += 1
+
 class HtmlWindow(PyV8.JSClass):
+    log = logging.getLogger("html.window")
+
     class Timer(object):
         def __init__(self, code, repeat, lang='JavaScript'):
             self.code = code
@@ -190,15 +264,22 @@ class HtmlWindow(PyV8.JSClass):
 
     timers = []
 
-    def __init__(self, navigator, dom_or_doc, name="", target='_blank', parent=None, opener=None, width=800, height=600, left=0, top=0):
-        self._navigator = navigator
-        self.doc = w3c.getDOMImplementation(dom_or_doc) if isinstance(dom_or_doc, BeautifulSoup) else dom_or_doc
-        self.loc = HtmlLocation(self)
+    def __init__(self, url, dom_or_doc, navigator_or_class=InternetExplorer, name="", target='_blank',
+                 parent=None, opener=None, replace=False, screen=None, width=800, height=600, left=0, top=0, **kwds):
+        self.url = url
+        self.doc = w3c.getDOMImplementation(dom_or_doc, **kwds) if isinstance(dom_or_doc, BeautifulSoup.BeautifulSoup) else dom_or_doc
+        self.doc.window = self
+
+        self._navigator = navigator_or_class(self) if type(navigator_or_class) == type else navigator_or_class
+        self._location = Location(self)
+        self._history = History(self)
+
+        self._history.update(url, replace)
 
         self._target = target
         self._parent = parent
         self._opener = opener
-        self._screen = Screen(width, height, 32)
+        self._screen = screen or Screen(width, height, 32)
         self._closed = False
 
         self.name = name
@@ -210,13 +291,6 @@ class HtmlWindow(PyV8.JSClass):
         self.innerHeight = height
         self.outerWidth = width
         self.outerHeight = height
-
-    @property
-    def context(self):
-        if not hasattr(self, '_context'):
-            self._context = PyV8.JSContext(self)
-
-        return self._context
 
     @property
     def closed(self):
@@ -235,25 +309,28 @@ class HtmlWindow(PyV8.JSClass):
     def document(self):
         return self.doc
 
+    def _findAll(self, tags):
+        return self.doc.doc.findAll(tags, recursive=True)
+
     @property
     def frames(self):
         """an array of all the frames (including iframes) in the current window"""
-        return w3c.HTMLCollection(self.doc, [self.doc.createHTMLElement(self.doc, f) for f in self.doc.find(['frame', 'iframe'])])
+        return w3c.HTMLCollection(self.doc, [self.doc.createHTMLElement(self.doc, f) for f in self._findAll(['frame', 'iframe'])])
 
     @property
     def length(self):
         """the number of frames (including iframes) in a window"""
-        return len(self.doc.find(['frame', 'iframe']))
+        return len(self._findAll(['frame', 'iframe']))
 
     @property
     def history(self):
         """the History object for the window"""
-        raise NotImplementedError()
+        return self._history
 
     @property
     def location(self):
         """the Location object for the window"""
-        return self.loc
+        return self._location
 
     @property
     def navigator(self):
@@ -368,8 +445,17 @@ class HtmlWindow(PyV8.JSClass):
     def createPopup(self):
         raise NotImplementedError()
 
-    def open(self, url, name='_blank', specs='', replace=False):
-        kwds = {}
+    def open(self, url=None, name='_blank', specs='', replace=False):
+        self.log.info("window.open(url='%s', name='%s', specs='%s')", url, name, specs)
+        
+        if url:
+            html, kwds = self._navigator.fetch(url)
+        else:
+            url = 'about:blank'
+            html = ''
+            kwds = {}
+
+        dom = BeautifulSoup.BeautifulSoup(html)
 
         for spec in specs.split(','):
             spec = [s.strip() for s in spec.split('=')]
@@ -384,15 +470,122 @@ class HtmlWindow(PyV8.JSClass):
         else:
             kwds['target'] = '_blank'
 
-        html = self._navigator.fetch(url)        
-        dom = w3c.parseString(html)
+        return HtmlWindow(url, dom, self._navigator, name, parent=self, opener=self, replace=replace, **kwds)
 
-        return HtmlWindow(self._navigator, dom, name, parent=self, opener=self, **kwds)
+    @property
+    def context(self):
+        if not hasattr(self, "_context"):
+            self._context = PyV8.JSContext(self)
+
+        return self._context
+
+    def evalScript(self, script, tag=None):
+        if isinstance(script, unicode):
+            script = script.encode('utf-8')
+
+        if tag:
+            self.doc.current = tag
+        else:
+            body = self.doc.body
+
+            self.doc.current = body.tag.contents[-1] if body else self.doc.doc.contents[-1]
+
+        self.log.debug("executing script: %s", script)
+
+        with self.context as ctxt:
+            ctxt.eval(script)
+
+    def fireOnloadEvents(self):
+        for tag in self._findAll('script'):
+            self.evalScript(tag.string, tag=tag)
+
+        body = self.doc.body
+
+        if body and body.tag.has_key('onload'):
+            self.evalScript(body.tag['onload'], tag=body.tag.contents[-1])
+
+        if hasattr(self, 'onload'):
+            self.evalScript(self.onload)
+
+    def fireExpiredTimer(self):
+        pass
 
     def Image(self):
         return self.doc.createElement('img')
 
 import unittest
+
+TEST_URL = 'http://localhost:8080/path?query=key#frag'
+TEST_HTML = """
+<html>
+<head>
+    <title></title>
+</head>
+<body onload='load()'>
+    <frame src="#"/>
+    <iframe src="#"/>
+    <script>
+    function load()
+    {
+        alert('onload');
+    }
+    document.write("<p id='hello'>world</p>");
+    </script>
+</body>
+</html>
+"""
+
+class HtmlWindowTest(unittest.TestCase):
+    def setUp(self):
+        self.doc = w3c.parseString(TEST_HTML)
+        self.win = HtmlWindow(TEST_URL, self.doc)
+
+    def testWindow(self):
+        self.assertEquals(self.doc, self.win.document)
+        self.assertEquals(self.win, self.win.window)
+        self.assertEquals(self.win, self.win.self)
+
+        self.assertFalse(self.win.closed)
+        self.win.close()
+        self.assert_(self.win.closed)
+
+        self.assertEquals(2, self.win.frames.length)
+        self.assertEquals(2, self.win.length)
+        
+        self.assertEquals(1, self.win.history.length)
+
+        loc = self.win.location
+
+        self.assert_(loc)
+        self.assertEquals("frag", loc.hash)
+        self.assertEquals("localhost:8080", loc.host)
+        self.assertEquals("localhost", loc.hostname)
+        self.assertEquals(TEST_URL, loc.href)
+        self.assertEquals("/path", loc.pathname)
+        self.assertEquals(8080, loc.port)
+        self.assertEquals("http", loc.protocol)
+        self.assertEquals("query=key", loc.search)
+
+    def testOpen(self):
+        url = 'http://www.google.com'
+        win = self.win.open(url, specs="width=640, height=480")
+        self.assertEquals(url, win.url)
+
+        self.assert_(win.document)
+        self.assertEquals(url, win.document.URL)
+        self.assertEquals('www.google.com', win.document.domain)
+        self.assertEquals(640, win.innerWidth)
+        self.assertEquals(480, win.innerHeight)
+
+    def testScript(self):
+        self.win.fireOnloadEvents()
+
+        tag = self.doc.getElementById('hello')
+
+        self.assertEquals(u'P', tag.nodeName)
+
+    def testTimer(self):
+        pass
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,

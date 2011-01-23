@@ -1106,9 +1106,15 @@ class HTMLDocument(Document):
 
         self._html = None
 
+        self.current = None
+
     @property
     def window(self):
         return self._win
+
+    @window.setter
+    def window(self, win):
+        self._win = win
 
     @property
     def referrer(self):
@@ -1146,7 +1152,7 @@ class HTMLDocument(Document):
         if self._html:
             self._html.write(html)
         else:
-            tag = self.current.tag
+            tag = self.current
             parent = tag.parent
             pos = parent.contents.index(tag) + 1
 
@@ -1203,18 +1209,18 @@ class DOMImplementation(HTMLDocument):
         else:
             return HTMLElement(doc, tag)
     
-def getDOMImplementation(dom = None):
-    return DOMImplementation(dom if dom else BeautifulSoup.BeautifulSoup())
+def getDOMImplementation(dom=None, **kwds):
+    return DOMImplementation(dom if dom else BeautifulSoup.BeautifulSoup(), **kwds)
     
-def parseString(html):
-    return DOMImplementation(BeautifulSoup.BeautifulSoup(html))
+def parseString(html, **kwds):
+    return DOMImplementation(BeautifulSoup.BeautifulSoup(html), **kwds)
     
-def parse(file):
+def parse(file, **kwds):
     if isinstance(file, StringTypes):
         with open(file, 'r') as f:
             return parseString(f.read())
     
-    return parseString(file.read())
+    return parseString(file.read(), **kwds)
     
 import unittest
 
@@ -1511,7 +1517,7 @@ class HTMLDocumentTest(unittest.TestCase):
 
         self.assertEquals("Hello World", doc.title)
 
-        doc.current = doc.getElementsByTagName('title')[0]
+        doc.current = doc.getElementsByTagName('title')[0].tag
         doc.write("<meta/>")
 
         self.assertEquals("<head><title>Hello World</title><meta /></head>", str(doc.getElementsByTagName('head')[0]))
