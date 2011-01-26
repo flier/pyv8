@@ -1330,6 +1330,33 @@ class TestWrapper(unittest.TestCase):
             self.assert_(ctxt.eval("b == b"))
             self.assert_(ctxt.eval("o == o"))
 
+    def testNamedSetter(self):
+        class Obj(JSClass):
+            @property
+            def p(self):
+                return self._p
+
+            @p.setter
+            def p(self, value):
+                self._p = value
+
+        class Global(JSClass):
+            def __init__(self):
+                self.obj = Obj()
+                self.d = {}
+                self.p = None
+
+        with JSContext(Global()) as ctxt:
+            ctxt.eval("""
+            x = obj;
+            x.y = 10;
+            x.p = 10;
+            d.y = 10;
+            """)
+            self.assertEquals(10, ctxt.eval("obj.y"))
+            self.assertEquals(10, ctxt.eval("obj.p"))
+            self.assertEquals(10, ctxt.locals.d['y'])
+
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)

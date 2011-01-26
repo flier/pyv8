@@ -260,33 +260,33 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   v8::String::AsciiValue name(prop);
 
-  if (!::PyObject_HasAttrString(obj.ptr(), *name) &&
-      ::PyMapping_Check(obj.ptr()))
+  bool found = ::PyObject_HasAttrString(obj.ptr(), *name);
+
+  if (!found && ::PyMapping_Check(obj.ptr()))
   {
     ::PyMapping_SetItemString(obj.ptr(), *name, CJavascriptObject::Wrap(value).ptr());
   }
-  else
+  else 
   {
   #ifdef SUPPORT_PROPERTY
-    py::object attr = obj.attr(*name);
-
-    if (::PyObject_HasAttrString(obj.ptr(), *name) && 
-        PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+    if (found)
     {
-      py::object setter = attr.attr("fset");
-      
-      if (setter.ptr() == Py_None)
-        throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
+      py::object attr = obj.attr(*name);
 
-      setter(CJavascriptObject::Wrap(value));    
+      if (PyObject_TypeCheck(attr.ptr(), &::PyProperty_Type))
+      {
+        py::object setter = attr.attr("fset");
+
+        if (setter.ptr() == Py_None)
+          throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
+
+        setter(CJavascriptObject::Wrap(value));    
+
+        return value;
+      }
     }
-    else
-    {
-      attr = CJavascriptObject::Wrap(value);
-    }
-  #else
-    obj.attr(*name) = CJavascriptObject::Wrap(value);
   #endif
+    obj.attr(*name) = CJavascriptObject::Wrap(value);  
   }
 
   return value;
