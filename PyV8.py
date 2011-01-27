@@ -82,6 +82,7 @@ class JSUnlocker(_PyV8.JSUnlocker):
 
 class JSClass(object):
     __properties__ = {}
+    __watchpoints__ = {}
 
     def __getattr__(self, name):
         if name == 'constructor':
@@ -140,6 +141,14 @@ class JSClass(object):
     def __lookupSetter__(self, name):
         "Return the function bound as a setter to the specified property."
         return self.__properties__.get(name, (None, None))[1]
+
+    def watch(self, prop, handler):
+        "Watches for a property to be assigned a value and runs a function when that occurs."
+        self.__watchpoints__[prop] = handler
+
+    def unwatch(self, prop):
+        "Removes a watchpoint set with the watch method."
+        del self.__watchpoints__[prop]
 
 class JSClassConstructor(JSClass):
     def __init__(self, cls):
@@ -1241,41 +1250,26 @@ class TestWrapper(unittest.TestCase):
             #ctxt.eval("__defineGetter__('name', function() { return 'fixed'; });")
             #self.assertEquals('fixed', ctxt.eval("name"))
 
-    def _testGetterAndSetter(self):
+    def testGetterAndSetter(self):
         class Global(JSClass):
            def __init__(self, testval):
                self.testval = testval
 
-        contextA = None
-        contextB = None
-
-        with JSContext(Global("Test Value A")) as ctx:
-           contextA = ctx
-           self.assertEquals("Test Value A", ctx.locals.testval)
-           ctx.eval("""
+        with JSContext(Global("Test Value A")) as ctxt:
+           self.assertEquals("Test Value A", ctxt.locals.testval)
+           ctxt.eval("""
                this.__defineGetter__("test", function() {
-                   return "Test A";
+                   return this.testval;
+               });
+               this.__defineSetter__("test", function(val) {
+                   this.testval = val;
                });
            """)
-           self.assertEquals("Test A",  ctx.locals.test)
+           self.assertEquals("Test Value A",  ctxt.locals.test)
 
-           with JSContext(Global("Test Value B")) as ctx:
-               contextB = ctx
-               self.assertEquals("Test Value B", ctx.locals.testval)
-               ctx.eval("""
-                   this.__defineGetter__("test", function() {
-                       return "Test B";
-                   });
-               """)
-               self.assertEquals("Test B",  ctx.locals.test)
+           ctxt.eval("test = 'Test Value B';")
 
-        with contextA:
-           self.assertEquals("Test Value A", contextA.locals.testval)
-           self.assertEquals("Test A", contextA.locals.test)
-
-        with contextB:
-           self.assertEquals("Test Value B", contextB.locals.testval)
-           self.assertEquals("Test B", contextB.locals.test)
+           self.assertEquals("Test Value B",  ctxt.locals.test)
 
     def testDestructor(self):
         import gc
@@ -1356,6 +1350,42 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(10, ctxt.eval("obj.y"))
             self.assertEquals(10, ctxt.eval("obj.p"))
             self.assertEquals(10, ctxt.locals.d['y'])
+
+    def testWatch(self):
+        class Obj(JSClass):
+            def __init__(self):
+                self.p = 1
+                
+        class Global(JSClass):
+            def __init__(self):
+                self.o = Obj()
+
+        with JSContext(Global()) as ctxt:
+            ctxt.eval("""
+            o.watch("p", function (id, oldval, newval) {
+                return oldval + newval;
+            });
+            """)
+
+            self.assertEquals(1, ctxt.eval("o.p"))
+
+            ctxt.eval("o.p = 2;")
+
+            self.assertEquals(3, ctxt.eval("o.p"))
+
+            ctxt.eval("delete o.p;")
+
+            self.assertEquals(None, ctxt.eval("o.p"))
+
+            ctxt.eval("o.p = 2;")
+
+            self.assertEquals(2, ctxt.eval("o.p"))
+
+            ctxt.eval("o.unwatch('p');")
+
+            ctxt.eval("o.p = 1;")
+
+            self.assertEquals(1, ctxt.eval("o.p"))
 
 class TestMultithread(unittest.TestCase):
     def testLocker(self):

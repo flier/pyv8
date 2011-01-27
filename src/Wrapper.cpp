@@ -259,12 +259,26 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
   v8::String::AsciiValue name(prop);
+  py::object newval = CJavascriptObject::Wrap(value);
 
   bool found = ::PyObject_HasAttrString(obj.ptr(), *name);
 
+  if (::PyObject_HasAttrString(obj.ptr(), "__watchpoints__"))
+  {
+    py::dict watchpoints(obj.attr("__watchpoints__"));
+    py::str propname(*name, name.length());
+
+    if (watchpoints.has_key(propname))
+    {
+      py::object watchhandler = watchpoints.get(propname);      
+
+      newval = watchhandler(propname, found ? obj.attr(propname) : py::object(), newval);
+    }
+  }
+
   if (!found && ::PyMapping_Check(obj.ptr()))
   {
-    ::PyMapping_SetItemString(obj.ptr(), *name, CJavascriptObject::Wrap(value).ptr());
+    ::PyMapping_SetItemString(obj.ptr(), *name, newval.ptr());    
   }
   else 
   {
@@ -280,13 +294,13 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
         if (setter.ptr() == Py_None)
           throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
 
-        setter(CJavascriptObject::Wrap(value));    
+        setter(newval);    
 
         return value;
       }
     }
   #endif
-    obj.attr(*name) = CJavascriptObject::Wrap(value);  
+    obj.attr(*name) = newval;  
   }
 
   return value;
