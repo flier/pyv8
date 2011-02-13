@@ -1387,6 +1387,20 @@ class TestWrapper(unittest.TestCase):
 
             self.assertEquals(1, ctxt.eval("o.p"))
 
+    def testReferenceError(self):
+        class Global(JSClass):
+            def __init__(self):
+                self.s = self
+
+        with JSContext(Global()) as ctxt:
+            self.assertRaises(ReferenceError, ctxt.eval, 'x')
+
+            self.assert_(ctxt.eval("typeof(x) === 'undefined'"))
+
+            self.assert_(ctxt.eval("typeof(String) === 'function'"))
+
+            self.assert_(ctxt.eval("typeof(s.String) === 'undefined'"))
+            
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)

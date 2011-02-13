@@ -200,7 +200,6 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 {
   TRY_HANDLE_EXCEPTION()
   
-  v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
@@ -220,13 +219,10 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
     {      
       py::object result(py::handle<>(::PyMapping_GetItemString(obj.ptr(), *name)));
 
-      return handle_scope.Close(Wrap(result));
+      return Wrap(result);
     }
 
-    if (::PyObject_HasAttrString(obj.ptr(), "__is_global_object__"))
-      return v8::ThrowException(v8::Exception::ReferenceError(prop));
-
-    return v8::Undefined();
+    return v8::Handle<v8::Value>();
   }
 
   py::object attr = py::object(py::handle<>(value));
@@ -243,7 +239,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   }
 #endif
 
-  return handle_scope.Close(Wrap(attr));
+  return Wrap(attr);
 
   END_HANDLE_EXCEPTION(v8::Undefined())
 }
