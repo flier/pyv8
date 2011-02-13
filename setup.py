@@ -180,12 +180,18 @@ else:
 
 class build(_build):
     def checkout_v8(self):
+        update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
+
         try:
             from pysvn import Client, Revision, opt_revision_kind
 
             svnClient = Client()
+            rev = Revision(opt_revision_kind.number, V8_SVN_REVISION) if V8_SVN_REVISION else Revision(opt_revision_kind.head)
 
-            r = svnClient.checkout(V8_SVN_URL, V8_HOME, revision=Revision(opt_revision_kind.number, V8_SVN_REVISION))
+            if update_code:
+                r = svnClient.update(V8_HOME, revision=rev)
+            else:
+                r = svnClient.checkout(V8_SVN_URL, V8_HOME, revision=rev)
 
             if r: return
 
@@ -196,14 +202,12 @@ class build(_build):
 
             print "INFO: we will try to use the system 'svn' command to checkout/update V8 code"
 
-        if not os.path.isdir(V8_HOME):
+        if update_code:
+            args = ["svn", "up", V8_HOME]
+        else:
             os.makedirs(V8_HOME)
 
-            cmd = "co"
-        else:
-            cmd = "up"
-
-        args = ["svn", cmd, V8_SVN_URL, V8_HOME]
+            args = ["svn", "co", V8_SVN_URL, V8_HOME]
 
         if V8_SVN_REVISION:
             args += ['-r', str(V8_SVN_REVISION)]
