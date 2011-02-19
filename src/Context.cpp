@@ -28,6 +28,11 @@ void CContext::Expose(void)
                                        py::arg("line") = -1,
                                        py::arg("col") = -1,
                                        py::arg("precompiled") = py::object()))
+    .def("eval", &CContext::EvaluateW, (py::arg("source"), 
+                                        py::arg("name") = std::wstring(),
+                                        py::arg("line") = -1,
+                                        py::arg("col") = -1,
+                                        py::arg("precompiled") = py::object()))
 
     .def("enter", &CContext::Enter, "Enter this context. "
          "After entering a context, all code compiled and "
@@ -155,6 +160,18 @@ py::object CContext::Evaluate(const std::string& src,
   CEngine engine;
 
   CScriptPtr script = engine.Compile(src, name, line, col, precompiled);
+
+  return script->Run(); 
+}
+
+py::object CContext::EvaluateW(const std::wstring& src, 
+                               const std::wstring name,
+                               int line, int col,
+                               py::object precompiled) 
+{ 
+  CEngine engine;
+
+  CScriptPtr script = engine.CompileW(src, name, line, col, precompiled);
 
   return script->Run(); 
 }

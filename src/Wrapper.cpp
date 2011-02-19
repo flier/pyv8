@@ -7,14 +7,10 @@
 #include <boost/python/raw_function.hpp>
 
 #include <descrobject.h>
-
-#ifdef _WIN32
-#  define _USE_32BIT_TIME_T
-#endif
-
 #include <datetime.h>
 
 #include "Context.h"
+#include "Utils.h"
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 { 
@@ -177,11 +173,11 @@ void CPythonObject::ThrowIf(void)
     // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
 
   #ifdef SUPPORT_TRACE_LIFECYCLE
-    error->ToObject()->SetHiddenValue(v8::String::New("exc_type"), v8::External::New(ObjectTracer::Trace(error, new py::object(type)).Object()));
-    error->ToObject()->SetHiddenValue(v8::String::New("exc_value"), v8::External::New(ObjectTracer::Trace(error, new py::object(value)).Object()));
+    error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_type"), v8::External::New(ObjectTracer::Trace(error, new py::object(type)).Object()));
+    error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_value"), v8::External::New(ObjectTracer::Trace(error, new py::object(value)).Object()));
   #else
-    error->ToObject()->SetHiddenValue(v8::String::New("exc_type"), v8::External::New(new py::object(type)));
-    error->ToObject()->SetHiddenValue(v8::String::New("exc_value"), v8::External::New(new py::object(value)));
+    error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_type"), v8::External::New(new py::object(type)));
+    error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_value"), v8::External::New(new py::object(value)));
   #endif
   }
 
@@ -192,7 +188,7 @@ void CPythonObject::ThrowIf(void)
 #define END_HANDLE_EXCEPTION(result) } \
   catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } \
   catch (const py::error_already_set&) { ThrowIf(); } \
-  catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::New("unknown exception"))); } \
+  catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); } \
   return result;
 
 v8::Handle<v8::Value> CPythonObject::NamedGetter(
@@ -204,7 +200,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  v8::String::AsciiValue name(prop);
+  v8::String::Utf8Value name(prop);
 
   if (PyGen_Check(obj.ptr())) return v8::Undefined();
 
@@ -254,10 +250,10 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
-  v8::String::AsciiValue name(prop);
+  v8::String::Utf8Value name(prop);
   py::object newval = CJavascriptObject::Wrap(value);
 
-  bool found = ::PyObject_HasAttrString(obj.ptr(), *name);
+  bool found = 1 == ::PyObject_HasAttrString(obj.ptr(), *name);
 
   if (::PyObject_HasAttrString(obj.ptr(), "__watchpoints__"))
   {
@@ -314,7 +310,7 @@ v8::Handle<v8::Integer> CPythonObject::NamedQuery(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  v8::String::AsciiValue name(prop);
+  v8::String::Utf8Value name(prop);
 
   bool exists = PyGen_Check(obj.ptr()) || ::PyObject_HasAttrString(obj.ptr(), *name) || 
                 (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
@@ -334,7 +330,7 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
-  v8::String::AsciiValue name(prop);
+  v8::String::Utf8Value name(prop);
  
   if (!::PyObject_HasAttrString(obj.ptr(), *name) &&
       ::PyMapping_Check(obj.ptr()) && 
@@ -491,7 +487,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   if (::PySequence_Check(obj.ptr()))
   {
     if (::PySequence_SetItem(obj.ptr(), index, CJavascriptObject::Wrap(value).ptr()) < 0)
-      v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set indexed value")));
+      v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("fail to set indexed value")));
   }
   else if (::PyMapping_Check(obj.ptr()))
   { 
@@ -500,7 +496,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
     snprintf(buf, sizeof(buf), "%d", index);
 
     if (::PyMapping_SetItemString(obj.ptr(), buf, CJavascriptObject::Wrap(value).ptr()) < 0)
-      v8::ThrowException(v8::Exception::Error(v8::String::New("fail to set named value")));
+      v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("fail to set named value")));
   }
 
   return value;
@@ -636,7 +632,7 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
                         CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                         CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
   default:
-    return v8::ThrowException(v8::Exception::Error(v8::String::New("too many arguments")));
+    return v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
   }
 
   return handle_scope.Close(Wrap(result));
@@ -758,25 +754,10 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   {
     result = v8::Boolean::New(py::extract<bool>(obj));
   }
-  else if (PyString_CheckExact(obj.ptr()))
+  else if (PyString_CheckExact(obj.ptr()) || 
+           PyUnicode_CheckExact(obj.ptr()))
   {
-    result = v8::String::New(PyString_AS_STRING(obj.ptr()), PyString_GET_SIZE(obj.ptr()));
-  }
-  else if (PyUnicode_CheckExact(obj.ptr()))
-  {
-  #ifndef Py_UNICODE_WIDE
-    result = v8::String::New(reinterpret_cast<const uint16_t *>(PyUnicode_AS_UNICODE(obj.ptr())));
-
-  #else
-    Py_ssize_t len = PyUnicode_GET_SIZE(obj.ptr());
-    const uint32_t *p = reinterpret_cast<const uint32_t *>(PyUnicode_AS_UNICODE(obj.ptr()));
-    uint16_t *m = PyMem_NEW(uint16_t, len);
-
-    for(Py_ssize_t i=0; i<len; i++) m[i] = (uint16_t)(p[i]);
-    result = v8::String::New(m, len);
-
-    PyMem_FREE(m);
-  #endif
+    result = ToString(obj);
   }
   else if (PyFloat_CheckExact(obj.ptr()))
   {   
@@ -858,8 +839,8 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
   {
     std::ostringstream msg;
       
-    msg << "'" << *v8::String::AsciiValue(m_obj->ObjectProtoToString()) 
-        << "' object has no attribute '" << *v8::String::AsciiValue(name) << "'";
+    msg << "'" << *v8::String::Utf8Value(m_obj->ObjectProtoToString()) 
+        << "' object has no attribute '" << *v8::String::Utf8Value(name) << "'";
 
     throw CJavascriptException(msg.str(), ::PyExc_AttributeError);
   }
@@ -1133,7 +1114,7 @@ py::object CJavascriptArray::GetItem(size_t idx)
   {
     std::ostringstream msg;
 
-    msg << "'" << *v8::String::AsciiValue(m_obj->ObjectProtoToString()) 
+    msg << "'" << *v8::String::Utf8Value(m_obj->ObjectProtoToString()) 
         << "' index out of range";
 
     throw CJavascriptException(msg.str(), ::PyExc_IndexError);
@@ -1262,7 +1243,7 @@ const std::string CJavascriptFunction::GetName(void) const
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
 
-  v8::String::AsciiValue name(v8::Handle<v8::String>::Cast(func->GetName()));
+  v8::String::Utf8Value name(v8::Handle<v8::String>::Cast(func->GetName()));
 
   return std::string(*name, name.length());
 }

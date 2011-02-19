@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Utils.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Wrapper.cpp"
 				>
 			</File>
@@ -264,6 +268,10 @@
 			</File>
 			<File
 				RelativePath=".\PrettyPrinter.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Utils.h"
 				>
 			</File>
 			<File

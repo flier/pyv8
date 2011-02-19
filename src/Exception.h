@@ -3,47 +3,11 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/shared_ptr.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-#include <v8.h>
-
-#ifdef _WIN32
-
-# pragma warning( push )
-# pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
-# pragma warning( disable : 4127 ) // conditional expression is constant
-# pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
-# pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
-
-#else
-
-#include <cmath>
-using std::isnan;
-
-#endif
-
-#include <boost/shared_ptr.hpp>
-
-#include <boost/python.hpp>
-namespace py = boost::python;
-
-#ifdef _WIN32
-# pragma comment( lib, "v8.lib" )
-# pragma comment( lib, "v8_base.lib" )
-# pragma comment( lib, "v8_snapshot.lib" )
-
-# pragma warning( pop )
-#endif 
-
 #include "Config.h"
-
-struct CPythonGIL
-{
-  PyGILState_STATE m_state;
-
-  CPythonGIL();
-  ~CPythonGIL();
-};
+#include "Utils.h"
 
 class CJavascriptException;
 

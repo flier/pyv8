@@ -1183,8 +1183,8 @@ class TestWrapper(unittest.TestCase):
 
     def testUnicode(self):
         with JSContext() as ctxt:
-            self.assertEquals(u"人", unicode(ctxt.eval("\"人\""), "utf-8"))
-            self.assertEquals(u"é", unicode(ctxt.eval("\"é\""), "utf-8"))
+            self.assertEquals(u"人", unicode(ctxt.eval(u"\"人\""), "utf-8"))
+            self.assertEquals(u"é", unicode(ctxt.eval(u"\"é\""), "utf-8"))
 
             func = ctxt.eval("(function (msg) { return msg.length; })")
 
@@ -1573,6 +1573,35 @@ class TestEngine(unittest.TestCase):
 
                 self.assertEquals("1+2", s.source)
                 self.assertEquals(3, int(s.run()))
+
+    def testUnicodeSource(self):
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                src = u"""
+                var 变量 = '测试';
+
+                function 函数() { return 变量.length; }
+
+                函数();
+                """
+
+                data = engine.precompile(src)
+
+                self.assert_(data)
+                self.assertEquals(48, len(data))
+
+                s = engine.compile(src, precompiled=data)
+
+                self.assert_(isinstance(s, _PyV8.JSScript))
+
+                self.assertEquals(src.encode('utf-8'), s.source)
+                self.assertEquals(2, int(s.run()))
+
+                f = getattr(ctxt.locals, u'函数'.encode('utf-8'))
+
+                self.assert_(isinstance(s, _PyV8.JSFunction))
+
+                self.assertEquals(u'函数'.encode('utf-8'), f.name)
 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""

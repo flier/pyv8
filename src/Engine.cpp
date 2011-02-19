@@ -1,13 +1,5 @@
 #include "Engine.h"
 
-#ifndef WIN32
-
-#ifndef isfinite
-  #define isfinite(val) (val <= std::numeric_limits<double>::max())
-#endif
-
-#endif
-
 #if defined(SUPPORT_EXTENSION) || defined(SUPPORT_PROFILER)
 
   #undef COMPILER
@@ -101,11 +93,18 @@ void CEngine::Expose(void)
     .staticmethod("lowMemory")
 
     .def("precompile", &CEngine::PreCompile, (py::arg("source")))
+    .def("precompile", &CEngine::PreCompileW, (py::arg("source")))
+
     .def("compile", &CEngine::Compile, (py::arg("source"), 
                                         py::arg("name") = std::string(),
                                         py::arg("line") = -1,
                                         py::arg("col") = -1,
                                         py::arg("precompiled") = py::object()))    
+    .def("compile", &CEngine::CompileW, (py::arg("source"), 
+                                         py::arg("name") = std::wstring(),
+                                         py::arg("line") = -1,
+                                         py::arg("col") = -1,
+                                         py::arg("precompiled") = py::object()))    
     ;
 
   py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
@@ -288,9 +287,9 @@ void CEngine::ReportFatalError(const char* location, const char* message)
 
 void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data)
 {
-  v8::String::AsciiValue filename(message->GetScriptResourceName());
+  v8::String::Utf8Value filename(message->GetScriptResourceName());
   int lineno = message->GetLineNumber();
-  v8::String::AsciiValue sourceline(message->GetSourceLine());
+  v8::String::Utf8Value sourceline(message->GetSourceLine());
 
   std::ostringstream oss;
 
@@ -299,7 +298,7 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
   throw CJavascriptException(oss.str());
 }
 
-py::object CEngine::PreCompile(const std::string& src)
+py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
 {
   v8::TryCatch try_catch;
 
@@ -307,7 +306,7 @@ py::object CEngine::PreCompile(const std::string& src)
 
   Py_BEGIN_ALLOW_THREADS
 
-  precompiled.reset(v8::ScriptData::PreCompile(src.c_str(), src.size()));
+  precompiled.reset(v8::ScriptData::PreCompile(src));
 
   Py_END_ALLOW_THREADS 
 
@@ -330,10 +329,10 @@ py::object CEngine::PreCompile(const std::string& src)
   return obj;
 }
 
-boost::shared_ptr<CScript> CEngine::Compile(const std::string& src, 
-                                            const std::string name,
-                                            int line, int col,
-                                            py::object precompiled)
+boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src, 
+                                                    v8::Handle<v8::Value> name,
+                                                    int line, int col,
+                                                    py::object precompiled)
 {
   if (!v8::Context::InContext())
   {
@@ -344,8 +343,7 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
   v8::TryCatch try_catch;
 
-  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(v8::String::New(src.c_str()));
-  v8::Handle<v8::Value> script_name = name.empty() ? v8::Undefined() : v8::String::New(name.c_str());
+  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(src);  
 
   v8::Handle<v8::Script> script;
   std::auto_ptr<v8::ScriptData> script_data;
@@ -365,15 +363,15 @@ boost::shared_ptr<CScript> CEngine::Compile(const std::string& src,
 
   if (line >= 0 && col >= 0)
   {
-    v8::ScriptOrigin script_origin(script_name, v8::Integer::New(line), v8::Integer::New(col));
+    v8::ScriptOrigin script_origin(name, v8::Integer::New(line), v8::Integer::New(col));
 
-    script = v8::Script::Compile(script_source, &script_origin, script_data.release());
+    script = v8::Script::Compile(script_source, &script_origin, script_data.get());
   }
   else
   {
-    v8::ScriptOrigin script_origin(script_name);
+    v8::ScriptOrigin script_origin(name);
 
-    script = v8::Script::Compile(script_source, &script_origin, script_data.release());
+    script = v8::Script::Compile(script_source, &script_origin, script_data.get());
   }
 
   Py_END_ALLOW_THREADS 
@@ -489,7 +487,7 @@ class CPythonExtension : public v8::Extension
                           CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                           CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
     default:
-      return v8::ThrowException(v8::Exception::Error(v8::String::New("too many arguments")));
+      return v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
     }
 
     return handle_scope.Close(CPythonObject::Wrap(result));
@@ -527,7 +525,7 @@ public:
     }
     catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } 
     catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } 
-    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::New("unknown exception"))); } 
+    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); } 
     
     v8::Handle<v8::External> func_data = v8::External::New(new py::object(func));
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(CallStub, func_data);

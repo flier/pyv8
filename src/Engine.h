@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Context.h"
+#include "Utils.h"
 
 class CScript;
 
@@ -15,6 +16,8 @@ typedef boost::shared_ptr<CScript> CScriptPtr;
 class CEngine
 {  
 protected:
+  py::object InternalPreCompile(v8::Handle<v8::String> src);
+  CScriptPtr InternalCompile(v8::Handle<v8::String> src, v8::Handle<v8::Value> name, int line, int col, py::object precompiled);
 
 #ifdef SUPPORT_SERIALIZE
 
@@ -28,12 +31,33 @@ protected:
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);    
 public:
-  py::object PreCompile(const std::string& src);
+  py::object PreCompile(const std::string& src) 
+  { 
+    v8::HandleScope scope;
+
+    return InternalPreCompile(ToString(src)); 
+  }
+  py::object PreCompileW(const std::wstring& src) 
+  { 
+    v8::HandleScope scope;
+
+    return InternalPreCompile(ToString(src)); 
+  }
 
   CScriptPtr Compile(const std::string& src, const std::string name = std::string(),
-                     int line = -1, int col = -1, py::object precompiled = py::object());
+                     int line = -1, int col = -1, py::object precompiled = py::object())
+  {
+    v8::HandleScope scope;
 
-  CJavascriptObjectPtr Execute(const std::string& src);
+    return InternalCompile(ToString(src), name.empty() ? v8::Undefined() : ToString(name), line, col, precompiled);
+  }
+  CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(),
+                      int line = -1, int col = -1, py::object precompiled = py::object())
+  {
+    v8::HandleScope scope;
+
+    return InternalCompile(ToString(src), name.empty() ? v8::Undefined() : ToString(name), line, col, precompiled);
+  }
 
   void RaiseError(v8::TryCatch& try_catch);
 public:  

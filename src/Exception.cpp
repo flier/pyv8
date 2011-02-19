@@ -2,43 +2,6 @@
 
 #include <sstream>
 
-#undef COMPILER
-
-#ifndef WIN32
-
-#ifndef isfinite
-  #define isfinite(val) (val <= std::numeric_limits<double>::max())
-#endif
-
-#include <strings.h>
-#define strnicmp strncasecmp
- 
-#define _countof(array) (sizeof(array)/sizeof(array[0]))
-
-#endif
-
-#include "src/v8.h"
-
-#include "src/bootstrapper.h"
-#include "src/natives.h"
-
-#include "Locker.h"
-
-CPythonGIL::CPythonGIL() 
-{
-  while (CLocker::IsPreemption() && _PyThreadState_Current && ::PyGILState_GetThisThreadState() != ::_PyThreadState_Current)
-  {
-    v8::internal::Thread::YieldCPU();
-  }
-
-  m_state = ::PyGILState_Ensure();
-}
-
-CPythonGIL::~CPythonGIL()
-{
-  ::PyGILState_Release(m_state);
-}  
-
 std::ostream& operator<<(std::ostream& os, const CJavascriptException& ex)
 {
   os << "JSError: " << ex.what();
@@ -151,11 +114,11 @@ void CJavascriptStackTrace::Dump(std::ostream& os) const
 
   std::ostringstream oss;
 
-  for (size_t i=0; i<m_st->GetFrameCount(); i++)
+  for (int i=0; i<m_st->GetFrameCount(); i++)
   {
     v8::Handle<v8::StackFrame> frame = m_st->GetFrame(i);
 
-    v8::String::AsciiValue funcName(frame->GetFunctionName()), scriptName(frame->GetScriptName());
+    v8::String::Utf8Value funcName(frame->GetFunctionName()), scriptName(frame->GetScriptName());
 
     os << "\tat ";
     
@@ -183,7 +146,7 @@ const std::string CJavascriptStackFrame::GetScriptName() const
 { 
   v8::HandleScope handle_scope;
 
-  v8::String::AsciiValue name(m_frame->GetScriptName());
+  v8::String::Utf8Value name(m_frame->GetScriptName());
 
   return std::string(*name, name.length());
 }
@@ -191,7 +154,7 @@ const std::string CJavascriptStackFrame::GetFunctionName() const
 {
   v8::HandleScope handle_scope;
 
-  v8::String::AsciiValue name(m_frame->GetFunctionName());
+  v8::String::Utf8Value name(m_frame->GetFunctionName());
 
   return std::string(*name, name.length());
 }
@@ -203,7 +166,7 @@ const std::string CJavascriptException::GetName(void)
 
   v8::HandleScope handle_scope;
 
-  v8::String::AsciiValue msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("name"))));
+  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("name"))));
 
   return std::string(*msg, msg.length());
 }
@@ -215,7 +178,7 @@ const std::string CJavascriptException::GetMessage(void)
 
   v8::HandleScope handle_scope;
 
-  v8::String::AsciiValue msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("message"))));
+  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(m_exc->ToObject()->Get(v8::String::New("message"))));
 
   return std::string(*msg, msg.length());
 }
@@ -228,7 +191,7 @@ const std::string CJavascriptException::GetScriptName(void)
   if (!m_msg.IsEmpty() && !m_msg->GetScriptResourceName().IsEmpty() &&
       !m_msg->GetScriptResourceName()->IsUndefined())
   {
-    v8::String::AsciiValue name(m_msg->GetScriptResourceName());
+    v8::String::Utf8Value name(m_msg->GetScriptResourceName());
 
     return std::string(*name, name.length());
   }
@@ -276,7 +239,7 @@ const std::string CJavascriptException::GetSourceLine(void)
   if (!m_msg.IsEmpty() && !m_msg->GetSourceLine().IsEmpty() &&
       !m_msg->GetSourceLine()->IsUndefined())
   {
-    v8::String::AsciiValue line(m_msg->GetSourceLine());
+    v8::String::Utf8Value line(m_msg->GetSourceLine());
 
     return std::string(*line, line.length());
   }
@@ -291,7 +254,7 @@ const std::string CJavascriptException::GetStackTrace(void)
 
   if (!m_stack.IsEmpty())
   {
-    v8::String::AsciiValue stack(v8::Handle<v8::String>::Cast(m_stack));
+    v8::String::Utf8Value stack(v8::Handle<v8::String>::Cast(m_stack));
 
     return std::string(*stack, stack.length());
   }
@@ -306,7 +269,7 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 
   std::ostringstream oss;
 
-  v8::String::AsciiValue msg(try_catch.Exception());
+  v8::String::Utf8Value msg(try_catch.Exception());
 
   if (*msg)
     oss << std::string(*msg, msg.length());
@@ -320,7 +283,7 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
     if (!message->GetScriptResourceName().IsEmpty() &&
         !message->GetScriptResourceName()->IsUndefined())
     {
-      v8::String::AsciiValue name(message->GetScriptResourceName());
+      v8::String::Utf8Value name(message->GetScriptResourceName());
 
       oss << std::string(*name, name.length());
     }
@@ -330,7 +293,7 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
     if (!message->GetSourceLine().IsEmpty() &&
         !message->GetSourceLine()->IsUndefined())
     {
-      v8::String::AsciiValue line(message->GetSourceLine());
+      v8::String::Utf8Value line(message->GetSourceLine());
 
       oss << " -> " << std::string(*line, line.length());
     }
@@ -365,7 +328,7 @@ void CJavascriptException::ThrowIf(v8::TryCatch& try_catch)
 
       if (exc->Has(name))
       {
-        v8::String::AsciiValue s(v8::Handle<v8::String>::Cast(exc->Get(name)));
+        v8::String::Utf8Value s(v8::Handle<v8::String>::Cast(exc->Get(name)));
 
         for (int i=0; i<_countof(SupportErrors); i++)
         {

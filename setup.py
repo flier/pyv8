@@ -53,7 +53,7 @@ else:
 
     print "Found Google v8 base on V8_HOME <%s>, update it to %s at <%s>" % (V8_HOME, svn_name, V8_SVN_URL)
 
-source_files = ["Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
+source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
                 "Debug.cpp", "Locker.cpp", "AST.cpp", "PrettyPrinter.cpp", "PyV8.cpp"]
 
 macros = [
