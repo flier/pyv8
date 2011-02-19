@@ -1575,11 +1575,20 @@ class TestEngine(unittest.TestCase):
                 self.assertEquals(3, int(s.run()))
 
     def testUnicodeSource(self):
-        with JSContext() as ctxt:
+        class Global(JSClass):
+            var = u'测试'
+
+            def __getattr__(self, name):
+                if (name.decode('utf-8')) == u'变量':
+                    return self.var
+
+                return JSClass.__getattr__(self, name)
+
+        g = Global()
+
+        with JSContext(g) as ctxt:
             with JSEngine() as engine:
                 src = u"""
-                var 变量 = '测试';
-
                 function 函数() { return 变量.length; }
 
                 函数();
@@ -1588,7 +1597,7 @@ class TestEngine(unittest.TestCase):
                 data = engine.precompile(src)
 
                 self.assert_(data)
-                self.assertEquals(48, len(data))
+                self.assertEquals(44, len(data))
 
                 s = engine.compile(src, precompiled=data)
 
@@ -1605,9 +1614,9 @@ class TestEngine(unittest.TestCase):
 
                 self.assertEquals(u'函数'.encode('utf-8'), f.name)
 
-                setattr(ctxt.locals, u'变量'.encode('utf-8'), u'长字符串')
+                setattr(ctxt.locals, u'变量'.encode('utf-8'), u'测试长字符串')
 
-                self.assertEquals(4, f())
+                self.assertEquals(6, f())
 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""
