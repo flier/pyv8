@@ -24,13 +24,13 @@
 
 #else
 
+#include <cmath>
+using std::isnan;
+
 #ifndef isfinite
 # include <limits>
 # define isfinite(val) (val <= std::numeric_limits<double>::max())
 #endif
-
-#include <cmath>
-using std::isnan;
 
 #include <strings.h>
 #define strnicmp strncasecmp

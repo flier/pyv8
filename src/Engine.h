@@ -49,14 +49,14 @@ public:
   {
     v8::HandleScope scope;
 
-    return InternalCompile(ToString(src), name.empty() ? v8::Undefined() : ToString(name), line, col, precompiled);
+    return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
   }
   CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(),
                       int line = -1, int col = -1, py::object precompiled = py::object())
   {
     v8::HandleScope scope;
 
-    return InternalCompile(ToString(src), name.empty() ? v8::Undefined() : ToString(name), line, col, precompiled);
+    return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
   }
 
   void RaiseError(v8::TryCatch& try_catch);
