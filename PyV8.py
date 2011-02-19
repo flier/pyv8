@@ -1595,13 +1595,19 @@ class TestEngine(unittest.TestCase):
                 self.assert_(isinstance(s, _PyV8.JSScript))
 
                 self.assertEquals(src.encode('utf-8'), s.source)
-                self.assertEquals(2, int(s.run()))
+                self.assertEquals(2, s.run())
+
+                self.assert_(hasattr(ctxt.locals, u'函数'.encode('utf-8')))
 
                 f = getattr(ctxt.locals, u'函数'.encode('utf-8'))
 
-                self.assert_(isinstance(s, _PyV8.JSFunction))
+                self.assert_(isinstance(f, _PyV8.JSFunction))
 
                 self.assertEquals(u'函数'.encode('utf-8'), f.name)
+
+                setattr(ctxt.locals, u'变量'.encode('utf-8'), u'长字符串')
+
+                self.assertEquals(4, f())
 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""

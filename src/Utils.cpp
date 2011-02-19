@@ -1,6 +1,9 @@
 #include "Utils.h"
 
 #include <vector>
+#include <iterator>
+
+#include "utf8.h"
 
 #undef COMPILER
 
@@ -69,6 +72,24 @@ v8::Handle<v8::String> ToString(py::object str)
   }
   
   return ToString(py::object(py::handle<>(::PyObject_Str(str.ptr()))));
+}
+
+v8::Handle<v8::String> DecodeUtf8(const std::string& str)
+{
+  v8::HandleScope scope;
+
+  std::vector<uint16_t> data;
+
+  try
+  {
+    utf8::utf8to16(str.begin(), str.end(), std::back_inserter(data));
+
+    return scope.Close(v8::String::New(&data[0], data.size()));
+  }
+  catch (const std::exception&)
+  {
+  	return scope.Close(v8::String::New(str.c_str(), str.size()));
+  }
 }
 
 CPythonGIL::CPythonGIL() 

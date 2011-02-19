@@ -297,6 +297,30 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="UTF8"
+			>
+			<File
+				RelativePath=".\utf8.h"
+				>
+			</File>
+			<Filter
+				Name="utf8"
+				>
+				<File
+					RelativePath=".\utf8\checked.h"
+					>
+				</File>
+				<File
+					RelativePath=".\utf8\core.h"
+					>
+				</File>
+				<File
+					RelativePath=".\utf8\unchecked.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

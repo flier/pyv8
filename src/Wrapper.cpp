@@ -852,7 +852,7 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+  v8::Handle<v8::String> attr_name = DecodeUtf8(name);
 
   CheckAttr(attr_name);
 
@@ -870,7 +870,7 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+  v8::Handle<v8::String> attr_name = DecodeUtf8(name);
   v8::Handle<v8::Value> attr_obj = CPythonObject::Wrap(value);
 
   if (m_obj->Has(attr_name))
@@ -887,11 +887,9 @@ void CJavascriptObject::DelAttr(const std::string& name)
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::String> attr_name = v8::String::New(name.c_str());
+  v8::Handle<v8::String> attr_name = DecodeUtf8(name);
 
   CheckAttr(attr_name);
-
-  v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
 
   if (!m_obj->Delete(attr_name)) 
     CJavascriptException::ThrowIf(try_catch);
@@ -930,7 +928,7 @@ bool CJavascriptObject::Contains(const std::string& name)
 
   v8::TryCatch try_catch;
 
-  bool found = m_obj->Has(v8::String::New(name.c_str()));
+  bool found = m_obj->Has(DecodeUtf8(name));
   
   if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
