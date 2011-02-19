@@ -4,6 +4,7 @@
 
 #include <vector>
 
+#include <boost/preprocessor.hpp>
 #include <boost/python/raw_function.hpp>
 
 #include <descrobject.h>
@@ -594,6 +595,30 @@ v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& i
   END_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
 }
 
+#define GEN_ARG(z, n, data) CJavascriptObject::Wrap(args[n])
+#define GEN_ARGS(count) BOOST_PP_ENUM(count, GEN_ARG, NULL)
+
+#define GEN_CASE_PRED(r, state) \
+  BOOST_PP_NOT_EQUAL( \
+    BOOST_PP_TUPLE_ELEM(2, 0, state), \
+    BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
+  ) \
+  /**/
+
+#define GEN_CASE_OP(r, state) \
+  ( \
+    BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)), \
+    BOOST_PP_TUPLE_ELEM(2, 1, state) \
+  ) \
+  /**/
+
+#define GEN_CASE_MACRO(r, state) \
+  case BOOST_PP_TUPLE_ELEM(2, 0, state): { \
+    result = self(GEN_ARGS(BOOST_PP_TUPLE_ELEM(2, 0, state))); \
+    break; \
+  } \
+  /**/
+
 v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 {
   TRY_HANDLE_EXCEPTION()
@@ -618,19 +643,7 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 
   switch (args.Length())
   {
-  case 0: result = self(); break;
-  case 1: result = self(CJavascriptObject::Wrap(args[0])); break;
-  case 2: result = self(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1])); break;
-  case 3: result = self(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
-                        CJavascriptObject::Wrap(args[2])); break;
-  case 4: result = self(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
-                        CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3])); break;
-  case 5: result = self(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
-                        CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
-                        CJavascriptObject::Wrap(args[4])); break;
-  case 6: result = self(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
-                        CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
-                        CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
+    BOOST_PP_FOR((0, 10), GEN_CASE_PRED, GEN_CASE_OP, GEN_CASE_MACRO)
   default:
     return v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
   }
