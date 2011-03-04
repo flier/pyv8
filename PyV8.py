@@ -1883,7 +1883,7 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals(2, len(stmt.statements))
 
-                self.assertEquals(['%InitializeVarGlobal("i");', '%InitializeVarGlobal("j");'], [str(s) for s in stmt.statements])
+                self.assertEquals(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
 
 
         self.assertEquals(1, BlockChecker(self).test("var i, j;"))
@@ -2012,7 +2012,7 @@ class TestAST(unittest.TestCase):
                 self.called += 1
 
                 self.assertEquals("InitializeVarGlobal", expr.name)
-                self.assertEquals(['"s"'], [str(arg) for arg in expr.args])
+                self.assertEquals(['"s"', '0'], [str(arg) for arg in expr.args])
                 self.assertFalse(expr.isJsRuntime)
 
         self.assertEquals(6,  CallStatementChecker(self).test("""
@@ -2079,7 +2079,6 @@ class TestAST(unittest.TestCase):
                 self.assertFalse(litr.propertyName)
                 self.assertFalse(litr.isNull)
                 self.assertFalse(litr.isTrue)
-                self.assertTrue(litr.isFalse)
 
             def onRegExpLiteral(self, litr):
                 self.called += 1
