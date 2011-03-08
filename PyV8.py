@@ -176,6 +176,80 @@ class JSClassPrototype(JSClass):
     def name(self):
         return self.cls.__name__
 
+class JSDebugProtocol(object):
+    """
+    Support the V8 debugger JSON based protocol.
+
+    <http://code.google.com/p/v8/wiki/DebuggerProtocol>
+    """
+    class Packet(object):
+        REQUEST = 'request'
+        RESPONSE = 'response'
+        EVENT = 'event'
+
+        def __init__(self, payload):
+            self.data = json.loads(payload)
+
+        @property
+        def seq(self):
+            return self.data['seq']
+
+        @property
+        def type(self):
+            return self.data['type']
+
+    class Request(Packet):
+        @property
+        def cmd(self):
+            return self.data['command']
+
+        @property
+        def args(self):
+            return self.data['args']
+
+    class Response(Packet):
+        @property
+        def request_seq(self):
+            return self.data['request_seq']
+
+        @property
+        def cmd(self):
+            return self.data['command']
+
+        @property
+        def body(self):
+            return self.data['body']
+
+        @property
+        def running(self):
+            return self.data['running']
+
+        @property
+        def success(self):
+            return self.data['success']
+
+        @property
+        def message(self):
+            return self.data['message']
+
+    class Event(Packet):
+        @property
+        def event(self):
+            return self.data['event']
+
+        @property
+        def body(self):
+            return self.data['body']
+
+    def __init__(self):
+        self.seq = 0
+
+    def nextSeq(self):
+        seq = self.seq
+        self.seq += 1
+
+        return seq
+
 class JSDebug(object):
     class FrameData(object):
         def __init__(self, frame, count, name, value):
@@ -425,13 +499,7 @@ class JSDebug(object):
     onAfterCompile = None
 
     def __init__(self):
-        self.seq = 0
-
-    def nextSeq(self):
-        seq = self.seq
-        self.seq += 1
-
-        return seq
+        JSDebugProtocol.__init__(self)
 
     def isEnabled(self):
         return _PyV8.debug().enabled
