@@ -80,6 +80,15 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
   py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
 }
 
+class DebugClientData : public v8::Debug::ClientData
+{
+  py::object m_data;
+public:
+  DebugClientData(py::object data) : m_data(data) {}
+
+  py::object data(void) const { return m_data; }
+};
+
 void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data)
 {
   if (GetInstance().m_onDebugMessage.ptr() == Py_None) return;
@@ -90,9 +99,16 @@ void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::Clie
 
   v8::String::Utf8Value str(msg);
 
+  py::object data;
+
+  if (client_data)
+  {
+    data = static_cast<DebugClientData *>(client_data)->data();
+  }
+
   CPythonGIL python_gil;
 
-  py::call<void>(GetInstance().m_onDebugMessage.ptr(), py::str(*str, str.length()));
+  py::call<void>(GetInstance().m_onDebugMessage.ptr(), py::str(*str, str.length()), data);
 }
 
 void CDebug::OnDispatchDebugMessages(void)
@@ -104,6 +120,11 @@ void CDebug::OnDispatchDebugMessages(void)
   {
     v8::Debug::ProcessDebugMessages(); 
   }  
+}
+
+void CDebug::DebugBreakForCommand(py::object data)
+{
+  v8::Debug::DebugBreakForCommand(data.ptr() == Py_None ? NULL : new DebugClientData(data)); 
 }
 
 void CDebug::Expose(void)

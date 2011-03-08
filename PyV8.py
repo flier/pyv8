@@ -452,7 +452,7 @@ class JSDebug(object):
 
     enabled = property(isEnabled, setEnabled)
 
-    def onDebugMessage(self, msg):
+    def onDebugMessage(self, msg, data):
         if self.onMessage:
             self.onMessage(json.loads(msg))
 
