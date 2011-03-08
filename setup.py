@@ -19,6 +19,7 @@ V8_HOME = None
 V8_SVN_URL = "http://v8.googlecode.com/svn/trunk/"
 V8_SVN_REVISION = None
 V8_SNAPSHOT_ENABLED = True
+V8_DEBUGGER_SUPPORT = True
 INCLUDE = None
 LIB = None
 DEBUG = False
@@ -274,10 +275,11 @@ class build(_build):
         mode = 'debug' if DEBUG else 'release'
         arch = 'x64' if x64 else 'ia32'
         snapshot = 'on' if V8_SNAPSHOT_ENABLED else 'off'
+        debuggersupport = 'on' if V8_DEBUGGER_SUPPORT else 'off'
 
         print "INFO: building Google v8 with SCons for %s platform" % arch
 
-        proc = subprocess.Popen("scons arch=%s mode=%s snapshot=%s" % (arch, mode, snapshot),
+        proc = subprocess.Popen("scons arch=%s mode=%s snapshot=%s debuggersupport=%s" % (arch, mode, snapshot, debuggersupport),
                                 cwd=V8_HOME, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 
         proc.communicate()
