@@ -250,7 +250,7 @@ class JSDebugProtocol(object):
 
         return seq
 
-class JSDebug(object):
+class JSDebug(JSDebugProtocol):
     class FrameData(object):
         def __init__(self, frame, count, name, value):
             self.frame = frame
@@ -1423,7 +1423,7 @@ class TestWrapper(unittest.TestCase):
         class Obj(JSClass):
             def __init__(self):
                 self.p = 1
-                
+
         class Global(JSClass):
             def __init__(self):
                 self.o = Obj()
@@ -1468,7 +1468,7 @@ class TestWrapper(unittest.TestCase):
             self.assert_(ctxt.eval("typeof(String) === 'function'"))
 
             self.assert_(ctxt.eval("typeof(s.String) === 'undefined'"))
-            
+
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)
