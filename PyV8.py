@@ -249,8 +249,8 @@ class JSDebugProtocol(object):
         self.seq += 1
 
         return seq
-
-class JSDebug(JSDebugProtocol):
+    
+class JSDebugEvent(_PyV8.JSDebugEvent):
     class FrameData(object):
         def __init__(self, frame, count, name, value):
             self.frame = frame
@@ -370,7 +370,7 @@ class JSDebug(JSDebugProtocol):
             return int(self.state.frameCount())
 
         def frame(self, idx = None):
-            return JSDebug.Frame(self.state.frame(idx))
+            return JSDebugEvent.Frame(self.state.frame(idx))
 
         @property
         def selectedFrame(self):
@@ -378,7 +378,7 @@ class JSDebug(JSDebugProtocol):
 
         @property
         def frames(self):
-            return JSDebug.Frames(self)
+            return JSDebugEvent.Frames(self)
 
         def __repr__(self):
             s = StringIO()
@@ -400,7 +400,7 @@ class JSDebug(JSDebugProtocol):
         @property
         def state(self):
             if not self.__state:
-                self.__state = JSDebug.State(self.event.executionState())
+                self.__state = JSDebugEvent.State(self.event.executionState())
 
             return self.__state
 
@@ -466,7 +466,7 @@ class JSDebug(JSDebugProtocol):
         @property
         def script(self):
             if not hasattr(self, "_script"):
-                setattr(self, "_script", JSDebug.Script(self.event.script()))
+                setattr(self, "_script", JSDebugEvent.Script(self.event.script()))
 
             return self._script
 
@@ -477,7 +477,7 @@ class JSDebug(JSDebugProtocol):
         type = _PyV8.JSDebugEvent.BeforeCompile
 
         def __init__(self, event):
-            JSDebug.CompileEvent.__init__(self, event)
+            JSDebugEvent.CompileEvent.__init__(self, event)
 
         def __repr__(self):
             return "before compile script: %s\n%s" % (repr(self.script), repr(self.state))
@@ -486,7 +486,7 @@ class JSDebug(JSDebugProtocol):
         type = _PyV8.JSDebugEvent.AfterCompile
 
         def __init__(self, event):
-            JSDebug.CompileEvent.__init__(self, event)
+            JSDebugEvent.CompileEvent.__init__(self, event)
 
         def __repr__(self):
             return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
@@ -498,8 +498,10 @@ class JSDebug(JSDebugProtocol):
     onBeforeCompile = None
     onAfterCompile = None
 
+class JSDebugger(JSDebugProtocol, JSDebugEvent):
     def __init__(self):
         JSDebugProtocol.__init__(self)
+        JSDebugEvent.__init__(self)
 
     def isEnabled(self):
         return _PyV8.debug().enabled
@@ -525,16 +527,16 @@ class JSDebug(JSDebugProtocol):
             self.onMessage(json.loads(msg))
 
     def onDebugEvent(self, type, evt):
-        if type == _PyV8.JSDebugEvent.Break:
-            if self.onBreak: self.onBreak(JSDebug.BreakEvent(evt))
-        elif type == _PyV8.JSDebugEvent.Exception:
-            if self.onException: self.onException(JSDebug.ExceptionEvent(evt))
-        elif type == _PyV8.JSDebugEvent.NewFunction:
-            if self.onNewFunction: self.onNewFunction(JSDebug.NewFunctionEvent(evt))
-        elif type == _PyV8.JSDebugEvent.BeforeCompile:
-            if self.onBeforeCompile: self.onBeforeCompile(JSDebug.BeforeCompileEvent(evt))
-        elif type == _PyV8.JSDebugEvent.AfterCompile:
-            if self.onAfterCompile: self.onAfterCompile(JSDebug.AfterCompileEvent(evt))
+        if type == JSDebugEvent.Break:
+            if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
+        elif type == JSDebugEvent.Exception:
+            if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
+        elif type == JSDebugEvent.NewFunction:
+            if self.onNewFunction: self.onNewFunction(JSDebugEvent.NewFunctionEvent(evt))
+        elif type == JSDebugEvent.BeforeCompile:
+            if self.onBeforeCompile: self.onBeforeCompile(JSDebugEvent.BeforeCompileEvent(evt))
+        elif type == JSDebugEvent.AfterCompile:
+            if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
 
     def onDispatchDebugMessages(self):
         return True
@@ -576,7 +578,7 @@ class JSDebug(JSDebugProtocol):
         """Perform a minimum step in the current function."""
         return self.debugContinue(action='out', steps=steps)
 
-debugger = JSDebug()
+debugger = JSDebugger()
 
 class JSProfiler(_PyV8.JSProfiler):
     Modules = _PyV8.JSProfilerModules
