@@ -30,7 +30,9 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
         threading.Thread.__init__(self, name='dbg')
 
         self.terminated = False
+        self.exitcode = None
         self.daemon = True
+        self.evalContext = PyV8.JSContext(Shell(self))
 
     def __enter__(self):
         script_filename = os.path.join(os.path.dirname(__file__), 'd8.js')
@@ -65,7 +67,27 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
 
         print detail.text
 
-        # TODO handle the debug command
+        cmd_processor = state.debugCommandProcessor()
+
+        running = False
+
+        while not running:
+            line = raw_input('> ' if running else 'dbg> ').strip()
+
+            if line == '': break
+
+            with self.context as ctxt:
+                request = ctxt.locals.DebugCommandToJSONRequest(line)
+
+            if not request: continue
+
+            response = cmd_processor.processDebugRequest(request)
+            detail = ctxt.locals.DebugMessageDetails(response)
+
+            if detail.text:
+                print detail.text
+
+            running = detail.running
 
     def shell(self):
         while not self.terminated:
@@ -74,14 +96,17 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
             if line == '': continue
 
             try:
-                result = self.eval(line)
+                with self.evalContext as ctxt:
+                    result = ctxt.eval(line)
 
-                if result:
-                    print result
+                    if result:
+                        print result
             except KeyboardInterrupt:
                 break
             except Exception, e:
                 print e
+
+        return self.exitcode
 
     def debug(self, line):
         args = line.split(' ')
@@ -177,9 +202,13 @@ class OS(PyV8.JSClass):
 
 class Shell(PyV8.JSClass):
     os = OS()
+
+    def __init__(self, debugger):
+        self.debugger = debugger
     
     def quit(self, code=0):
-        sys.exit(code)
+        self.debugger.terminated = True
+        self.debugger.exitcode = code
 
     def writeln(self, *args):
         self.write(*args)
@@ -227,13 +256,14 @@ def parse_cmdline():
 if __name__=='__main__':
     opts, args = parse_cmdline()
 
-    with PyV8.JSContext(Shell()) as ctxt:
-        with Debugger() as dbg:
-            dbg.showCopyright()
+    with Debugger() as dbg:
+        dbg.showCopyright()
 
-            #dbg.start()
+        #dbg.start()
 
-            try:
-                dbg.shell()
-            except KeyboardInterrupt:
-                pass
+        try:
+            exitcode = dbg.shell()
+        except KeyboardInterrupt:
+            exitcode = 0
+
+    sys.exit(exitcode)
