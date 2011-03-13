@@ -552,7 +552,7 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         if self.onMessage:
             self.onMessage(json.loads(msg))
 
-    def onDebugEvent(self, type, evt):
+    def onDebugEvent(self, type, state, evt):
         if type == JSDebugEvent.Break:
             if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
         elif type == JSDebugEvent.Exception:

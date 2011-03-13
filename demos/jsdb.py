@@ -32,6 +32,16 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
         self.terminated = False
         self.daemon = True
 
+    def __enter__(self):
+        script_filename = os.path.join(os.path.dirname(__file__), 'd8.js')
+        
+        self.log.debug("loading d8.js from %s", script_filename)
+
+        with self.context as ctxt:
+            ctxt.eval(open(script_filename, 'r').read())
+
+        return PyV8.JSDebugger.__enter__(self)
+
     def showCopyright(self):
         print "jsdb with PyV8 v%s base on Google v8 engine v%s" % (PyV8.__version__, PyV8.JSEngine.version)
         print "Apache License 2.0 <http://www.apache.org/licenses/LICENSE-2.0>"
@@ -39,20 +49,23 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
     def onMessage(self, msg):
         self.log.info("Debug message: %s", msg)
 
-    def onBreak(self, evt):
-        self.log.info("Break event: %s", evt)
+    def onDebugEvent(self, type, state, evt):
+        json = evt.toJSONProtocol()
 
-    def onException(self, evt):
-        self.log.info("Exception event: %s", evt)
+        self.log.info("%s event: %s", type, json)
 
-    def onNewFunction(self, evt):
-        self.log.info("New function event: %s", evt)
+        if type not in [PyV8.JSDebugger.Break, PyV8.JSDebugger.Exception, PyV8.JSDebugger.AfterCompile]:
+            return
 
-    def onBeforeCompile(self, evt):
-        self.log.info("Before compile event: %s", evt)
+        with self.context as ctxt:
+            detail = ctxt.locals.DebugMessageDetails(json)
 
-    def onAfterCompile(self, evt):
-        self.log.info("After compile event: %s", evt)
+        if len(detail.text) == 0:
+            return
+
+        print detail.text
+
+        # TODO handle the debug command
 
     def shell(self):
         while not self.terminated:
@@ -61,7 +74,7 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
             if line == '': continue
 
             try:
-                result = PyV8.JSContext.current.eval(line)
+                result = self.eval(line)
 
                 if result:
                     print result

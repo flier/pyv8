@@ -112,13 +112,13 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 
   if (pThis->m_onDebugEvent.ptr() == Py_None) return;
 
-  CJavascriptObjectPtr event_obj(new CJavascriptObject(event_data));
-
   CPythonGIL python_gil;
 
   BEGIN_HANDLE_PYTHON_EXCEPTION
   {
-    py::call<void>(pThis->m_onDebugEvent.ptr(), event, event_obj);
+    py::call<void>(pThis->m_onDebugEvent.ptr(), event, 
+      CJavascriptObjectPtr(new CJavascriptObject(exec_state)),
+      CJavascriptObjectPtr(new CJavascriptObject(event_data)));
   }
   END_HANDLE_PYTHON_EXCEPTION
 }
