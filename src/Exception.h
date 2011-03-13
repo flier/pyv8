@@ -9,6 +9,15 @@
 #include "Config.h"
 #include "Utils.h"
 
+#define BEGIN_HANDLE_PYTHON_EXCEPTION try 
+#define END_HANDLE_PYTHON_EXCEPTION \
+  catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } \
+  catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } \
+  catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); }
+
+#define BEGIN_HANDLE_JAVASCRIPT_EXCEPTION v8::TryCatch try_catch;
+#define END_HANDLE_JAVASCRIPT_EXCEPTION if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch); 
+
 class CJavascriptException;
 
 struct ExceptionTranslator

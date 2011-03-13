@@ -15,7 +15,7 @@ class CDebug
   py::object m_onDebugMessage;
   py::object m_onDispatchDebugMessages;
 
-  v8::Persistent<v8::Context> m_debug_context;
+  v8::Persistent<v8::Context> m_debug_context, m_eval_context;
 
   static void OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
     v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data);
@@ -41,6 +41,7 @@ public:
   void SendCommand(const std::string& cmd);
 
   py::object GetDebugContext(void);
+  py::object GetEvalContext(void);
 
   static CDebug& GetInstance(void)
   {

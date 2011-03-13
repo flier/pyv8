@@ -15,8 +15,13 @@
 //
 #define SUPPORT_PROPERTY 1
 
+//
+// Enable the Javascript debugger supports
+//
+#define SUPPORT_DEBUGGER 1
+
 // 
-// Enable the javascript profiler supports
+// Enable the Javascript profiler supports
 //
 #define SUPPORT_PROFILER 1
 

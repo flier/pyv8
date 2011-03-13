@@ -185,11 +185,8 @@ void CPythonObject::ThrowIf(void)
   v8::ThrowException(error);
 }
 
-#define TRY_HANDLE_EXCEPTION() try {
-#define END_HANDLE_EXCEPTION(result) } \
-  catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } \
-  catch (const py::error_already_set&) { ThrowIf(); } \
-  catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); } \
+#define TRY_HANDLE_EXCEPTION() BEGIN_HANDLE_PYTHON_EXCEPTION {
+#define END_HANDLE_EXCEPTION(result) } END_HANDLE_PYTHON_EXCEPTION \
   return result;
 
 v8::Handle<v8::Value> CPythonObject::NamedGetter(
