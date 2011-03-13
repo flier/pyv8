@@ -20,7 +20,7 @@ __author__ = 'Flier Lu <flier.lu@gmail.com>'
 __version__ = '1.0'
 
 __all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSStackTrace", "JSStackFrame", "debugger", "profiler", \
+           "JSStackTrace", "JSStackFrame", "profiler", \
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
 
 class JSError(Exception):
@@ -188,7 +188,7 @@ class JSDebugProtocol(object):
         EVENT = 'event'
 
         def __init__(self, payload):
-            self.data = json.loads(payload)
+            self.data = json.loads(payload) if type(payload) in [str, unicode] else payload
 
         @property
         def seq(self):
@@ -249,6 +249,11 @@ class JSDebugProtocol(object):
         self.seq += 1
 
         return seq
+
+    def parsePacket(self, payload):
+        obj = json.loads(payload)
+
+        return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
     
 class JSDebugEvent(_PyV8.JSDebugEvent):
     class FrameData(object):
@@ -503,6 +508,27 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         JSDebugProtocol.__init__(self)
         JSDebugEvent.__init__(self)
 
+        self.evalContext = JSContext()
+
+    def __enter__(self):
+        self.enabled = True
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.enabled = False
+
+    @property
+    def context(self):
+        if not hasattr(self, '_context'):
+            self._context = JSContext(_PyV8.debug().context)
+
+        return self._context
+
+    def eval(self, script):
+        with self.evalContext as ctxt:
+            return ctxt.eval(script)
+
     def isEnabled(self):
         return _PyV8.debug().enabled
 
@@ -578,8 +604,6 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         """Perform a minimum step in the current function."""
         return self.debugContinue(action='out', steps=steps)
 
-debugger = JSDebugger()
-
 class JSProfiler(_PyV8.JSProfiler):
     Modules = _PyV8.JSProfilerModules
 
@@ -612,12 +636,15 @@ JSStackTrace.Options = _PyV8.JSStackTraceOptions
 JSStackFrame = _PyV8.JSStackFrame
 
 class JSContext(_PyV8.JSContext):
-    def __init__(self, obj=None, extensions=None):
+    def __init__(self, obj=None, extensions=None, ctxt=None):
         if JSLocker.actived:
             self.lock = JSLocker()
             self.lock.enter()
 
-        _PyV8.JSContext.__init__(self, obj, extensions or [])
+        if ctxt:
+            _PyV8.JSContext.__init__(self, ctxt)
+        else:
+            _PyV8.JSContext.__init__(self, obj, extensions or [])
 
     def __enter__(self):
         self.enter()
@@ -1845,7 +1872,7 @@ class TestDebug(unittest.TestCase):
             logging.debug(traceback.extract_stack())
 
     def testEventDispatch(self):
-        global debugger
+        debugger = JSDebugger()
 
         self.assert_(not debugger.enabled)
 

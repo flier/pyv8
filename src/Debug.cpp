@@ -25,9 +25,6 @@ void CDebug::Init(void)
   m_debug_context = v8::Context::New(NULL, global_template);
   m_debug_context->SetSecurityToken(v8::Undefined());
   
-  m_eval_context = v8::Context::New(NULL, global_template);
-  m_eval_context->SetSecurityToken(v8::Undefined());
-
 #ifdef SUPPORT_DEBUGGER
   v8::Context::Scope context_scope(m_debug_context);  
 
@@ -70,14 +67,6 @@ py::object CDebug::GetDebugContext(void)
 
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
     CContextPtr(new CContext(m_debug_context)))));
-}
-
-py::object CDebug::GetEvalContext(void)
-{
-  v8::HandleScope handle_scope;
-
-  return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-    CContextPtr(new CContext(m_eval_context)))));
 }
 
 void CDebug::Listen(const std::string& name, int port, bool wait_for_connection)
@@ -195,8 +184,7 @@ void CDebug::Expose(void)
 {
   py::class_<CDebug, boost::noncopyable>("JSDebug", py::no_init)
     .add_property("enabled", &CDebug::IsEnabled, &CDebug::SetEnable)
-    .add_property("debugContext", &CDebug::GetDebugContext) 
-    .add_property("evalContext", &CDebug::GetEvalContext)     
+    .add_property("context", &CDebug::GetDebugContext)   
 
     .def("debugBreak", &CDebug::DebugBreak)
     .def("debugBreakForCommand", &CDebug::DebugBreakForCommand)

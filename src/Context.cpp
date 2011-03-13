@@ -6,6 +6,7 @@
 void CContext::Expose(void)
 {
   py::class_<CContext, boost::noncopyable>("JSContext", py::no_init)
+    .def(py::init<const CContext&>("create a new context base on a exists context"))
     .def(py::init<py::object, py::list>((py::arg("global") = py::object(), 
                                          py::arg("extensions") = py::list()), 
                                         "create a new context base on global object"))
@@ -54,6 +55,13 @@ CContext::CContext(v8::Handle<v8::Context> context)
   v8::HandleScope handle_scope;
 
   m_context = v8::Persistent<v8::Context>::New(context);
+}
+
+CContext::CContext(const CContext& context)
+{
+  v8::HandleScope handle_scope;
+
+  m_context = context.m_context;
 }
 
 CContext::CContext(py::object global, py::list extensions)
