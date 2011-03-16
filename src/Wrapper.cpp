@@ -228,7 +228,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
     if (getter.ptr() == Py_None)
       throw CJavascriptException("unreadable attribute", ::PyExc_AttributeError);    
-	  
+    
     attr = getter();
   }
 #endif
@@ -373,16 +373,17 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
   py::list keys;
+  bool filter_name = false;
   
-  if (::PyObject_HasAttrString(obj.ptr(), "__dict__"))
+  if (::PySequence_Check(obj.ptr()))
   {
-    keys = py::dict(obj.attr("__dict__")).keys();
+    return v8::Handle<v8::Array>();
   }
   else if (::PyMapping_Check(obj.ptr()))
   {
-    keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));
+    keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));    
   }
-  else if (PyGen_Check(obj.ptr()))
+  else if (PyGen_CheckExact(obj.ptr()))
   {
     py::object iter(py::handle<>(::PyObject_GetIter(obj.ptr())));
 
@@ -392,6 +393,11 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
     {
       keys.append(py::object(py::handle<>(item)));
     } 
+  }
+  else
+  {
+    keys = py::list(py::handle<>(::PyObject_Dir(obj.ptr())));
+    filter_name = true;
   }
 
   Py_ssize_t len = PyList_GET_SIZE(keys.ptr());
@@ -403,7 +409,7 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
     {
       PyObject *item = PyList_GET_ITEM(keys.ptr(), i);
 
-      if (PyString_CheckExact(item))
+      if (filter_name && PyString_CheckExact(item))
       {
         py::str name(py::handle<>(py::borrowed(item)));
 

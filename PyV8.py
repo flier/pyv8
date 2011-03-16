@@ -19,9 +19,24 @@ import _PyV8
 __author__ = 'Flier Lu <flier.lu@gmail.com>'
 __version__ = '1.0'
 
-__all__ = ["JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
+__all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
+           "JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
            "JSStackTrace", "JSStackFrame", "profiler", \
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
+
+class JSAttribute(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, func):
+        setattr(func, "__%s__" % self.name, True)
+        
+        return func
+
+ReadOnly = JSAttribute(name='readonly')
+DontEnum = JSAttribute(name='dontenum')
+DontDelete = JSAttribute(name='dontdel')
+Internal = JSAttribute(name='internal')
 
 class JSError(Exception):
     def __init__(self, impl):
@@ -1206,16 +1221,19 @@ class TestWrapper(unittest.TestCase):
             self.assertEqual(2, ctxt.eval("""array[1]"""))
 
     def testForEach(self):
-        class NamedClass(JSClass):
+        class NamedClass(object):
             foo = 1
 
             def __init__(self):
                 self.bar = 2
 
+            @property
+            def foobar(self):
+                return self.foo + self.bar
+
         def gen(x):
-            yield 0
-            yield 1
-            yield 2
+            for i in range(x):
+                yield i
 
         with JSContext() as ctxt:
             func = ctxt.eval("""(function (k) {
@@ -1226,9 +1244,9 @@ class TestWrapper(unittest.TestCase):
                 return result;
             })""")
 
-            self.assertEquals(["bar"], list(func(NamedClass())))
+            self.assertEquals(["bar", "foo", "foobar"], list(func(NamedClass())))
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
-
+            self.assertEquals(["0", "1", "2"], list(func((1, 2, 3))))
             self.assertEquals(["1", "2", "3"], list(func({1:1, 2:2, 3:3})))
 
             self.assertEquals(["0", "1", "2"], list(func(gen(3))))
