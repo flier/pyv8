@@ -35,6 +35,7 @@ public:
 
   void DebugBreak(void) { v8::Debug::DebugBreak(); }
   void DebugBreakForCommand(py::object data);
+  void CancelDebugBreak(void) { v8::Debug::CancelDebugBreak(); }
   void ProcessDebugMessages(void) { v8::Debug::ProcessDebugMessages(); }
   
   void Listen(const std::string& name, int port, bool wait_for_connection);

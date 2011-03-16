@@ -186,8 +186,11 @@ void CDebug::Expose(void)
     .add_property("enabled", &CDebug::IsEnabled, &CDebug::SetEnable)
     .add_property("context", &CDebug::GetDebugContext)   
 
-    .def("debugBreak", &CDebug::DebugBreak)
+    .def("debugBreak", &CDebug::DebugBreak)    
     .def("debugBreakForCommand", &CDebug::DebugBreakForCommand)
+    .def("cancelDebugBreak", &CDebug::CancelDebugBreak)
+    .def("processDebugMessages", &CDebug::ProcessDebugMessages)
+
     .def("sendCommand", &CDebug::SendCommand, (py::arg("command")))
     .def("loop", &CDebug::ProcessDebugMessages)  
     .def("listen", &CDebug::Listen, (py::arg("name"),

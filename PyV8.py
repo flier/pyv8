@@ -508,8 +508,6 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         JSDebugProtocol.__init__(self)
         JSDebugEvent.__init__(self)
 
-        self.evalContext = JSContext()
-
     def __enter__(self):
         self.enabled = True
 
@@ -521,13 +519,9 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
     @property
     def context(self):
         if not hasattr(self, '_context'):
-            self._context = JSContext(_PyV8.debug().context)
+            self._context = JSContext(ctxt=_PyV8.debug().context)
 
         return self._context
-
-    def eval(self, script):
-        with self.evalContext as ctxt:
-            return ctxt.eval(script)
 
     def isEnabled(self):
         return _PyV8.debug().enabled
@@ -567,11 +561,17 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
     def onDispatchDebugMessages(self):
         return True
 
-    def breakForDebug(self):
+    def debugBreak(self):
         _PyV8.debug().debugBreak()
 
-    def breakForCommand(self):
+    def debugBreakForCommand(self):
         _PyV8.debug().debugBreakForCommand()
+
+    def cancelDebugBreak(self):
+        _PyV8.debug().cancelDebugBreak()
+
+    def processDebugMessages(self):
+        _PyV8.debug().processDebugMessages()
 
     def sendCommand(self, cmd, *args, **kwds):
         request = json.dumps({

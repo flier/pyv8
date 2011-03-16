@@ -51,6 +51,8 @@ class Debugger(PyV8.JSDebugger, threading.Thread):
     def onMessage(self, msg):
         self.log.info("Debug message: %s", msg)
 
+        return True
+
     def onDebugEvent(self, type, state, evt):
         json = evt.toJSONProtocol()
 
@@ -205,6 +207,10 @@ class Shell(PyV8.JSClass):
 
     def __init__(self, debugger):
         self.debugger = debugger
+
+    def debugBreak(self):
+        self.debugger.debugBreak()
+        self.debugger.processDebugMessages()
     
     def quit(self, code=0):
         self.debugger.terminated = True
