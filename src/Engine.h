@@ -28,6 +28,9 @@ protected:
 
 #endif
 
+  static void CollectAllGarbage(bool force_compaction);
+  static void TerminateAllThreads(void);
+
   static void ReportFatalError(const char* location, const char* message);
   static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);    
 public:

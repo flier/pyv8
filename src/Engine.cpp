@@ -42,9 +42,8 @@ void CEngine::Expose(void)
   v8::V8::AddMessageListener(ReportMessage);
 #endif
 
-  void (*terminateThread)(int) = &v8::V8::TerminateExecution;
-  void (*terminateAllThreads)(void) = &v8::V8::TerminateExecution;
-
+  void (*terminateExecution)(int) = &v8::V8::TerminateExecution;
+  
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
 
@@ -57,7 +56,7 @@ void CEngine::Expose(void)
     .def("setFlags", &CEngine::SetFlags)
     .staticmethod("setFlags")
 
-    .def("collect", v8i::Heap::CollectAllGarbage, (py::arg("force")=true))
+    .def("collect", &CEngine::CollectAllGarbage, (py::arg("force")=true))
     .staticmethod("collect")
 
   #ifdef SUPPORT_SERIALIZE
@@ -70,11 +69,11 @@ void CEngine::Expose(void)
     .staticmethod("deserialize")
   #endif
 
-    .def("terminateThread", terminateThread,
+    .def("terminateThread", terminateExecution, (py::arg("thread_id")),
          "Forcefully terminate execution of a JavaScript thread.")
     .staticmethod("terminateThread")
 
-    .def("terminateAllThreads", terminateAllThreads,
+    .def("terminateAllThreads", &CEngine::TerminateAllThreads,
          "Forcefully terminate the current thread of JavaScript execution.")
     .staticmethod("terminateAllThreads")
 
@@ -276,6 +275,16 @@ void CEngine::Deserialize(py::object snapshot)
 
 #endif // SUPPORT_SERIALIZE
 
+void CEngine::CollectAllGarbage(bool force_compaction)
+{
+  HEAP->CollectAllGarbage(force_compaction);
+}
+
+void CEngine::TerminateAllThreads(void)
+{
+  v8::V8::TerminateExecution();
+}
+
 void CEngine::ReportFatalError(const char* location, const char* message)
 {
   std::ostringstream oss;
@@ -427,9 +436,10 @@ void CScript::visit(py::object handler) const
   info.MarkAsGlobal();
 
   v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
-  v8i::PostponeInterruptsScope postpone;  
+  v8i::Isolate *isolate = info.isolate();
+  v8i::PostponeInterruptsScope postpone(isolate);  
 
-  script->set_context_data((*v8i::Top::global_context())->data());
+  script->set_context_data((*isolate->global_context())->data());
 
   if (v8i::ParserApi::Parse(&info))
   {
@@ -590,17 +600,17 @@ void CProfiler::Start(void)
   char params[] = "--prof --prof_auto --logfile=*";
 
   v8::V8::SetFlagsFromString(params, strlen(params));
-  v8i::Logger::Setup();
+  LOGGER->Setup();
 }
 
 void CProfiler::Stop(void)
 {
-  v8i::Logger::TearDown();
+  LOGGER->TearDown();
 }
 
 bool CProfiler::IsStarted(void)
 {
-  return v8i::Log::IsEnabled();
+  return v8i::RuntimeProfiler::IsEnabled();
 }
 
 py::tuple CProfiler::GetLogLines(int pos)

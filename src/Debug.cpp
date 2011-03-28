@@ -29,13 +29,15 @@ void CDebug::Init(void)
   v8::Context::Scope context_scope(m_debug_context);  
 
   // Install the debugger object in the utility scope
-  v8i::Debug::Load();
+  v8i::Debug *debug = v8i::Isolate::Current()->debug();
+  
+  debug->Load();
 
-  v8i::Handle<v8i::JSObject> debug(v8i::Debug::debug_context()->global());
-  m_debug_context->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(debug));
+  v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global());
+  m_debug_context->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
   
   // Set the security token of the debug context to allow access.
-  v8i::Debug::debug_context()->set_security_token(v8i::Heap::undefined_value());
+  debug->debug_context()->set_security_token(HEAP->undefined_value());
 #endif
 }
 
