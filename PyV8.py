@@ -1065,8 +1065,8 @@ class TestWrapper(unittest.TestCase):
             c();""", "test")
 
             self.assertEquals(4, len(st))
-            self.assertEquals("\tat a (test:4:28)\n\tat (eval)\n\tat b (test:8:28)\n\tat c (test:13:17)\n", str(st))
-            self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (13:17)",
+            self.assertEquals("\tat a (test:4:28)\n\tat (eval)\n\tat b (test:8:28)\n\tat c (test:12:28)\n", str(st))
+            self.assertEquals("test.a (4:28)\n. (1:1) eval\ntest.b (8:28) constructor\ntest.c (12:28)",
                               "\n".join(["%s.%s (%d:%d)%s%s" % (
                                 f.scriptName, f.funcName, f.lineNum, f.column,
                                 ' eval' if f.isEval else '',
