@@ -1516,6 +1516,8 @@ class TestWrapper(unittest.TestCase):
 
             self.assert_(ctxt.eval("typeof(s.String) === 'undefined'"))
 
+            self.assert_(ctxt.eval("typeof(s.z) === 'undefined'"))
+
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.actived)

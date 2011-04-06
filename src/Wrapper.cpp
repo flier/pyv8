@@ -213,7 +213,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
     {      
       py::object result(py::handle<>(::PyMapping_GetItemString(obj.ptr(), *name)));
 
-      return Wrap(result);
+      if (result.ptr() != Py_None) return Wrap(result);
     }
 
     return v8::Handle<v8::Value>();
