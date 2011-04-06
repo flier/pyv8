@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyV8", "src\PyV8.vs2008.vcxproj", "{4A863005-2619-4CD1-843E-73E23AF6E8F6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyV8", "src\PyV8.vs2010.vcxproj", "{4A863005-2619-4CD1-843E-73E23AF6E8F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
