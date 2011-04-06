@@ -60,10 +60,18 @@ source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrap
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
     ("V8_NATIVE_REGEXP", None),
-    ("ENABLE_DISASSEMBLER", None),
+    ("ENABLE_VMSTATE_TRACKING", None),
     ("ENABLE_LOGGING_AND_PROFILING", None),
     ("ENABLE_DEBUGGER_SUPPORT", None),
 ]
+
+if DEBUG:
+    macros += [
+        ("V8_ENABLE_CHECKS", None),
+        ("OBJECT_PRINT", None),
+        ("ENABLE_DISASSEMBLER", None),
+        ("ENABLE_HEAP_PROTECTION", None),
+    ]
 
 include_dirs = [
     os.path.join(V8_HOME, 'include'),
