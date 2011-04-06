@@ -127,7 +127,11 @@ if os.name == "nt":
         os.path.join(PYTHON_HOME, 'libs'),
     ]
 
-    macros += [("V8_TARGET_ARCH_IA32", None), ("WIN32", None)]
+    macros += [
+        ("V8_TARGET_ARCH_IA32", None),
+        ("WIN32", None),
+        ("_USE_32BIT_TIME_T", None),
+    ]
 
     libraries += ["winmm", "ws2_32"]
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
