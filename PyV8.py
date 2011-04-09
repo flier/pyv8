@@ -1676,6 +1676,8 @@ class TestEngine(unittest.TestCase):
                 self.assertEquals("1+2", s.source)
                 self.assertEquals(3, int(s.run()))
 
+                self.assertRaises(SyntaxError, engine.compile, "1+")
+
     def testPrecompile(self):
         with JSContext() as ctxt:
             with JSEngine() as engine:
@@ -1690,6 +1692,8 @@ class TestEngine(unittest.TestCase):
 
                 self.assertEquals("1+2", s.source)
                 self.assertEquals(3, int(s.run()))
+
+                self.assertRaises(SyntaxError, engine.precompile, "1+")
 
     def testUnicodeSource(self):
         class Global(JSClass):
