@@ -189,6 +189,11 @@ public:
   const std::string GetName(void) const;
   void SetName(const std::string name);
 
+  int GetLineNumber(void) const;
+  const std::string GetResourceName(void) const;
+  int GetLineOffset(void) const;
+  int GetColumnOffset(void) const;
+
   py::object GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
 };
 

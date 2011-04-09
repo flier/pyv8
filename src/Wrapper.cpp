@@ -78,6 +78,11 @@ void CWrapper::Expose(void)
           py::arg("kwds") = py::dict()))
     .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName)
     .add_property("owner", &CJavascriptFunction::GetOwner)
+
+    .add_property("linenum", &CJavascriptFunction::GetLineNumber)
+    .add_property("resname", &CJavascriptFunction::GetResourceName)
+    .add_property("lineoff", &CJavascriptFunction::GetLineOffset)
+    .add_property("coloff", &CJavascriptFunction::GetColumnOffset)
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
@@ -1269,6 +1274,41 @@ void CJavascriptFunction::SetName(const std::string name)
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
 
   func->SetName(v8::String::New(name.c_str(), name.size()));
+}
+
+int CJavascriptFunction::GetLineNumber(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  return func->GetScriptLineNumber();
+}
+const std::string CJavascriptFunction::GetResourceName(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+  
+  v8::String::Utf8Value name(v8::Handle<v8::String>::Cast(func->GetScriptOrigin().ResourceName()));
+
+  return std::string(*name, name.length());
+}
+int CJavascriptFunction::GetLineOffset(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  return func->GetScriptOrigin().ResourceLineOffset()->Value();
+}
+int CJavascriptFunction::GetColumnOffset(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  return func->GetScriptOrigin().ResourceColumnOffset()->Value();
 }
 
 #ifdef SUPPORT_TRACE_LIFECYCLE

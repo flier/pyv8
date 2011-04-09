@@ -989,7 +989,11 @@ class TestWrapper(unittest.TestCase):
             func = ctxt.eval("(function test() {})")
 
             self.assertEquals("test", func.name)
-
+            self.assertEquals("", func.resname)
+            self.assertEquals(0, func.linenum)
+            self.assertEquals(0, func.lineoff)
+            self.assertEquals(0, func.coloff)
+            
             #TODO fix me, why the setter doesn't work?
 
             func.name = "hello"
@@ -1729,15 +1733,19 @@ class TestEngine(unittest.TestCase):
 
                 self.assert_(hasattr(ctxt.locals, u'函数'.encode('utf-8')))
 
-                f = getattr(ctxt.locals, u'函数'.encode('utf-8'))
+                func = getattr(ctxt.locals, u'函数'.encode('utf-8'))
 
-                self.assert_(isinstance(f, _PyV8.JSFunction))
+                self.assert_(isinstance(func, _PyV8.JSFunction))
 
-                self.assertEquals(u'函数'.encode('utf-8'), f.name)
+                self.assertEquals(u'函数'.encode('utf-8'), func.name)
+                self.assertEquals("", func.resname)
+                self.assertEquals(1, func.linenum)
+                self.assertEquals(0, func.lineoff)
+                self.assertEquals(0, func.coloff)
 
                 setattr(ctxt.locals, u'变量'.encode('utf-8'), u'测试长字符串')
 
-                self.assertEquals(6, f())
+                self.assertEquals(6, func())
 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""
