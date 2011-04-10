@@ -32,7 +32,7 @@ protected:
   static void TerminateAllThreads(void);
 
   static void ReportFatalError(const char* location, const char* message);
-  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);    
+  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);      
 public:
   py::object PreCompile(const std::string& src) 
   { 
@@ -67,6 +67,7 @@ public:
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
+  static bool SetMemoryLimit(int max_young_space_size, int max_old_space_size, int max_executable_size);
 
   py::object ExecuteScript(v8::Handle<v8::Script> script);
 

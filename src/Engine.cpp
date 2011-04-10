@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+#include <boost/preprocessor.hpp>
+
 #if defined(SUPPORT_EXTENSION) || defined(SUPPORT_PROFILER)
 
   #undef COMPILER
@@ -34,6 +36,68 @@
   #include "AST.h"
 #endif
 
+struct MemoryAllocationCallbackBase
+{
+  virtual void Set(py::object callback) = 0;
+};
+
+template <v8::ObjectSpace space, v8::AllocationAction action>
+struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
+{  
+  static py::object s_callback;
+
+  static void onMemoryAllocation(v8::ObjectSpace space, v8::AllocationAction action, int size)
+  {
+    if (s_callback.ptr() != Py_None) s_callback(space, action, size);
+  }
+
+  virtual void Set(py::object callback)
+  {
+    if (s_callback.ptr() == Py_None && callback.ptr() != Py_None)
+    {
+      v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, space, action);  
+    }
+    else if (s_callback.ptr() != Py_None && callback.ptr() == Py_None)
+    {
+      v8::V8::RemoveMemoryAllocationCallback(&onMemoryAllocation);
+    }
+
+    s_callback = callback;
+  }
+};
+
+template<v8::ObjectSpace space, v8::AllocationAction action> 
+py::object MemoryAllocationCallbackStub<space, action>::s_callback;
+
+class MemoryAllocationManager
+{
+  typedef std::map<std::pair<v8::ObjectSpace, v8::AllocationAction>, MemoryAllocationCallbackBase *> CallbackMap;
+
+  static CallbackMap s_callbacks;
+public:
+  static void Init(void)
+  {
+#define ADD_CALLBACK_STUB(space, action) s_callbacks[std::make_pair(space, action)] = new MemoryAllocationCallbackStub<space, action>()
+
+#define OBJECT_SPACES (kObjectSpaceNewSpace) (kObjectSpaceOldPointerSpace) (kObjectSpaceOldDataSpace) \
+(kObjectSpaceCodeSpace) (kObjectSpaceMapSpace) (kObjectSpaceLoSpace) (kObjectSpaceAll)
+#define ALLOCATION_ACTIONS (kAllocationActionAllocate) (kAllocationActionFree) (kAllocationActionAll)
+
+#define ADD_CALLBACK_STUBS(r, action, space) ADD_CALLBACK_STUB(v8::space, v8::action);
+
+    BOOST_PP_SEQ_FOR_EACH(ADD_CALLBACK_STUBS, kAllocationActionAllocate, OBJECT_SPACES);
+    BOOST_PP_SEQ_FOR_EACH(ADD_CALLBACK_STUBS, kAllocationActionFree, OBJECT_SPACES);
+    BOOST_PP_SEQ_FOR_EACH(ADD_CALLBACK_STUBS, kAllocationActionAll, OBJECT_SPACES);
+  }
+
+  static void SetCallback(py::object callback, v8::ObjectSpace space, v8::AllocationAction action)
+  {
+    s_callbacks[std::make_pair(space, action)]->Set(callback);
+  }
+};
+
+MemoryAllocationManager::CallbackMap MemoryAllocationManager::s_callbacks;
+  
 void CEngine::Expose(void)
 {
 #ifndef SUPPORT_SERIALIZE
@@ -42,8 +106,26 @@ void CEngine::Expose(void)
   v8::V8::AddMessageListener(ReportMessage);
 #endif
 
+  MemoryAllocationManager::Init();
+
   void (*terminateExecution)(int) = &v8::V8::TerminateExecution;
+
+  py::enum_<v8::ObjectSpace>("JSObjectSpace")
+    .value("New", v8::kObjectSpaceNewSpace)
   
+    .value("OldPointer", v8::kObjectSpaceOldPointerSpace)
+    .value("OldData", v8::kObjectSpaceOldDataSpace)
+    .value("Code", v8::kObjectSpaceCodeSpace)
+    .value("Map", v8::kObjectSpaceMapSpace)
+    .value("Lo", v8::kObjectSpaceLoSpace)
+
+    .value("All", v8::kObjectSpaceAll);
+
+  py::enum_<v8::AllocationAction>("JSAllocationAction")
+    .value("alloc", v8::kAllocationActionAllocate)
+    .value("free", v8::kAllocationActionFree)
+    .value("all", v8::kAllocationActionAll);
+
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
     .add_static_property("version", &CEngine::GetVersion)
 
@@ -90,6 +172,19 @@ void CEngine::Expose(void)
     .def("lowMemory", &v8::V8::LowMemoryNotification,
          "Optional notification that the system is running low on memory.")
     .staticmethod("lowMemory")
+
+    .def("setMemoryLimit", &CEngine::SetMemoryLimit, (py::arg("max_young_space_size") = 0,
+                                                py::arg("max_old_space_size") = 0,
+                                                py::arg("max_executable_size") = 0),
+         "Specifies the limits of the runtime's memory use."
+         "You must set the heap size before initializing the VM"
+         "the size cannot be adjusted after the VM is initialized.")
+    .staticmethod("setMemoryLimit")
+
+    .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback, (py::arg("callback"),
+                                                                                py::arg("space") = v8::kObjectSpaceAll, 
+                                                                                py::arg("action") = v8::kAllocationActionAll))
+    .staticmethod("setMemoryAllocationCallback")
 
     .def("precompile", &CEngine::PreCompile, (py::arg("source")))
     .def("precompile", &CEngine::PreCompileW, (py::arg("source")))
@@ -305,6 +400,17 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
   oss << *filename << ":" << lineno << " -> " << *sourceline;
 
   throw CJavascriptException(oss.str());
+}
+
+bool CEngine::SetMemoryLimit(int max_young_space_size, int max_old_space_size, int max_executable_size)
+{
+  v8::ResourceConstraints limit;
+
+  limit.set_max_young_space_size(max_young_space_size);
+  limit.set_max_old_space_size(max_old_space_size);
+  limit.set_max_executable_size(max_executable_size);
+
+  return v8::SetResourceConstraints(&limit);
 }
 
 py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)

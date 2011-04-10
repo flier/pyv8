@@ -21,6 +21,7 @@ __version__ = '1.0'
 
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
+           "JSObjectSpace", "JSAllocationAction", \
            "JSStackTrace", "JSStackFrame", "profiler", \
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
 
@@ -638,6 +639,9 @@ class JSProfiler(_PyV8.JSProfiler):
             pos += size
 
 profiler = JSProfiler()
+
+JSObjectSpace = _PyV8.JSObjectSpace
+JSAllocationAction = _PyV8.JSAllocationAction
 
 class JSEngine(_PyV8.JSEngine):
     def __enter__(self):
@@ -1884,6 +1888,23 @@ class TestEngine(unittest.TestCase):
             """)
             self.assertEquals(4, g.d['a']['q'])
             self.assertEquals(None, ctxt.eval("d.d"))
+
+    def testMemoryAllocationCallback(self):
+        alloc = {}
+
+        def callback(space, action, size):
+            alloc[(space, action)] = alloc.setdefault((space, action), 0) + size
+
+        JSEngine.setMemoryAllocationCallback(callback)
+
+        with JSContext() as ctxt:
+            self.assertEquals({}, alloc)
+
+            ctxt.eval("var o = new Array(1000);")
+
+            alloc.has_key((JSObjectSpace.Code, JSAllocationAction.alloc))
+
+        JSEngine.setMemoryAllocationCallback(None)
 
 class TestDebug(unittest.TestCase):
     def setUp(self):
