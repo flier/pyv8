@@ -41,7 +41,7 @@ struct MemoryAllocationCallbackBase
   virtual void Set(py::object callback) = 0;
 };
 
-template <v8::ObjectSpace space, v8::AllocationAction action>
+template <v8::ObjectSpace SPACE, v8::AllocationAction ACTION>
 struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
 {  
   static py::object s_callback;
@@ -55,7 +55,7 @@ struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
   {
     if (s_callback.ptr() == Py_None && callback.ptr() != Py_None)
     {
-      v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, space, action);  
+      v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, SPACE, ACTION);  
     }
     else if (s_callback.ptr() != Py_None && callback.ptr() == Py_None)
     {
