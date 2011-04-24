@@ -178,7 +178,7 @@ void CPythonObject::ThrowIf(void)
   {
     // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
 
-  #ifdef SUPPORT_TRACE_LIFECYCLE
+  #ifdef SUPPORT_TRACE_EXCEPTION_LIFECYCLE
     error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_type"), v8::External::New(ObjectTracer::Trace(error, new py::object(type)).Object()));
     error->ToObject()->SetHiddenValue(v8::String::NewSymbol("exc_value"), v8::External::New(ObjectTracer::Trace(error, new py::object(value)).Object()));
   #else
@@ -1317,7 +1317,6 @@ ObjectTracer::ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
   : m_handle(v8::Persistent<v8::Value>::New(handle)), 
     m_object(object), m_living(GetLivingMapping())
 {
-
 }
 
 ObjectTracer::~ObjectTracer()
