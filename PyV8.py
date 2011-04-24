@@ -696,7 +696,6 @@ class AST:
     Label = _PyV8.AstLabel
     NodeType = _PyV8.AstNodeType
     Node = _PyV8.AstNode
-    JumpTarget = _PyV8.AstJumpTarget
     Statement = _PyV8.AstStatement
     Expression = _PyV8.AstExpression
     Breakable = _PyV8.AstBreakableStatement
@@ -736,7 +735,6 @@ class AST:
     CallRuntime = _PyV8.AstCallRuntime
     Op = _PyV8.AstOperation
     UnaryOp = _PyV8.AstUnaryOperation
-    IncOp = _PyV8.AstIncrementOperation
     BinOp = _PyV8.AstBinaryOperation
     CountOp = _PyV8.AstCountOperation
     CompOp = _PyV8.AstCompareOperation
@@ -2024,17 +2022,9 @@ class TestAST(unittest.TestCase):
                 self.assert_(target.unused)
                 self.assertFalse(target.linked)
 
-                label = stmt.breakTarget.entryLabel
-
-                self.assert_(label)
-                self.assertFalse(label.bound)
-                self.assert_(label.unused)
-                self.assertFalse(label.linked)
-
                 self.assertEquals(2, len(stmt.statements))
 
                 self.assertEquals(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
-
 
         self.assertEquals(1, BlockChecker(self).test("var i, j;"))
 
@@ -2059,7 +2049,6 @@ class TestAST(unittest.TestCase):
 
                 self.assertFalse(stmt.condition.trivial)
                 self.assertFalse(stmt.condition.propertyName)
-                self.assertFalse(stmt.condition.loopCondition)
 
         self.assertEquals(1, IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
 
@@ -2302,10 +2291,6 @@ class TestAST(unittest.TestCase):
                 self.assertEquals(AST.Op.ADD, expr.binop)
                 self.assertEquals(55, expr.pos)
                 self.assertEquals("i", expr.expression.name)
-
-                self.assertEquals(AST.Op.INC, expr.increment.op)
-                self.assertEquals("i", expr.increment.expression.name)
-                self.assert_(expr.increment.increment)
 
                 #print "count", expr
 

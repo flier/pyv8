@@ -118,32 +118,6 @@ public:
   bool IsLinked(void) const { return m_label->is_linked(); }
 };
 
-class CAstJumpTarget
-{
-protected:
-  v8i::JumpTarget *m_target;
-public:
-  CAstJumpTarget(v8i::JumpTarget *target) : m_target(target)
-  {
-
-  }
-
-  CAstLabel GetEntryLabel(void) { return CAstLabel(m_target->entry_label()); }
-
-  bool IsBound(void) const { return m_target->is_bound(); }
-  bool IsUnused(void) const { return m_target->is_unused(); }
-  bool IsLinked(void) const { return m_target->is_linked(); }
-};
-
-class CAstBreakTarget : public CAstJumpTarget
-{
-public:
-  CAstBreakTarget(v8i::BreakTarget *target) : CAstJumpTarget(target)
-  {
-
-  }
-};
-
 class CAstNode
 {  
 protected:
@@ -183,9 +157,6 @@ protected:
 public:
   bool IsTrivial(void) { return as<v8i::Expression>()->IsTrivial(); }
   bool IsPropertyName(void) { return as<v8i::Expression>()->IsPropertyName(); }
-
-  bool IsLoopCondition(void) { return as<v8i::Expression>()->is_loop_condition(); }
-  void SetLoopCondition(bool flag) { as<v8i::Expression>()->set_is_loop_condition(flag); }
 };
 
 class CAstBreakableStatement : public CAstStatement
@@ -195,7 +166,7 @@ protected:
 public:
   bool IsTargetForAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }  
 
-  CAstBreakTarget GetBreakTarget(void) { return CAstBreakTarget(as<v8i::BreakableStatement>()->break_target()); }
+  CAstLabel GetBreakTarget(void) { return CAstLabel(as<v8i::BreakableStatement>()->break_target()); }
 };
 
 class CAstBlock : public CAstBreakableStatement
@@ -227,7 +198,7 @@ protected:
 public:
   py::object GetBody(void) const { return to_python(as<v8i::IterationStatement>()->body()); }
 
-  CAstBreakTarget GetContinueTarget(void) { return CAstBreakTarget(as<v8i::IterationStatement>()->continue_target()); }
+  CAstLabel GetContinueTarget(void) { return CAstLabel(as<v8i::IterationStatement>()->continue_target()); }
 };
 
 class CAstDoWhileStatement : public CAstIterationStatement
@@ -531,16 +502,6 @@ public:
   py::object expression(void) const { return to_python(as<v8i::UnaryOperation>()->expression()); }
 };
 
-class CAstIncrementOperation : public CAstExpression
-{
-public:
-  CAstIncrementOperation(v8i::IncrementOperation *op) : CAstExpression(op) {}
-
-  v8i::Token::Value op(void) const { return as<v8i::IncrementOperation>()->op(); }
-  py::object expression(void) const { return to_python(as<v8i::IncrementOperation>()->expression()); }
-  bool is_increment(void) const { return as<v8i::IncrementOperation>()->is_increment(); }
-};
-
 class CAstBinaryOperation : public CAstExpression
 {
 public:
@@ -564,7 +525,6 @@ public:
   v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }  
 
   py::object expression(void) const { return to_python(as<v8i::CountOperation>()->expression()); }
-  CAstIncrementOperation increment(void) const { return CAstIncrementOperation(as<v8i::CountOperation>()->increment()); }
   int position(void) const { return as<v8i::CountOperation>()->position(); }
 };
 
@@ -640,7 +600,6 @@ public:
   int GetStartPosition(void) const { return as<v8i::FunctionLiteral>()->start_position(); }
   int GetEndPosition(void) const { return as<v8i::FunctionLiteral>()->end_position(); }
   bool IsExpression(void) const { return as<v8i::FunctionLiteral>()->is_expression(); }
-  bool ContainsLoops(void) const { return as<v8i::FunctionLiteral>()->contains_loops(); }
 
   const std::string ToAST(void) const { return v8i::AstPrinter().PrintProgram(as<v8i::FunctionLiteral>()); }
   const std::string ToJSON(void) const { return v8i::JsonAstBuilder().BuildProgram(as<v8i::FunctionLiteral>()); }
@@ -787,8 +746,8 @@ inline py::object CAstDeclaration::GetFunction(void) const
   return py::object(); 
 }
 
-inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstBreakTarget>(as<v8i::TargetCollector>()->targets()); }
+inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstLabel>(as<v8i::TargetCollector>()->targets()); }
 
-inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python<CAstBreakTarget>(as<v8i::TryStatement>()->escaping_targets()); }
+inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python<CAstLabel>(as<v8i::TryStatement>()->escaping_targets()); }
 
 inline CAstVariableProxy CAstTryCatchStatement::GetCatchVariable(void) const { return CAstVariableProxy(as<v8i::TryCatchStatement>()->catch_var()); }

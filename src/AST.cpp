@@ -48,18 +48,7 @@ void CAstNode::Expose(void)
     .add_property("unused", &CAstLabel::IsUnused)
     .add_property("linked", &CAstLabel::IsLinked)
     ;
-
-  py::class_<CAstJumpTarget>("AstJumpTarget", py::no_init)
-    .add_property("entryLabel", &CAstJumpTarget::GetEntryLabel)
-
-    .add_property("bound", &CAstJumpTarget::IsBound)
-    .add_property("unused", &CAstJumpTarget::IsUnused)
-    .add_property("linked", &CAstJumpTarget::IsLinked)
-    ;
-
-  py::class_<CAstBreakTarget, py::bases<CAstJumpTarget> >("AstBreakTarget", py::no_init)
-    ;
-
+  
   #define DECLARE_TYPE_ENUM(type) .value(#type, v8i::AstNode::k##type)
 
   py::enum_<v8i::AstNode::Type>("AstNodeType")
@@ -85,8 +74,6 @@ void CAstNode::Expose(void)
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
     .add_property("trivial", &CAstExpression::IsTrivial)
     .add_property("propertyName", &CAstExpression::IsPropertyName)
-
-    .add_property("loopCondition", &CAstExpression::IsLoopCondition, &CAstExpression::SetLoopCondition)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
@@ -286,12 +273,6 @@ void CAstNode::Expose(void)
     .add_property("expression", &CAstUnaryOperation::expression)
     ;
 
-  py::class_<CAstIncrementOperation, py::bases<CAstExpression> >("AstIncrementOperation", py::no_init)
-    .add_property("op", &CAstIncrementOperation::op)
-    .add_property("expression", &CAstIncrementOperation::expression)
-    .add_property("increment", &CAstIncrementOperation::is_increment)
-    ;
-
   py::class_<CAstBinaryOperation, py::bases<CAstExpression> >("AstBinaryOperation", py::no_init)
     .add_property("op", &CAstBinaryOperation::op)
     .add_property("left", &CAstBinaryOperation::left)
@@ -307,7 +288,6 @@ void CAstNode::Expose(void)
     .add_property("binop", &CAstCountOperation::binary_op)
 
     .add_property("expression", &CAstCountOperation::expression)
-    .add_property("increment", &CAstCountOperation::increment)
     .add_property("pos", &CAstCountOperation::position)
     ;
 
@@ -360,7 +340,6 @@ void CAstNode::Expose(void)
     .add_property("startPos", &CAstFunctionLiteral::GetStartPosition)
     .add_property("endPos", &CAstFunctionLiteral::GetEndPosition)
     .add_property("isExpression", &CAstFunctionLiteral::IsExpression)    
-    .add_property("containsLoops", &CAstFunctionLiteral::ContainsLoops)    
 
     .def("toAST", &CAstFunctionLiteral::ToAST)
     .def("toJSON", &CAstFunctionLiteral::ToJSON)

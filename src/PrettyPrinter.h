@@ -74,14 +74,13 @@ private:
   void PrintLiteralIndented(const char* info, Handle<Object> value, bool quote);
   void PrintLiteralWithModeIndented(const char* info,
     Variable* var,
-    Handle<Object> value,
-    StaticType* type);
+    Handle<Object> value);
   void PrintLabelsIndented(const char* info, ZoneStringList* labels);
 
   void inc_indent() { indent_++; }
   void dec_indent() { indent_--; }
 
-  static int indent_;
+  int indent_;
 };
 
 
