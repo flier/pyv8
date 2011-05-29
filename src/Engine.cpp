@@ -542,8 +542,8 @@ void CScript::visit(py::object handler) const
 
   info.MarkAsGlobal();
 
-  v8i::CompilationZoneScope zone_scope(v8i::DELETE_ON_EXIT);
   v8i::Isolate *isolate = info.isolate();
+  v8i::CompilationZoneScope zone_scope(isolate, v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone(isolate);  
 
   script->set_context_data((*isolate->global_context())->data());

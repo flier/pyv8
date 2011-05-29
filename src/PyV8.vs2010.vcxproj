@@ -33,9 +33,6 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(V8_HOME)\tools\visual_studio\common.props" />
-    <Import Project="$(V8_HOME)\tools\visual_studio\ia32.props" />
-    <Import Project="$(V8_HOME)\tools\visual_studio\debug.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -80,7 +77,7 @@
     <Link>
       <AdditionalDependencies>Winmm.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)_$(ProjectName).pyd</OutputFile>
-      <AdditionalLibraryDirectories>$(V8_HOME)\tools\visual_studio\$(Configuration)\lib;$(BOOST_HOME)\stage\lib;$(PYTHON_HOME)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(V8_HOME);$(BOOST_HOME)\stage\lib;$(PYTHON_HOME)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -115,7 +112,7 @@ $(OutDir)PyV8.py -v
     <Link>
       <AdditionalDependencies>Winmm.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)_$(ProjectName).pyd</OutputFile>
-      <AdditionalLibraryDirectories>$(V8_HOME)\tools\visual_studio\$(Configuration)\lib;$(BOOST_HOME)\stage\lib;$(PYTHON_HOME)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(V8_HOME);$(BOOST_HOME)\stage\lib;$(PYTHON_HOME)\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

@@ -122,7 +122,7 @@ if os.name == "nt":
         os.path.join(PYTHON_HOME, 'include'),
     ]
     library_dirs += [
-        os.path.join(V8_HOME, 'tools\\visual_studio\\Release\\lib'),
+        V8_HOME,
         os.path.join(BOOST_HOME, 'stage/lib'),
         os.path.join(PYTHON_HOME, 'libs'),
     ]
