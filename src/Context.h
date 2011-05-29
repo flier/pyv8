@@ -8,8 +8,30 @@
 #include "Utils.h"
 
 class CContext;
+class CIsolate;
 
 typedef boost::shared_ptr<CContext> CContextPtr;
+typedef boost::shared_ptr<CIsolate> CIsolatePtr;
+
+class CIsolate
+{
+  v8::Isolate *m_isolate;
+  bool m_owner;
+public:
+  CIsolate(bool owner=false) : m_owner(owner) { m_isolate = v8::Isolate::New(); }
+  CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owner(false) {}
+  ~CIsolate(void) { if (m_owner) m_isolate->Dispose(); }
+
+  v8::Isolate *GetIsolate(void) { return m_isolate; }
+
+  static py::object GetCurrent(void);
+
+  void Enter(void) { m_isolate->Enter(); }
+  void Leave(void) { m_isolate->Exit(); }
+  void Dispose(void) { m_isolate->Dispose(); }
+
+  bool IsLocked(void) { return v8::Locker::IsLocked(m_isolate); }
+};
 
 class CContext 
 {

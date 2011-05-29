@@ -656,7 +656,7 @@ JSStackFrame = _PyV8.JSStackFrame
 
 class JSContext(_PyV8.JSContext):
     def __init__(self, obj=None, extensions=None, ctxt=None):
-        if JSLocker.actived:
+        if JSLocker.active:
             self.lock = JSLocker()
             self.lock.enter()
 
@@ -1526,11 +1526,11 @@ class TestWrapper(unittest.TestCase):
 
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
-        self.assertFalse(JSLocker.actived)
+        self.assertFalse(JSLocker.active)
         self.assertFalse(JSLocker.locked)
 
         with JSLocker() as outter_locker:
-            self.assertTrue(JSLocker.actived)
+            self.assertTrue(JSLocker.active)
             self.assertTrue(JSLocker.locked)
 
             self.assertTrue(outter_locker)
@@ -1549,7 +1549,7 @@ class TestMultithread(unittest.TestCase):
 
                 self.assertTrue(JSLocker.locked)
 
-        self.assertTrue(JSLocker.actived)
+        self.assertTrue(JSLocker.active)
         self.assertFalse(JSLocker.locked)
 
         locker = JSLocker()
