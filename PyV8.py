@@ -1988,8 +1988,8 @@ class TestAST(unittest.TestCase):
             return self.called
 
         def onProgram(self, prog):
-            #print prog.toAST()
-            #print prog.toJSON()
+            self.ast = prog.toAST()
+            self.json = json.loads(prog.toJSON())
 
             for decl in prog.scope.declarations:
                 decl.visit(self)
@@ -2026,7 +2026,36 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
 
-        self.assertEquals(1, BlockChecker(self).test("var i, j;"))
+        checker = BlockChecker(self)
+        self.assertEquals(1, checker.test("var i, j;"))
+        self.assertEquals("""FUNC
+. NAME ""
+. INFERRED NAME ""
+. DECLS
+. . VAR "i"
+. . VAR "j"
+. BLOCK INIT
+. . CALL RUNTIME  InitializeVarGlobal
+. . . LITERAL "i"
+. . . LITERAL 0
+. . CALL RUNTIME  InitializeVarGlobal
+. . . LITERAL "j"
+. . . LITERAL 0
+""", checker.ast)
+        self.assertEquals([u'FunctionLiteral', {u'name': u''},
+            [u'Declaration', {u'mode': u'VAR'},
+                [u'VariableProxy', {u'name': u'i'}]
+            ], [u'Declaration', {u'mode':u'VAR'},
+                [u'VariableProxy', {u'name': u'j'}]
+            ], [u'Block',
+                [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                    [u'Literal', {u'handle':u'i'}],
+                    [u'Literal', {u'handle': 0}]]],
+                [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                    [u'Literal', {u'handle': u'j'}],
+                    [u'Literal', {u'handle': 0}]]]
+            ]
+        ], checker.json)
 
     def testIfStatement(self):
         class IfStatementChecker(TestAST.Checker):
@@ -2043,7 +2072,7 @@ class TestAST(unittest.TestCase):
                 self.assert_(stmt.hasThenStatement)
                 self.assert_(stmt.hasElseStatement)
 
-                self.assertEquals("((value%2)==0)", str(stmt.condition))
+                self.assertEquals("((value % 2) == 0)", str(stmt.condition))
                 self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
                 self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
 
@@ -2060,7 +2089,7 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("{ j += i; }", str(stmt.body))
 
                 self.assertEquals("i = 0;", str(stmt.init))
-                self.assertEquals("(i<10)", str(stmt.condition))
+                self.assertEquals("(i < 10)", str(stmt.condition))
                 self.assertEquals("(i++);", str(stmt.next))
 
                 target = stmt.continueTarget
@@ -2084,14 +2113,14 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals("{ i += 1; }", str(stmt.body))
 
-                self.assertEquals("(i<10)", str(stmt.condition))
+                self.assertEquals("(i < 10)", str(stmt.condition))
 
             def onDoWhileStatement(self, stmt):
                 self.called += 1
 
                 self.assertEquals("{ i += 1; }", str(stmt.body))
 
-                self.assertEquals("(i<10)", str(stmt.condition))
+                self.assertEquals("(i < 10)", str(stmt.condition))
                 self.assertEquals(253, stmt.conditionPos)
 
         self.assertEquals(4, ForStatementChecker(self).test("""
@@ -2127,7 +2156,7 @@ class TestAST(unittest.TestCase):
                 elif var.name == 'hello':
                     self.assertEquals(AST.VarMode.var, decl.mode)
                     self.assert_(decl.function)
-                    self.assertEquals('(function hello(name) { s = ("Hello "+name); })', str(decl.function))
+                    self.assertEquals('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
                 elif var.name == 'dog':
                     self.assertEquals(AST.VarMode.var, decl.mode)
                     self.assert_(decl.function)
@@ -2277,7 +2306,7 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("1", str(expr.value))
                 self.assertEquals(41, expr.pos)
 
-                self.assertEquals("(i+1)", str(expr.binOperation))
+                self.assertEquals("(i + 1)", str(expr.binOperation))
 
                 self.assert_(expr.compound)
 
@@ -2316,7 +2345,7 @@ class TestAST(unittest.TestCase):
             def onConditional(self, expr):
                 self.called += 1
 
-                self.assertEquals("(i>j)", str(expr.condition))
+                self.assertEquals("(i > j)", str(expr.condition))
                 self.assertEquals("i", str(expr.thenExpr))
                 self.assertEquals("j", str(expr.elseExpr))
 
