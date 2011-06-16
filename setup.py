@@ -137,13 +137,16 @@ if os.name == "nt":
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
 
-elif os.name == "posix" and sys.platform == "linux2":
+elif os.name == "posix" and (sys.platform == "linux2" or sys.platform.startswith("freebsd")):
     library_dirs += [
         V8_HOME,
     ]
     if BOOST_HOME:
         library_dirs += [os.path.join(BOOST_HOME, 'stage/lib')]
         include_dirs += [BOOST_HOME]
+    else:
+        library_dirs += ['/usr/local/lib']
+        include_dirs += ['/usr/local/include']
 
     if PYTHON_HOME:
         major, minor, _, _, _ = sys.version_info
