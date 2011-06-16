@@ -136,13 +136,11 @@ void CAstNode::Expose(void)
     .add_property("expression", &CAstReturnStatement::expression)
     ;
 
-  py::class_<CAstWithEnterStatement, py::bases<CAstStatement> >("AstWithEnterStatement", py::no_init)
-    .add_property("expression", &CAstWithEnterStatement::expression)
-
-    .add_property("isCacheBlock", &CAstWithEnterStatement::is_catch_block)
+  py::class_<CAstEnterWithContextStatement, py::bases<CAstStatement> >("AstWithEnterStatement", py::no_init)
+    .add_property("expression", &CAstEnterWithContextStatement::expression)
     ;
 
-  py::class_<CAstWithExitStatement, py::bases<CAstStatement> >("AstWithExitStatement", py::no_init)
+  py::class_<CAstExitContextStatement, py::bases<CAstStatement> >("AstWithExitStatement", py::no_init)
     ;
 
   py::class_<CAstCaseClause>("AstCaseClause", py::no_init)
@@ -171,7 +169,7 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstTryCatchStatement, py::bases<CAstTryStatement> >("AstTryCatchStatement", py::no_init)
-    .add_property("catchVar", &CAstTryCatchStatement::GetCatchVariable)
+    .add_property("name", &CAstTryCatchStatement::GetName)
     .add_property("catchBlock", &CAstTryCatchStatement::GetCatchBlock)
     ;
 
@@ -224,9 +222,6 @@ void CAstNode::Expose(void)
 
   py::class_<CAstArrayLiteral, py::bases<CAstMaterializedLiteral> >("AstArrayLiteral", py::no_init)
     .add_property("values", &CAstArrayLiteral::GetValues)
-    ;
-
-  py::class_<CAstCatchExtensionObject, py::bases<CAstExpression> >("AstCatchExtensionObject", py::no_init)
     ;
 
   py::class_<CAstVariableProxy, py::bases<CAstExpression> >("AstVariableProxy", py::no_init)

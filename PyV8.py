@@ -726,7 +726,6 @@ class AST:
     Object = _PyV8.AstObjectLiteral
     RegExp = _PyV8.AstRegExpLiteral
     Array = _PyV8.AstArrayLiteral
-    CatchExtension = _PyV8.AstCatchExtensionObject
     VarProxy = _PyV8.AstVariableProxy
     Slot = _PyV8.AstSlot
     Property = _PyV8.AstProperty
@@ -1724,7 +1723,7 @@ class TestEngine(unittest.TestCase):
                 data = engine.precompile(src)
 
                 self.assert_(data)
-                self.assertEquals(44, len(data))
+                self.assertEquals(48, len(data))
 
                 s = engine.compile(src, precompiled=data)
 
@@ -2207,8 +2206,8 @@ class TestAST(unittest.TestCase):
 
                 stmt.tryBlock.visit(self)
 
-                self.assertEquals(".catch-var", str(stmt.catchVar))
-                self.assertEquals("{ <enter with> ({ \"err\": .catch-var })  try { { s = err; } } finally { <exit with> } }", str(stmt.catchBlock))
+                self.assertEquals("err", str(stmt.name))
+                self.assertEquals("{ try { s = err; } finally { <exit context> } }", str(stmt.catchBlock))
 
             def onTryFinallyStatement(self, stmt):
                 self.called += 1

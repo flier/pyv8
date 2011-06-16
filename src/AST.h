@@ -276,20 +276,18 @@ public:
   py::object expression(void) const { return to_python(as<v8i::ReturnStatement>()->expression()); }
 };
 
-class CAstWithEnterStatement : public CAstStatement
+class CAstEnterWithContextStatement : public CAstStatement
 {
 public:
-  CAstWithEnterStatement(v8i::WithEnterStatement *stat) : CAstStatement(stat) {}
+  CAstEnterWithContextStatement(v8i::EnterWithContextStatement *stat) : CAstStatement(stat) {}
 
-  py::object expression(void) const { return to_python(as<v8i::WithEnterStatement>()->expression()); }
-
-  bool is_catch_block(void) const { return as<v8i::WithEnterStatement>()->is_catch_block(); }
+  py::object expression(void) const { return to_python(as<v8i::EnterWithContextStatement>()->expression()); }
 };
 
-class CAstWithExitStatement : public CAstStatement
+class CAstExitContextStatement : public CAstStatement
 {
 public:
-  CAstWithExitStatement(v8i::WithExitStatement *stat) : CAstStatement(stat) {}
+  CAstExitContextStatement(v8i::ExitContextStatement *stat) : CAstStatement(stat) {}
 };
 
 class CAstCaseClause 
@@ -345,8 +343,9 @@ class CAstTryCatchStatement : public CAstTryStatement
 public:
   CAstTryCatchStatement(v8i::TryCatchStatement *stat) : CAstTryStatement(stat) {}
 
-  CAstVariableProxy GetCatchVariable(void) const;
   CAstBlock GetCatchBlock(void) const { return CAstBlock(as<v8i::TryCatchStatement>()->catch_block()); }
+
+  const std::string GetName(void) const { return to_string(as<v8i::TryCatchStatement>()->name()); }
 };
 
 class CAstTryFinallyStatement : public CAstTryStatement
@@ -430,12 +429,6 @@ public:
   CAstArrayLiteral(v8i::ArrayLiteral *lit) : CAstMaterializedLiteral(lit) {}
 
   py::list GetValues(void) const { return to_python(as<v8i::ArrayLiteral>()->values()); }
-};
-
-class CAstCatchExtensionObject : public CAstExpression
-{
-public:
-  CAstCatchExtensionObject(v8i::CatchExtensionObject *obj) : CAstExpression(obj) {}
 };
 
 class CAstVariableProxy : public CAstExpression
@@ -749,5 +742,3 @@ inline py::object CAstDeclaration::GetFunction(void) const
 inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstLabel>(as<v8i::TargetCollector>()->targets()); }
 
 inline py::list CAstTryStatement::GetEscapingTargets(void) const { return to_python<CAstLabel>(as<v8i::TryStatement>()->escaping_targets()); }
-
-inline CAstVariableProxy CAstTryCatchStatement::GetCatchVariable(void) const { return CAstVariableProxy(as<v8i::TryCatchStatement>()->catch_var()); }
