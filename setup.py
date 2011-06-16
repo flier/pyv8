@@ -20,11 +20,22 @@ PYTHON_HOME = None
 V8_HOME = None
 V8_SVN_URL = "http://v8.googlecode.com/svn/trunk/"
 V8_SVN_REVISION = None
-V8_SNAPSHOT_ENABLED = True
-V8_DEBUGGER_SUPPORT = True
+
 INCLUDE = None
 LIB = None
 DEBUG = False
+
+V8_SNAPSHOT_ENABLED = True      # build using snapshots for faster start-up
+V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
+V8_VMSTATE_TRACKING = DEBUG     # enable VM state tracking
+V8_OBJECT_PRINT = DEBUG         # enable object printing
+V8_PROTECT_HEAP = DEBUG         # enable heap protection
+V8_DISASSEMBLEER = DEBUG        # enable the disassembler to inspect generated code
+V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
+V8_PROFILING_SUPPORT = True     # enable profiling of JavaScript code
+V8_INSPECTOR_SUPPORT = DEBUG    # enable inspector features
+V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
+V8_FAST_TLS = True              # enable fast thread local storage support
 
 # load defaults from config file
 try:
@@ -61,19 +72,49 @@ source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrap
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
-    ("V8_NATIVE_REGEXP", None),
-    ("ENABLE_VMSTATE_TRACKING", None),
-    ("ENABLE_LOGGING_AND_PROFILING", None),
-    ("ENABLE_DEBUGGER_SUPPORT", None),
 ]
 
 if DEBUG:
     macros += [
         ("V8_ENABLE_CHECKS", None),
-        ("OBJECT_PRINT", None),
-        ("ENABLE_DISASSEMBLER", None),
-        ("ENABLE_HEAP_PROTECTION", None),
     ]
+
+if V8_NATIVE_REGEXP:
+    macros += [("V8_NATIVE_REGEXP", None)]
+else:
+    macros += [("V8_INTERPRETED_REGEXP", None)]
+
+if V8_DISASSEMBLEER:
+    macros += [("ENABLE_DISASSEMBLER", None)]
+
+if V8_PROFILING_SUPPORT:
+    V8_VMSTATE_TRACKING = True
+    macros += [("ENABLE_LOGGING_AND_PROFILING", None)]
+
+if V8_PROTECT_HEAP:
+    V8_VMSTATE_TRACKING = True
+    macros += [("ENABLE_HEAP_PROTECTION", None)]
+
+if V8_VMSTATE_TRACKING:
+    macros += [("ENABLE_VMSTATE_TRACKING", None)]
+
+if V8_LIVE_OBJECT_LIST:
+    V8_OBJECT_PRINT = True
+    V8_DEBUGGER_SUPPORT = True
+    V8_INSPECTOR_SUPPORT = True
+    macros += [("LIVE_OBJECT_LIST", None)]
+
+if V8_OBJECT_PRINT:
+    macros += [("OBJECT_PRINT", None)]
+
+if V8_DEBUGGER_SUPPORT:
+    macros += [("ENABLE_DEBUGGER_SUPPORT", None)]
+
+if V8_INSPECTOR_SUPPORT:
+    macros += [("INSPECTOR", None)]
+
+if V8_FAST_TLS:
+    macros += [("V8_FAST_TLS", None)]
 
 include_dirs = [
     os.path.join(V8_HOME, 'include'),
@@ -280,7 +321,7 @@ class build(_build):
         
         fixed_build_script = build_script.replace('-fno-rtti', '')\
                                          .replace('-fno-exceptions', '')\
-                                         .replace('/WX', '')
+                                         .replace('/WX', '').replace('/GR-', '')
 
         if x64 and os.name != 'nt':
             fixed_build_script = fixed_build_script.replace("['$DIALECTFLAGS', '$WARNINGFLAGS']", "['$DIALECTFLAGS', '$WARNINGFLAGS', '-fPIC']")
@@ -298,15 +339,29 @@ class build(_build):
             with open(scons, 'w') as f:
                 f.write(fixed_build_script)
 
-        mode = 'debug' if DEBUG else 'release'
-        arch = 'x64' if x64 else 'ia32'
-        snapshot = 'on' if V8_SNAPSHOT_ENABLED else 'off'
-        debuggersupport = 'on' if V8_DEBUGGER_SUPPORT else 'off'
+        options = {
+            'mode': 'debug' if DEBUG else 'release',
+            'arch': 'x64' if x64 else 'ia32',
+            'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
+            'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
+            'vmstate': 'on' if V8_VMSTATE_TRACKING else 'off',
+            'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
+            'protectheap': 'on' if V8_PROTECT_HEAP else 'off',
+            'profilingsupport': 'on' if V8_PROFILING_SUPPORT else 'off',
+            'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
+            'inspector': 'on' if V8_INSPECTOR_SUPPORT else 'off',
+            'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
+            'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
+            'fasttls': 'on' if V8_FAST_TLS else 'off',
+        }
 
-        print "INFO: building Google v8 with SCons for %s platform" % arch
+        print "INFO: building Google v8 with SCons for %s platform" % options['arch']
 
-        proc = subprocess.Popen("scons arch=%s mode=%s snapshot=%s debuggersupport=%s" % (arch, mode, snapshot, debuggersupport),
-                                cwd=V8_HOME, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+        cmdline = "scons %s" % ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+
+        print "DEBUG: building", cmdline
+
+        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 
         proc.communicate()
 
