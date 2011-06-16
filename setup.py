@@ -116,7 +116,13 @@ between the Python and JavaScript objects, and support to hosting
 Google's v8 engine in a python script.
 """
 
-if os.name == "nt":
+is_winnt = os.name == "nt"
+is_linux = os.name == "posix" and sys.platform.startswith("linux")
+is_freebsd = os.name == "posix" and sys.platform.startswith("freebsd")
+is_mac = os.name == "mac"
+is_osx = os.name == "posix" and sys.platform == "darwin"
+
+if is_winnt:
     include_dirs += [
         BOOST_HOME,
         os.path.join(PYTHON_HOME, 'include'),
@@ -137,7 +143,7 @@ if os.name == "nt":
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
 
-elif os.name == "posix" and (sys.platform == "linux2" or sys.platform.startswith("freebsd")):
+elif is_linux or is_freebsd:
     library_dirs += [
         V8_HOME,
     ]
@@ -156,20 +162,23 @@ elif os.name == "posix" and (sys.platform == "linux2" or sys.platform.startswith
     libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
     extra_compile_args += ["-Wno-write-strings"]
 
+    if is_freebsd:
+        libraries += ["execinfo"]
+
     if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
         extra_link_args += ["-fPIC"]
         macros += [("V8_TARGET_ARCH_X64", None)]
     else:
         macros += [("V8_TARGET_ARCH_IA32", None)]
 
-elif os.name == "mac": # contribute by Artur Ventura
+elif is_mac: # contribute by Artur Ventura
     include_dirs += [
         BOOST_HOME,
     ]
     library_dirs += [os.path.join('/lib')]
     libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "c"]
 
-elif os.name == "posix" and sys.platform == "darwin": # contribute by progrium and alec
+elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
     # scons arch=x64 library=static
 
