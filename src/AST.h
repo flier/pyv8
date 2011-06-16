@@ -662,6 +662,8 @@ struct CAstListCollector : public v8i::AstVisitor
 template <typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst)
 {
+  if (!lst) return py::list();
+
   CAstListCollector collector;
 
   for (int i=0; i<lst->length(); i++)
@@ -675,6 +677,8 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
 template <typename C, typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst)
 {
+  if (!lst) return py::list();
+
   py::list targets;
 
   for (int i=0; i<lst->length(); i++)
