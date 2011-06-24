@@ -1,4 +1,6 @@
+#ifndef _WIN32
 #include "Python.h"
+#endif
 
 #include "Utils.h"
 
