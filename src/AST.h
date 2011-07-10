@@ -344,8 +344,8 @@ public:
   CAstTryCatchStatement(v8i::TryCatchStatement *stat) : CAstTryStatement(stat) {}
 
   CAstBlock GetCatchBlock(void) const { return CAstBlock(as<v8i::TryCatchStatement>()->catch_block()); }
-
-  const std::string GetName(void) const { return to_string(as<v8i::TryCatchStatement>()->name()); }
+  CAstScope GetScope(void) const { return CAstScope(as<v8i::TryCatchStatement>()->scope()); }
+  CAstVariable GetVariable(void) const { return CAstVariable(as<v8i::TryCatchStatement>()->variable()); }
 };
 
 class CAstTryFinallyStatement : public CAstTryStatement
@@ -693,7 +693,7 @@ inline py::object CAstScope::GetReceiver(void) const
 { 
   if (m_scope->receiver())
   {
-    CAstVariableProxy proxy(m_scope->receiver());
+    CAstVariable proxy(m_scope->receiver());
 
     return to_python(proxy);
   }

@@ -169,7 +169,8 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstTryCatchStatement, py::bases<CAstTryStatement> >("AstTryCatchStatement", py::no_init)
-    .add_property("name", &CAstTryCatchStatement::GetName)
+    .add_property("scope", &CAstTryCatchStatement::GetScope)
+    .add_property("variable", &CAstTryCatchStatement::GetVariable)
     .add_property("catchBlock", &CAstTryCatchStatement::GetCatchBlock)
     ;
 

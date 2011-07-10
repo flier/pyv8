@@ -621,8 +621,6 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         return self.debugContinue(action='out', steps=steps)
 
 class JSProfiler(_PyV8.JSProfiler):
-    Modules = _PyV8.JSProfilerModules
-
     @property
     def logs(self):
         pos = 0
@@ -2206,7 +2204,7 @@ class TestAST(unittest.TestCase):
 
                 stmt.tryBlock.visit(self)
 
-                self.assertEquals("err", str(stmt.name))
+                self.assertEquals("err", str(stmt.variable.name))
                 self.assertEquals("{ try { s = err; } finally { <exit context> } }", str(stmt.catchBlock))
 
             def onTryFinallyStatement(self, stmt):

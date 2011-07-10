@@ -236,17 +236,7 @@ void CEngine::Expose(void)
     ;
 
 #endif 
-
-  py::enum_<v8::ProfilerModules>("JSProfilerModules")
-    .value("none", v8::PROFILER_MODULE_NONE)
-    .value("cpu", v8::PROFILER_MODULE_CPU)
-    .value("heap", v8::PROFILER_MODULE_HEAP_STATS)
-    .value("js", v8::PROFILER_MODULE_JS_CONSTRUCTORS)
-    .value("snapshot", v8::PROFILER_MODULE_HEAP_SNAPSHOT)
-    .value("all", (v8::ProfilerModules) (v8::PROFILER_MODULE_CPU | v8::PROFILER_MODULE_HEAP_STATS | 
-                                         v8::PROFILER_MODULE_JS_CONSTRUCTORS | v8::PROFILER_MODULE_HEAP_SNAPSHOT))
-    ;
-
+  
   py::class_<CProfiler, boost::noncopyable>("JSProfiler", py::init<>())
     .add_static_property("started", &CProfiler::IsStarted)
     .def("start", &CProfiler::Start)  
@@ -258,14 +248,10 @@ void CEngine::Expose(void)
     .staticmethod("getLogLines")
 
     .add_static_property("paused", &v8::V8::IsProfilerPaused)
-    .def("pause", &v8::V8::PauseProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU,
-                                             py::arg("tag") = 0))
+    .def("pause", &v8::V8::PauseProfiler)
     .staticmethod("pause")
-    .def("resume", &v8::V8::ResumeProfilerEx, (py::arg("modules") = v8::PROFILER_MODULE_CPU,
-                                               py::arg("tag") = 0))
+    .def("resume", &v8::V8::ResumeProfiler)
     .staticmethod("resume")
-
-    .add_static_property("modules", v8::V8::GetActiveProfilerModules)
     ;
 }
 
