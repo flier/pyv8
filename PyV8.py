@@ -652,6 +652,17 @@ JSStackTrace = _PyV8.JSStackTrace
 JSStackTrace.Options = _PyV8.JSStackTraceOptions
 JSStackFrame = _PyV8.JSStackFrame
 
+class JSIsolate(_PyV8.JSIsolate):
+    def __enter__(self):
+        self.enter()
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.leave()
+
+        del self
+
 class JSContext(_PyV8.JSContext):
     def __init__(self, obj=None, extensions=None, ctxt=None):
         if JSLocker.active:
@@ -1599,13 +1610,13 @@ class TestMultithread(unittest.TestCase):
         self.assert_((time.time() - now) >= 1)
 
     def testMultiJavascriptThread(self):
-        import time, thread, threading
+        import time, threading
 
         class Global:
             result = []
 
             def add(self, value):
-                with JSUnlocker() as unlocker:
+                with JSUnlocker():
                     time.sleep(0.1)
 
                     self.result.append(value)
@@ -1629,7 +1640,7 @@ class TestMultithread(unittest.TestCase):
         self.assertEqual(20, len(g.result))
 
     def _testPreemptionJavascriptThreads(self):
-        import time, thread, threading
+        import time, threading
 
         class Global:
             result = []
