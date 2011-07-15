@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 
-import sys, os, os.path, platform
+import sys, os, os.path, math, platform
 import subprocess
 
 import ez_setup
@@ -233,9 +233,9 @@ elif is_osx: # contribute by progrium and alec
 
     libraries += ["boost_python-mt", v8_lib]
 
-    architecture = platform.architecture()[0]
+    is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
 
-    if architecture == '64bit':
+    if is_64bit:
         os.environ['ARCHFLAGS'] = '-arch x86_64'
         extra_link_args += ["-fPIC"]
         macros += [("V8_TARGET_ARCH_X64", None)]
