@@ -244,9 +244,6 @@ void CEngine::Expose(void)
     .def("stop", &CProfiler::Stop)    
     .staticmethod("stop")
 
-    .def("getLogLines", &CProfiler::GetLogLines)
-    .staticmethod("getLogLines")
-
     .add_static_property("paused", &v8::V8::IsProfilerPaused)
     .def("pause", &v8::V8::PauseProfiler)
     .staticmethod("pause")
@@ -704,17 +701,6 @@ void CProfiler::Stop(void)
 bool CProfiler::IsStarted(void)
 {
   return v8i::RuntimeProfiler::IsEnabled();
-}
-
-py::tuple CProfiler::GetLogLines(int pos)
-{
-  char buf[4096];
-
-  int size = v8::V8::GetLogLines(pos, buf, sizeof(buf));
-
-  buf[size] = 0;
-
-  return py::make_tuple(size, py::str(buf, size));
 }
 
 #endif // SUPPORT_PROFILER

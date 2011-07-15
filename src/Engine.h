@@ -148,8 +148,6 @@ public:
   static void Stop(void);
 
   static bool IsStarted(void);
-
-  static py::tuple GetLogLines(int pos);
 };
 
 #endif // SUPPORT_PROFILER
