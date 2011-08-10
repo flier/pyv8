@@ -1129,15 +1129,7 @@ py::object CJavascriptArray::GetItem(size_t idx)
 
   v8::TryCatch try_catch;
 
-  if (!m_obj->Has(idx))
-  {
-    std::ostringstream msg;
-
-    msg << "'" << *v8::String::Utf8Value(m_obj->ObjectProtoToString()) 
-        << "' index out of range";
-
-    throw CJavascriptException(msg.str(), ::PyExc_IndexError);
-  }
+  if (!m_obj->Has(idx)) return py::object();
   
   v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New(idx));
 

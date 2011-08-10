@@ -808,15 +808,18 @@ class TestContext(unittest.TestCase):
                 global1 = ctxt1.locals
                 global1.custom = 1234
 
-                self.assertEquals(1234, int(global0.custom))
+                with ctxt0:
+                    self.assertEquals(1234, int(global0.custom))
                 self.assertEquals(1234, int(global1.custom))
 
                 # Now create a new context with the old global
                 with JSContext(global1) as ctxt2:
                     ctxt2.securityToken = ctxt1.securityToken
 
-                    self.assertRaises(AttributeError, int, global1.custom)
-                    self.assertRaises(AttributeError, int, global2.custom)
+                    with ctxt1:
+                        self.assertEquals(1234, int(global1.custom))
+                        
+                    self.assertEquals(1234, int(global2.custom))
 
     def _testSecurityChecks(self):
         with JSContext() as env1:
@@ -1187,7 +1190,7 @@ class TestWrapper(unittest.TestCase):
 
             del array[5]
 
-            self.assertRaises(IndexError, lambda: array[5])
+            self.assertEquals(None, array[5])
 
             ctxt.locals.array1 = JSArray(5)
             ctxt.locals.array2 = JSArray([1, 2, 3, 4, 5])
@@ -1210,6 +1213,18 @@ class TestWrapper(unittest.TestCase):
             ctxt.locals.array3 = [1, 2, 3, 4, 5]
             self.assert_(ctxt.eval('array3[1] === 2'))
             self.assert_(ctxt.eval('array3[9] === undefined'))
+
+            cases = {
+                "a = Array(7); for(i=0; i<a.length; i++) a[i] = i; a[3] = undefined; a[a.length-1]; a" : ("0,1,2,,4,5,6", [0, 1, 2, None, 4, 5, 6]),
+                "a = Array(7); for(i=0; i<a.length - 1; i++) a[i] = i; a[a.length-1]; a" : ("0,1,2,3,4,5,", [0, 1, 2, 3, 4, 5, None]),
+                "a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a" : (",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6])
+            }
+
+            for code, (keys, values) in cases.items():
+                array = ctxt.eval(code)
+
+                self.assertEquals(keys, str(array))
+                self.assertEquals(values, [array[i] for i in range(len(array))])
 
     def testMultiDimArray(self):
         with JSContext() as ctxt:
