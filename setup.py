@@ -13,7 +13,7 @@ from setuptools import setup, Extension
 
 # default settings, you can modify it in buildconf.py.
 # please look in buildconf.py.example for more information
-PYV8_HOME = os.path.dirname(__file__)
+PYV8_HOME = os.path.abspath(os.path.dirname(__file__))
 BOOST_HOME = None
 BOOST_PYTHON_MT = False
 BOOST_STATIC_LINK = False
