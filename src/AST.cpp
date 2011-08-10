@@ -260,7 +260,7 @@ void CAstNode::Expose(void)
 
   py::enum_<v8i::Token::Value>("AstOperation")
   #define T(name, string, precedence) .value(#name, v8i::Token::name)
-    TOKEN_LIST(T, T, IGNORE_TOKEN)
+    TOKEN_LIST(T, IGNORE_TOKEN)
   #undef T
     ;
 

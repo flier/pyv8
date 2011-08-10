@@ -132,6 +132,7 @@ if LIB:
     library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
 
 v8_lib = 'v8_g' if DEBUG else 'v8' # contribute by gaussgss
+boost_lib = 'boost_python-mt' if BOOST_PYTHON_MT else 'boost_python'
 
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -200,7 +201,7 @@ elif is_linux or is_freebsd:
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-    libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "rt"]
+    libraries += [boost_lib, v8_lib, "rt"]
     extra_compile_args += ["-Wno-write-strings"]
 
     if is_freebsd:
@@ -217,7 +218,7 @@ elif is_mac: # contribute by Artur Ventura
         BOOST_HOME,
     ]
     library_dirs += [os.path.join('/lib')]
-    libraries += ["boost_python-mt" if BOOST_PYTHON_MT else "boost_python", v8_lib, "c"]
+    libraries += [boost_lib, v8_lib, "c"]
 
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
@@ -319,8 +320,9 @@ class build(_build):
 
         x64 = [k for k, v in macros if k == 'V8_TARGET_ARCH_X64']
         
-        fixed_build_script = build_script.replace('-fno-rtti', '')\
-                                         .replace('-fno-exceptions', '')\
+        fixed_build_script = build_script.replace('-fno-rtti', '') \
+                                         .replace('-fno-exceptions', '') \
+                                         .replace('-Werror', '') \
                                          .replace('/WX', '').replace('/GR-', '')
 
         if x64 and os.name != 'nt':
