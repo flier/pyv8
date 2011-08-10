@@ -16,6 +16,7 @@ from setuptools import setup, Extension
 PYV8_HOME = os.path.dirname(__file__)
 BOOST_HOME = None
 BOOST_PYTHON_MT = False
+BOOST_STATIC_LINK = False
 PYTHON_HOME = None
 V8_HOME = None
 V8_SVN_URL = "http://v8.googlecode.com/svn/trunk/"
@@ -190,19 +191,26 @@ elif is_linux or is_freebsd:
         V8_HOME,
     ]
     if BOOST_HOME:
-        library_dirs += [os.path.join(BOOST_HOME, 'stage/lib')]
+        boost_lib_dir = os.path.join(BOOST_HOME, 'stage/lib')
         include_dirs += [BOOST_HOME]
     else:
-        library_dirs += ['/usr/local/lib']
+        boost_lib_dir = '/usr/local/lib'
         include_dirs += ['/usr/local/include']
+
+    library_dirs += [boost_lib_dir]
 
     if PYTHON_HOME:
         major, minor, _, _, _ = sys.version_info
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-    libraries += [boost_lib, v8_lib, "rt"]
+    libraries += [v8_lib, "rt"]
     extra_compile_args += ["-Wno-write-strings"]
+
+    if BOOST_STATIC_LINK:
+        extra_link_args.append(os.path.join(boost_lib_dir, "lib%s.a" % boost_lib))
+    else:
+        libraries.append(boost_lib)
 
     if is_freebsd:
         libraries += ["execinfo"]
