@@ -2231,7 +2231,7 @@ class TestAST(unittest.TestCase):
                 stmt.tryBlock.visit(self)
 
                 self.assertEquals("err", str(stmt.variable.name))
-                self.assertEquals("{ try { s = err; } finally { <exit context> } }", str(stmt.catchBlock))
+                self.assertEquals("{ { s = err; } <exit context> }", str(stmt.catchBlock))
 
             def onTryFinallyStatement(self, stmt):
                 self.called += 1

@@ -276,12 +276,13 @@ public:
   py::object expression(void) const { return to_python(as<v8i::ReturnStatement>()->expression()); }
 };
 
-class CAstEnterWithContextStatement : public CAstStatement
+class CAstWithStatement : public CAstStatement
 {
 public:
-  CAstEnterWithContextStatement(v8i::EnterWithContextStatement *stat) : CAstStatement(stat) {}
+  CAstWithStatement(v8i::WithStatement *stat) : CAstStatement(stat) {}
 
-  py::object expression(void) const { return to_python(as<v8i::EnterWithContextStatement>()->expression()); }
+  py::object expression(void) const { return to_python(as<v8i::WithStatement>()->expression()); }
+  py::object statement(void) const { return to_python(as<v8i::WithStatement>()->statement()); }
 };
 
 class CAstExitContextStatement : public CAstStatement
