@@ -13,6 +13,13 @@
 #include "Context.h"
 #include "Utils.h"
 
+#define TERMINATE_EXECUTION_CHECK(returnValue) \
+  if(v8::V8::IsExecutionTerminating()) { \
+    ::PyErr_Clear(); \
+    ::PyErr_SetString(PyExc_RuntimeError, "execution is terminating"); \
+    return returnValue; \
+  }
+
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 { 
   obj.Dump(os);
@@ -93,7 +100,7 @@ void CWrapper::Expose(void)
 void CPythonObject::ThrowIf(void)
 {  
   CPythonGIL python_gil;
-
+  
   assert(::PyErr_Occurred());
 
   v8::HandleScope handle_scope;
@@ -201,6 +208,8 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
   
   CPythonGIL python_gil;
 
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
+
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   v8::String::Utf8Value name(prop);
@@ -250,6 +259,8 @@ v8::Handle<v8::Value> CPythonObject::NamedSetter(
 
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -311,6 +322,8 @@ v8::Handle<v8::Integer> CPythonObject::NamedQuery(
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Integer>())
+
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   v8::String::Utf8Value name(prop);
@@ -330,6 +343,8 @@ v8::Handle<v8::Boolean> CPythonObject::NamedDeleter(
 
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Boolean>())
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -374,6 +389,8 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
 
   v8::HandleScope handle_scope;  
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Array>())
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -441,6 +458,8 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
+
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   if (PyGen_Check(obj.ptr())) return v8::Undefined();
@@ -491,6 +510,8 @@ v8::Handle<v8::Value> CPythonObject::IndexedSetter(
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
+
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   if (::PySequence_Check(obj.ptr()))
@@ -519,6 +540,8 @@ v8::Handle<v8::Integer> CPythonObject::IndexedQuery(
 
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Integer>())
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
@@ -562,6 +585,8 @@ v8::Handle<v8::Boolean> CPythonObject::IndexedDeleter(
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Boolean>())
+
   py::object obj = CJavascriptObject::Wrap(info.Holder());  
 
   if (::PySequence_Check(obj.ptr()) && (Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
@@ -586,6 +611,8 @@ v8::Handle<v8::Array> CPythonObject::IndexedEnumerator(const v8::AccessorInfo& i
 
   v8::HandleScope handle_scope;  
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Handle<v8::Array>())
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
@@ -633,6 +660,8 @@ v8::Handle<v8::Value> CPythonObject::Caller(const v8::Arguments& args)
 
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
 
   py::object self;
   
@@ -735,6 +764,8 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   v8::TryCatch try_catch;
 
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(v8::Undefined())
 
   if (obj.ptr() == Py_None) return v8::Null();
   if (obj.ptr() == Py_True) return v8::True();
@@ -922,6 +953,8 @@ py::list CJavascriptObject::GetAttrList(void)
 
   py::list attrs;
 
+  TERMINATE_EXECUTION_CHECK(attrs);
+
   v8::TryCatch try_catch;
 
   v8::Handle<v8::Array> props = m_obj->GetPropertyNames();
@@ -1087,6 +1120,8 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 py::object CJavascriptObject::Wrap(CJavascriptObject *obj)
 {
   CPythonGIL python_gil;
+
+  TERMINATE_EXECUTION_CHECK(py::object())
 
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CJavascriptObject>(CJavascriptObjectPtr(obj))));
 }

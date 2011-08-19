@@ -314,7 +314,7 @@ static struct {
 
 void CJavascriptException::ThrowIf(v8::TryCatch& try_catch)
 {
-  if (try_catch.HasCaught())
+  if (try_catch.HasCaught() && try_catch.CanContinue())
   {
     v8::HandleScope handle_scope;
 
