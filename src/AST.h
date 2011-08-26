@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #ifndef WIN32
 
 #ifndef isfinite
@@ -13,6 +15,8 @@
 #include "src/ast.h"
 #include "src/scopes.h"
 #include "src/assembler.h"
+
+#include "utf8.h"
 
 #include "PrettyPrinter.h"
 #include "Wrapper.h"
@@ -34,22 +38,48 @@ inline py::list to_python(v8i::ZoneList<T *>* lst);
 template <typename C, typename T>
 inline py::list to_python(v8i::ZoneList<T *>* lst);
 
-inline py::object to_python(v8i::Handle<v8i::String> str)
+template <typename T>
+T _to_string(v8i::Handle<v8i::String> str)
 { 
-  if (str.is_null()) return py::object();
+  if (str.is_null()) return T();
 
-  v8i::Vector<const char> buf = str->ToAsciiVector();
+  v8i::String::FlatContent content = str->GetFlatContent();
 
-  return py::str(buf.start(), buf.length());
+  if (content.IsFlat())
+  {
+    if (content.IsAscii())
+    {
+      v8i::Vector<const char> buf = content.ToAsciiVector();
+
+      return T(buf.start(), buf.length());
+    }
+    else
+    {
+      v8i::Vector<const v8i::uc16> buf = content.ToUC16Vector();
+      std::vector<char> out;
+
+      utf8::utf16to8(buf.start(), buf.start() + buf.length(), out.begin());
+
+      return T(&out[0], out.size());
+    }
+  }
+  else
+  {
+    int len = 0;
+    v8i::SmartPointer<char> buf = str->ToCString(v8i::DISALLOW_NULLS, v8i::FAST_STRING_TRAVERSAL, &len);
+
+    return T(*buf, len);
+  }
+}
+
+inline py::object to_python(v8i::Handle<v8i::String> str)
+{
+  return _to_string<py::str>(str);
 }
 
 inline const std::string to_string(v8i::Handle<v8i::String> str)
-{ 
-  if (str.is_null()) return std::string();
-
-  v8i::Vector<const char> buf = str->ToAsciiVector();
-
-  return std::string(buf.start(), buf.length());
+{
+  return _to_string<std::string>(str);
 }
 
 class CAstVisitor;
