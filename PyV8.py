@@ -642,10 +642,6 @@ JSObjectSpace = _PyV8.JSObjectSpace
 JSAllocationAction = _PyV8.JSAllocationAction
 
 class JSEngine(_PyV8.JSEngine):
-    """
-    JSEngine is the backend Javascript engine.
-    """
-
     def __enter__(self):
         return self
 
@@ -1333,7 +1329,7 @@ class TestWrapper(unittest.TestCase):
 
     def testUnicode(self):
         with JSContext() as ctxt:
-            self.assertEquals(u"�?, unicode(ctxt.eval(u"\"人\""), "utf-8"))
+            self.assertEquals(u"人", unicode(ctxt.eval(u"\"人\""), "utf-8"))
             self.assertEquals(u"é", unicode(ctxt.eval(u"\"é\""), "utf-8"))
 
             func = ctxt.eval("(function (msg) { return msg.length; })")
