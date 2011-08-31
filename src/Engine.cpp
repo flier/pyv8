@@ -126,15 +126,16 @@ void CEngine::Expose(void)
     .value("free", v8::kAllocationActionFree)
     .value("all", v8::kAllocationActionAll);
 
-  py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
+  py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is the backend Javascript engine.")
+    .def(py::init<>("Create a new script engine instance."))
     .add_static_property("version", &CEngine::GetVersion, 
-                         "Get the V8 engine version")
+                         "Get the V8 engine version.")
 
     .add_static_property("dead", &v8::V8::IsDead,
                          "Check if V8 is dead and therefore unusable.")
 
     .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
-                         "the V8 thread id of the calling thread.")
+                         "The V8 thread id of the calling thread.")
 
     .def("setFlags", &CEngine::SetFlags, "Sets V8 flags from a string.")
     .staticmethod("setFlags")
@@ -206,13 +207,14 @@ void CEngine::Expose(void)
                                          py::arg("precompiled") = py::object()))    
     ;
 
-  py::class_<CScript, boost::noncopyable>("JSScript", py::no_init)
-    .add_property("source", &CScript::GetSource)
+  py::class_<CScript, boost::noncopyable>("JSScript", "JSScript is the compiled script", py::no_init)
+    .add_property("source", &CScript::GetSource, "the source code")
 
-    .def("run", &CScript::Run)
+    .def("run", &CScript::Run, "Execute the compiled code.")
 
   #ifdef SUPPORT_AST
-    .def("visit", &CScript::visit, (py::arg("handler")))
+    .def("visit", &CScript::visit, (py::arg("handler")), 
+         "Visit the AST of code with callback handler")
   #endif
     ;
 
@@ -222,7 +224,7 @@ void CEngine::Expose(void)
 
 #ifdef SUPPORT_EXTENSION
 
-  py::class_<CExtension, boost::noncopyable>("JSExtension", py::no_init)    
+  py::class_<CExtension, boost::noncopyable>("JSExtension", "JSExtension is the reusable script module", py::no_init)    
     .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"), 
                                                                                        py::arg("source"),
                                                                                        py::arg("callback") = py::object(),
@@ -230,14 +232,14 @@ void CEngine::Expose(void)
                                                                                        py::arg("register") = true)))
     .add_static_property("extensions", &CExtension::GetExtensions)
 
-    .add_property("name", &CExtension::GetName)
-    .add_property("source", &CExtension::GetSource)
-    .add_property("dependencies", &CExtension::GetDependencies)
+    .add_property("name", &CExtension::GetName, "The name of extension")
+    .add_property("source", &CExtension::GetSource, "The source code of extension")
+    .add_property("dependencies", &CExtension::GetDependencies, "The extension dependencies which will be load before this extension")
 
-    .add_property("autoEnable", &CExtension::IsAutoEnable, &CExtension::SetAutoEnable)
+    .add_property("autoEnable", &CExtension::IsAutoEnable, &CExtension::SetAutoEnable, "Enable the extension by default.")
 
-    .add_property("registered", &CExtension::IsRegistered)
-    .def("register", &CExtension::Register)
+    .add_property("registered", &CExtension::IsRegistered, "The extension has been registerd")
+    .def("register", &CExtension::Register, "Register the extension")
     ;
 
 #endif 

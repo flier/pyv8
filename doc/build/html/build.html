@@ -34,6 +34,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="1minute.html" title="One Minute Tutorial"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -62,15 +65,17 @@ You could use it to build the PyV8 module or distribution with one command.</p>
 <div class="section" id="build-the-module">
 <h3>Build the module<a class="headerlink" href="#build-the-module" title="Permalink to this headline">¶</a></h3>
 <p>Run the setup.py with install or build command</p>
-<div class="highlight-python"><pre>python setup.py install     # build and install the PyV8
-python setup.py build       # build the PyV8 package</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$python</span> setup.py install     <span class="c"># build and install the PyV8</span>
+<span class="nv">$python</span> setup.py build       <span class="c"># build the PyV8 package</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="build-the-distribution">
 <h3>Build the distribution<a class="headerlink" href="#build-the-distribution" title="Permalink to this headline">¶</a></h3>
 <p>Run the setup.py with bdist or bdist_wininst command</p>
-<div class="highlight-python"><pre>python setup.py bdist           # build the distribution package for Linux/Mac
-python setup.py bdist_wininst   # build the distribution package for Windows</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$python</span> setup.py bdist           <span class="c"># build the distribution package for Linux/Mac</span>
+<span class="nv">$python</span> setup.py bdist_wininst   <span class="c"># build the distribution package for Windows</span>
+</pre></div>
 </div>
 </div>
 </div>
@@ -80,7 +85,8 @@ python setup.py bdist_wininst   # build the distribution package for Windows</pr
 <h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
 <p>Please download and install Python 2.5 or later first.</p>
 <p>Set environment variable PYTHON_HOME to the python root folder</p>
-<div class="highlight-python"><pre>set PYTHON_HOME=C:\Program Files\Python</pre>
+<div class="highlight-guess"><div class="highlight"><pre><span class="n">C:</span><span class="o">\&gt;</span><span class="n">set</span> <span class="n">PYTHON_HOME</span><span class="o">=</span><span class="n">C:</span><span class="o">\</span><span class="n">Program</span> <span class="n">Files</span><span class="o">\</span><span class="n">Python</span>
+</pre></div>
 </div>
 </div>
 <div class="section" id="boost">
@@ -89,25 +95,29 @@ python setup.py bdist_wininst   # build the distribution package for Windows</pr
 please download or install <a class="reference external" href="http://www.boost.org/users/download/">the latest version</a> of Boost,
 and follow <a class="reference external" href="http://www.boost.org/doc/libs/release/more/getting_started/">the getting started guide</a> to build the library.</p>
 <p>Set environment variable BOOST_HOME to the boost root folder</p>
-<div class="highlight-python"><pre>$export BOOST_HOME=~/boost_1_47_0</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$export</span> <span class="nv">BOOST_HOME</span><span class="o">=</span>~/boost_1_47_0
+</pre></div>
 </div>
 </div>
 <div class="section" id="google-v8">
 <h3>Google V8<a class="headerlink" href="#google-v8" title="Permalink to this headline">¶</a></h3>
 <p>Please follow <a class="reference external" href="http://code.google.com/apis/v8/build.html">the building document</a> to download and build v8 engine as static library</p>
 <p>set environment variable V8_HOME to the v8 root folder</p>
-<div class="highlight-python"><pre>$export V8_HOME=~/v8</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$export</span> <span class="nv">V8_HOME</span><span class="o">=</span>~/v8
+</pre></div>
 </div>
 <p>If PyV8&#8217;s setup.py can&#8217;t found the v8 source from V8_HOME, it will automatic try to checkout the latest v8 SNV trunk code and build it.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p>If you want to build v8 with GCC 4.x at x64 platform, you should compile v8 with PIC (Position-Independent Code) mode <a class="footnote-reference" href="#f3" id="id3">[3]</a>,and set the arch to x64 for scons.</p>
-<div class="highlight-python"><pre>$export CCFLAGS=-fPIC
-$scons arch=x64</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$export</span> <span class="nv">CCFLAGS</span><span class="o">=</span>-fPIC
+<span class="nv">$scons</span> <span class="nv">arch</span><span class="o">=</span>x64
+</pre></div>
 </div>
 <p>You may also need build Boost with &#8216;-fPIC&#8217; argument.</p>
-<div class="last highlight-python"><pre>$./bjam --clean
-$./bjam cxxflags=-fPIC</pre>
+<div class="last highlight-sh"><div class="highlight"><pre><span class="nv">$.</span>/bjam --clean
+<span class="nv">$.</span>/bjam <span class="nv">cxxflags</span><span class="o">=</span>-fPIC
+</pre></div>
 </div>
 </div>
 <div class="admonition note">
@@ -115,27 +125,28 @@ $./bjam cxxflags=-fPIC</pre>
 <p>From the v8 engine 3.0, the build script of v8 engine has disabled the C++ RTTI and exception supports by default. It may save some bits of memory, but will broke the boost::python library and PyV8.</p>
 <p>So, we must enable it before build PyV8.</p>
 <p>For the GCC and other environment base on the SCons, please remove the -fno-rtti and -fno-exceptions from SConstruct</p>
-<div class="highlight-python"><pre>Index: SConstruct
-===================================================================
---- SConstruct  (revision 6041)
-+++ SConstruct  (working copy)
-@@ -126,7 +126,7 @@
-   'gcc': {
-     'all': {
-       'CCFLAGS':      ['$DIALECTFLAGS', '$WARNINGFLAGS'],
--      'CXXFLAGS':     ['$CCFLAGS', '-fno-rtti', '-fno-exceptions'],
-+      'CXXFLAGS':     ['$CCFLAGS'],
+<div class="highlight-diff"><div class="highlight"><pre><span class="gh">Index: SConstruct</span>
+<span class="gh">===================================================================</span>
+<span class="gd">--- SConstruct  (revision 6041)</span>
+<span class="gi">+++ SConstruct  (working copy)</span>
+<span class="gu">@@ -126,7 +126,7 @@</span>
+   &#39;gcc&#39;: {
+     &#39;all&#39;: {
+       &#39;CCFLAGS&#39;:      [&#39;$DIALECTFLAGS&#39;, &#39;$WARNINGFLAGS&#39;],
+<span class="gd">-      &#39;CXXFLAGS&#39;:     [&#39;$CCFLAGS&#39;, &#39;-fno-rtti&#39;, &#39;-fno-exceptions&#39;],</span>
+<span class="gi">+      &#39;CXXFLAGS&#39;:     [&#39;$CCFLAGS&#39;],</span>
      },
-     'visibility:hidden': {
+     &#39;visibility:hidden&#39;: {
        # Use visibility=default to disable this.
-@@ -455,7 +455,6 @@
-   'gcc': {
-     'all': {
-       'LIBPATH': ['.'],
--      'CCFLAGS': ['-fno-rtti', '-fno-exceptions']
+<span class="gu">@@ -455,7 +455,6 @@</span>
+   &#39;gcc&#39;: {
+     &#39;all&#39;: {
+       &#39;LIBPATH&#39;: [&#39;.&#39;],
+<span class="gd">-      &#39;CCFLAGS&#39;: [&#39;-fno-rtti&#39;, &#39;-fno-exceptions&#39;]</span>
      },
-     'os:linux': {
-       'LIBS':         ['pthread'],</pre>
+     &#39;os:linux&#39;: {
+       &#39;LIBS&#39;:         [&#39;pthread&#39;],
+</pre></div>
 </div>
 <p class="last">If you are using PyV8&#8217;s setup.py to checkout and build v8, it will automatic patch the SConstruct file before build v8.</p>
 </div>
@@ -147,20 +158,21 @@ $./bjam cxxflags=-fPIC</pre>
 <ol class="arabic simple">
 <li>Build v8 with debug mode</li>
 </ol>
-<div class="highlight-python"><pre>scons mode=debug            # x86
-scons mode=debug arch=x64   # amd64</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$scons</span> <span class="nv">mode</span><span class="o">=</span>debug            <span class="c"># x86</span>
+<span class="nv">$scons</span> <span class="nv">mode</span><span class="o">=</span>debug <span class="nv">arch</span><span class="o">=</span>x64   <span class="c"># amd64</span>
+</pre></div>
 </div>
 <ol class="arabic simple" start="2">
 <li>Set or export DEBUG=1</li>
 </ol>
-<div class="highlight-python"><pre>set DEBUG=1 # Windows
-
-export DEBUG=1 # Unix</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$export</span> <span class="nv">DEBUG</span><span class="o">=</span>1
+</pre></div>
 </div>
 <ol class="arabic simple" start="3">
 <li>Build pyv8 with setup.py</li>
 </ol>
-<div class="highlight-python"><pre>python setup.py build</pre>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$python</span> setup.py build
+</pre></div>
 </div>
 </div>
 <div class="section" id="faq">
@@ -274,6 +286,9 @@ export DEBUG=1 # Unix</pre>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="1minute.html" title="One Minute Tutorial"
              >next</a> |</li>

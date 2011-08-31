@@ -12,7 +12,7 @@ and support to host the Google's v8 engine in a python script.
 
 You could create and enter a context to evaluate Javascript code in a few of code.
 
-::
+.. code-block:: python
 
     >>> import PyV8
     >>> ctxt = PyV8.JSContext()          # create a context with an implicit global object
@@ -22,7 +22,7 @@ You could create and enter a context to evaluate Javascript code in a few of cod
 
 You also could invoke the Javascript function from Python, or vice versa.
 
-::
+.. code-block:: python
 
     >>> class Global(PyV8.JSClass):      # define a compatible javascript class
     ...   def hello(self):               # define a method

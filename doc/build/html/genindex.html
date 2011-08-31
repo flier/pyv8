@@ -31,6 +31,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="#" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li><a href="index.html">PyV8 v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -44,22 +47,47 @@
    <h1 id="index">Index</h1>
 
    <div class="genindex-jumpbox">
-   <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#J"><strong>J</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> 
+   <a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#J"><strong>J</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#V"><strong>V</strong></a> 
    </div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSExtension.autoEnable">autoEnable (PyV8.JSExtension attribute)</a></dt>
+</dl></td>
+</tr></table>
+
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
     <dt><a href="api/engine.html#PyV8.JSEngine.collect">collect() (PyV8.JSEngine method)</a></dt>
+    <dt><a href="api/engine.html#PyV8.JSEngine.compile">compile() (PyV8.JSEngine method)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="api/engine.html#JSEngine.compile">compile() (JSEngine method)</a></dt>
+    <dt><a href="api/engine.html#PyV8.JSEngine.currentThreadId">currentThreadId (PyV8.JSEngine attribute)</a></dt>
 </dl></td>
 </tr></table>
 
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/engine.html#PyV8.JSEngine.dead">dead (PyV8.JSEngine attribute)</a></dt>
+    <dt><a href="api/context.html#PyV8.JSExtension.dependencies">dependencies (PyV8.JSExtension attribute)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
     <dt><a href="api/engine.html#PyV8.JSEngine.dispose">dispose() (PyV8.JSEngine method)</a></dt>
+</dl></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSContext.enter">enter() (PyV8.JSContext method)</a></dt>
+    <dd><dl>
+      <dt><a href="api/context.html#PyV8.JSIsolate.enter">(PyV8.JSIsolate method)</a></dt>
+  </dl></dd>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSContext.eval">eval() (PyV8.JSContext method)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -73,10 +101,12 @@
 <h2 id="J">J</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSContext">JSContext (class in PyV8)</a></dt>
     <dt><a href="api/engine.html#PyV8.JSEngine">JSEngine (class in PyV8)</a></dt>
-    <dt><a href="api/engine.html#PyV8.JSExtension">JSExtension (class in PyV8)</a></dt>
+    <dt><a href="api/context.html#PyV8.JSExtension">JSExtension (class in PyV8)</a></dt>
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSIsolate">JSIsolate (class in PyV8)</a></dt>
     <dt><a href="api/engine.html#PyV8.JSScript">JSScript (class in PyV8)</a></dt>
 </dl></td>
 </tr></table>
@@ -84,21 +114,42 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSContext.leave">leave() (PyV8.JSContext method)</a></dt>
+    <dd><dl>
+      <dt><a href="api/context.html#PyV8.JSIsolate.leave">(PyV8.JSIsolate method)</a></dt>
+  </dl></dd>
+    <dt><a href="api/context.html#PyV8.JSContext.locals">locals (PyV8.JSContext attribute)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
     <dt><a href="api/engine.html#PyV8.JSEngine.lowMemory">lowMemory() (PyV8.JSEngine method)</a></dt>
+</dl></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#PyV8.JSExtension.name">name (PyV8.JSExtension attribute)</a></dt>
 </dl></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="api/engine.html#JSEngine.precompile">precompile() (JSEngine method)</a></dt>
+    <dt><a href="api/engine.html#PyV8.JSEngine.precompile">precompile() (PyV8.JSEngine method)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/context.html#module-PyV8">PyV8 (module)</a>, <a href="api/engine.html#module-PyV8">[1]</a></dt>
 </dl></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%" valign="top"><dl>
-    <dt><a href="api/engine.html#JSExtension.register">register() (JSExtension method)</a></dt>
+    <dt><a href="api/context.html#PyV8.JSExtension.register">register() (PyV8.JSExtension method)</a></dt>
+    <dt><a href="api/context.html#PyV8.JSExtension.registered">registered (PyV8.JSExtension attribute)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/engine.html#PyV8.JSScript.run">run() (PyV8.JSScript method)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -110,6 +161,10 @@
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
     <dt><a href="api/engine.html#PyV8.JSEngine.setMemoryLimit">setMemoryLimit() (PyV8.JSEngine method)</a></dt>
+    <dt><a href="api/context.html#PyV8.JSExtension.source">source (PyV8.JSExtension attribute)</a></dt>
+    <dd><dl>
+      <dt><a href="api/engine.html#PyV8.JSScript.source">(PyV8.JSScript attribute)</a></dt>
+  </dl></dd>
 </dl></td>
 </tr></table>
 
@@ -120,6 +175,16 @@
 </dl></td>
   <td style="width: 33%" valign="top"><dl>
     <dt><a href="api/engine.html#PyV8.JSEngine.terminateThread">terminateThread() (PyV8.JSEngine method)</a></dt>
+</dl></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/engine.html#PyV8.JSEngine.version">version (PyV8.JSEngine attribute)</a></dt>
+</dl></td>
+  <td style="width: 33%" valign="top"><dl>
+    <dt><a href="api/engine.html#PyV8.JSScript.visit">visit() (PyV8.JSScript method)</a></dt>
 </dl></td>
 </tr></table>
 
@@ -156,6 +221,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="#" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li><a href="index.html">PyV8 v1.0beta documentation</a> &raquo;</li> 
       </ul>
     </div>

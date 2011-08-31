@@ -1,18 +1,61 @@
 .. _engine:
+.. py:module:: PyV8
 
 Javascript Engine
 ==========================
 
-JSEngine
---------
-.. autoclass:: PyV8.JSEngine
-   :members: version, setFlags, dead, dispose,
-             collect, idle, lowMemory, setMemoryLimit, setMemoryAllocationCallback,
-             currentThreadId, terminateThread, terminateAllThreads
+Besides to execute a Javascript code with :py:meth:`JSContext.eval`, you could create a new :py:class:`JSEngine` instance and compile the Javascript code with :py:meth:`JSEngine.compile` before execute it. A :py:class:`JSScript` object will be returned, and you could run it later with :py:meth:`JSScript.run` method many times, or visit its AST [#f1]_ with :py:meth:`JSScript.visit`.
 
-   .. py:method:: compile(source, name='', line=-1, col=-1, precompiled=None) -> JSScript object
+Compile Script and Control Engine
+---------------------------------
 
-      Compile the Javascript code to a :py:class:`PyV8.JSScript` object, which could be execute or visit it's AST.
+When you use :py:meth:`JSEngine.compile` compile a Javascript code, the v8 engine will parse the sytanx and store the AST in a :py:class:`JSScript` object. You could execute it with :py:meth:`JSScript.run` or access the source code with :py:attr:`JSScript.source` later.
+
+.. code-block:: python
+
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                s = engine.compile("1+2")
+
+                print s.source # "1+2"
+                print s.run()  # 3
+
+You could only parse the sytanx with :py:meth:`JSEngine.precompile` before use it, which return a :py:class:`buffer` object contains some internal data. The buffer can't be executed directly, but could be used as the precompied parameter when call the :py:meth:`JSEngine.compile` later and improve the performance.
+
+.. code-block:: python
+
+        with JSContext() as ctxt:
+            with JSEngine() as engine:
+                buf = engine.precompile("1+2")
+
+                # do something
+
+                s = engine.compile("1+2", precompied=buf) # use the parsed data to improve performancee
+
+                print s.source # "1+2"
+                print s.run()  # 3
+
+:py:class:`JSEngine` contains some static attributes and methods for the global v8 engine, for example:
+
+* Get the compiled v8 version with :py:attr:`JSEngine.version`
+* Check if V8 is dead and therefore unusable with :py:attr:`JSEngine.dead`
+* Force a full garbage collection with :py:meth:`JSEngine.collect`.
+* Releases any resources used by v8 and stops any utility threads with :py:meth:`JSEngine.dispose`
+
+* Get the current v8 thread id with :py:attr:`JSEngine.currentThreadId`
+* Forcefully terminate the current JavaScript thread with :py:meth:`JSEngine.terminateAllThreads`
+* Forcefully terminate execution of a JavaScript thread with :py:meth:`JSEngine.terminateThread`
+
+JSEngine - the backend Javascript engine
+----------------------------------------
+.. autoclass:: JSEngine
+   :members:
+   :inherited-members:
+   :exclude-members: compile, precompile
+
+   .. automethod:: compile(source, name='', line=-1, col=-1, precompiled=None) -> JSScript object
+
+      Compile the Javascript code to a :py:class:`JSScript` object, which could be execute many times or visit it's AST.
 
       :param source: the Javascript code
       :type source: str or unicode
@@ -20,30 +63,39 @@ JSEngine
       :param integer line: the start line number of the Javascript code
       :param integer col: the start column number of the Javascript code
       :param buffer precompiled: the precompiled buffer of Javascript code
-      :rtype: a compiled :py:class:`PyV8.JSScript` object
+      :rtype: a compiled :py:class:`JSScript` object
 
-   .. py:method:: precompile(source) -> buffer object
+   .. automethod:: precompile(source) -> buffer object
 
-      Precompile the Javascript code to an internal buffer, which could be used to improve the performance when compile the same script.
+      Precompile the Javascript code to an internal buffer, which could be used to improve the performance when compile the same script later.
 
       :param source: the Javascript code
       :type source: str or unicode
       :rtype: a buffer object contains the precompiled internal data
 
-.. autoclass:: PyV8.JSScript
-   :members: source
+   .. py:attribute:: version
 
-   Compiled Javascript Code
+      Get the V8 engine version
 
-   .. py::method:: run()
-      Execute the compiled Javascript code
+   .. py:attribute:: dead
 
-   .. py::method:: visit(handler)
+      Check if V8 is dead and therefore unusable.
 
-.. autoclass:: PyV8.JSExtension
-   :members: extensions, name, source, dependencies, autoEnable, registered
+   .. py:attribute:: currentThreadId
 
-   .. py:method:: register()
+      The V8 thread id of the calling thread.
+
+JSScript - the compiled script
+----------------------------
+.. autoclass:: JSScript
+   :members:
+   :inherited-members:
 
 .. toctree::
    :maxdepth: 2
+
+.. rubric:: Footnotes
+
+.. [#f1] `Abstract Syntax Tree (AST) <http://en.wikipedia.org/wiki/Abstract_syntax_tree>`_ is a tree representation of the abstract syntactic structure of source code written in a programming language. Each node of the tree denotes a construct occurring in the source code. The syntax is 'abstract' in the sense that it does not represent every detail that appears in the real syntax. For instance, grouping parentheses are implicit in the tree structure, and a syntactic construct such as an if-condition-then expression may be denoted by a single node with two branches.
+
+         Please refer to the :ref:`ast` page for more detail.

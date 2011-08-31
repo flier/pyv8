@@ -18,19 +18,19 @@ Build the module
 ^^^^^^^^^^^^^^^^
 Run the setup.py with install or build command
 
-::
+.. code-block:: sh
 
-    python setup.py install     # build and install the PyV8
-    python setup.py build       # build the PyV8 package
+    $python setup.py install     # build and install the PyV8
+    $python setup.py build       # build the PyV8 package
 
 Build the distribution
 ^^^^^^^^^^^^^^^^^^^^^^
 Run the setup.py with bdist or bdist_wininst command
 
-::
+.. code-block:: sh
 
-    python setup.py bdist           # build the distribution package for Linux/Mac
-    python setup.py bdist_wininst   # build the distribution package for Windows
+    $python setup.py bdist           # build the distribution package for Linux/Mac
+    $python setup.py bdist_wininst   # build the distribution package for Windows
 
 Third Party Library
 -------------------
@@ -42,9 +42,9 @@ Please download and install Python 2.5 or later first.
 
 Set environment variable PYTHON_HOME to the python root folder
 
-::
+.. code-block:: guess
 
-    set PYTHON_HOME=C:\Program Files\Python
+    C:\>set PYTHON_HOME=C:\Program Files\Python
 
 Boost
 ^^^^^
@@ -55,7 +55,7 @@ and follow `the getting started guide <http://www.boost.org/doc/libs/release/mor
 
 Set environment variable BOOST_HOME to the boost root folder
 
-::
+.. code-block:: sh
 
     $export BOOST_HOME=~/boost_1_47_0
 
@@ -66,7 +66,7 @@ Please follow `the building document <http://code.google.com/apis/v8/build.html>
 
 set environment variable V8_HOME to the v8 root folder
 
-::
+.. code-block:: sh
 
     $export V8_HOME=~/v8
 
@@ -76,14 +76,14 @@ If PyV8's setup.py can't found the v8 source from V8_HOME, it will automatic try
 
     If you want to build v8 with GCC 4.x at x64 platform, you should compile v8 with PIC (Position-Independent Code) mode [#f3]_,and set the arch to x64 for scons.
 
-    ::
+    .. code-block:: sh
 
         $export CCFLAGS=-fPIC
         $scons arch=x64
 
     You may also need build Boost with '-fPIC' argument.
 
-    ::
+    .. code-block:: sh
 
         $./bjam --clean
         $./bjam cxxflags=-fPIC
@@ -96,7 +96,7 @@ If PyV8's setup.py can't found the v8 source from V8_HOME, it will automatic try
 
     For the GCC and other environment base on the SCons, please remove the -fno-rtti and -fno-exceptions from SConstruct
 
-    ::
+    .. code-block:: diff
 
         Index: SConstruct
         ===================================================================
@@ -128,24 +128,22 @@ You could build Google v8 and PyV8 with debug mode, for more detail debug inform
 
 1. Build v8 with debug mode
 
-::
+.. code-block:: sh
 
-    scons mode=debug            # x86
-    scons mode=debug arch=x64   # amd64
+    $scons mode=debug            # x86
+    $scons mode=debug arch=x64   # amd64
 
 2. Set or export DEBUG=1
 
-::
+.. code-block:: sh
 
-    set DEBUG=1 # Windows
-
-    export DEBUG=1 # Unix
+    $export DEBUG=1 
 
 3. Build pyv8 with setup.py
 
-::
+.. code-block:: sh
 
-    python setup.py build
+    $python setup.py build
 
 FAQ
 ----

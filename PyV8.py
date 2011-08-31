@@ -642,6 +642,9 @@ JSObjectSpace = _PyV8.JSObjectSpace
 JSAllocationAction = _PyV8.JSAllocationAction
 
 class JSEngine(_PyV8.JSEngine):
+    def __init__(self):
+        _PyV8.JSEngine.__init__(self)
+        
     def __enter__(self):
         return self
 

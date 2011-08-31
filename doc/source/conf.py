@@ -216,3 +216,5 @@ man_pages = [
 ]
 
 intersphinx_mapping = {'python': ('http://docs.python.org/2.6', None)}
+
+autodoc_member_order = 'groupwise'
