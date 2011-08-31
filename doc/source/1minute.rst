@@ -1,3 +1,5 @@
+.. _1minute:
+
 One Minute Tutorial
 ==========================
 

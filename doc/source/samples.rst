@@ -1,6 +1,7 @@
-.. _build:
+.. _samples:
 
 Samples
 ==========================
+
 .. toctree::
    :maxdepth: 2

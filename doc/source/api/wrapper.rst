@@ -1,3 +1,5 @@
+.. _wrapper:
+
 Two-Way Data Convert
 ==========================
 

@@ -1,3 +1,5 @@
+.. _multithread:
+
 Multi-Thread and Lock
 ==========================
 

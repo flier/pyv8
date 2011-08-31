@@ -1,3 +1,5 @@
+.. _ast:
+
 Javascript AST (Abstract Syntax Tree)
 =====================================
 
