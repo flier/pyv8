@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Build and Install &mdash; PyV8 v1.0beta documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="PyV8 v1.0beta documentation" href="index.html" />
+    <link rel="next" title="One Minute Tutorial" href="1minute.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="1minute.html" title="One Minute Tutorial"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">PyV8 v1.0beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="build-and-install">
+<span id="build"></span><h1>Build and Install<a class="headerlink" href="#build-and-install" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="build-steps">
+<h2>Build Steps<a class="headerlink" href="#build-steps" title="Permalink to this headline">¶</a></h2>
+<p>PyV8 is using the setuptools <a class="footnote-reference" href="#f1" id="id1">[1]</a>, which is a famous building system for the Python.
+You could use it to build the PyV8 module or distribution with one command.</p>
+<div class="section" id="precompiled-packages">
+<h3>Precompiled Packages<a class="headerlink" href="#precompiled-packages" title="Permalink to this headline">¶</a></h3>
+<p>If you want to try pyv8 ASAP, we suggest you use the precompiled package for your platform.</p>
+<p>Please downloads the precompiled <a class="reference external" href="http://code.google.com/p/pyv8/downloads/list">packages</a> for Windows and Linux/Debian.</p>
+</div>
+<div class="section" id="build-the-module">
+<h3>Build the module<a class="headerlink" href="#build-the-module" title="Permalink to this headline">¶</a></h3>
+<p>Run the setup.py with install or build command</p>
+<div class="highlight-python"><pre>python setup.py install     # build and install the PyV8
+python setup.py build       # build the PyV8 package</pre>
+</div>
+</div>
+<div class="section" id="build-the-distribution">
+<h3>Build the distribution<a class="headerlink" href="#build-the-distribution" title="Permalink to this headline">¶</a></h3>
+<p>Run the setup.py with bdist or bdist_wininst command</p>
+<div class="highlight-python"><pre>python setup.py bdist           # build the distribution package for Linux/Mac
+python setup.py bdist_wininst   # build the distribution package for Windows</pre>
+</div>
+</div>
+</div>
+<div class="section" id="third-party-library">
+<h2>Third Party Library<a class="headerlink" href="#third-party-library" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="python">
+<h3>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h3>
+<p>Please download and install Python 2.5 or later first.</p>
+<p>Set environment variable PYTHON_HOME to the python root folder</p>
+<div class="highlight-python"><pre>set PYTHON_HOME=C:\Program Files\Python</pre>
+</div>
+</div>
+<div class="section" id="boost">
+<h3>Boost<a class="headerlink" href="#boost" title="Permalink to this headline">¶</a></h3>
+<p>PyV8 use <a class="reference external" href="http://www.boost.org/doc/libs/release/libs/python/doc/">boost.python</a> <a class="footnote-reference" href="#f2" id="id2">[2]</a> for interoperability,
+please download or install <a class="reference external" href="http://www.boost.org/users/download/">the latest version</a> of Boost,
+and follow <a class="reference external" href="http://www.boost.org/doc/libs/release/more/getting_started/">the getting started guide</a> to build the library.</p>
+<p>Set environment variable BOOST_HOME to the boost root folder</p>
+<div class="highlight-python"><pre>$export BOOST_HOME=~/boost_1_47_0</pre>
+</div>
+</div>
+<div class="section" id="google-v8">
+<h3>Google V8<a class="headerlink" href="#google-v8" title="Permalink to this headline">¶</a></h3>
+<p>Please follow <a class="reference external" href="http://code.google.com/apis/v8/build.html">the building document</a> to download and build v8 engine as static library</p>
+<p>set environment variable V8_HOME to the v8 root folder</p>
+<div class="highlight-python"><pre>$export V8_HOME=~/v8</pre>
+</div>
+<p>If PyV8&#8217;s setup.py can&#8217;t found the v8 source from V8_HOME, it will automatic try to checkout the latest v8 SNV trunk code and build it.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you want to build v8 with GCC 4.x at x64 platform, you should compile v8 with PIC (Position-Independent Code) mode <a class="footnote-reference" href="#f3" id="id3">[3]</a>,and set the arch to x64 for scons.</p>
+<div class="highlight-python"><pre>$export CCFLAGS=-fPIC
+$scons arch=x64</pre>
+</div>
+<p>You may also need build Boost with &#8216;-fPIC&#8217; argument.</p>
+<div class="last highlight-python"><pre>$./bjam --clean
+$./bjam cxxflags=-fPIC</pre>
+</div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>From the v8 engine 3.0, the build script of v8 engine has disabled the C++ RTTI and exception supports by default. It may save some bits of memory, but will broke the boost::python library and PyV8.</p>
+<p>So, we must enable it before build PyV8.</p>
+<p>For the GCC and other environment base on the SCons, please remove the -fno-rtti and -fno-exceptions from SConstruct</p>
+<div class="highlight-python"><pre>Index: SConstruct
+===================================================================
+--- SConstruct  (revision 6041)
++++ SConstruct  (working copy)
+@@ -126,7 +126,7 @@
+   'gcc': {
+     'all': {
+       'CCFLAGS':      ['$DIALECTFLAGS', '$WARNINGFLAGS'],
+-      'CXXFLAGS':     ['$CCFLAGS', '-fno-rtti', '-fno-exceptions'],
++      'CXXFLAGS':     ['$CCFLAGS'],
+     },
+     'visibility:hidden': {
+       # Use visibility=default to disable this.
+@@ -455,7 +455,6 @@
+   'gcc': {
+     'all': {
+       'LIBPATH': ['.'],
+-      'CCFLAGS': ['-fno-rtti', '-fno-exceptions']
+     },
+     'os:linux': {
+       'LIBS':         ['pthread'],</pre>
+</div>
+<p class="last">If you are using PyV8&#8217;s setup.py to checkout and build v8, it will automatic patch the SConstruct file before build v8.</p>
+</div>
+</div>
+</div>
+<div class="section" id="debug-mode">
+<h2>Debug Mode<a class="headerlink" href="#debug-mode" title="Permalink to this headline">¶</a></h2>
+<p>You could build Google v8 and PyV8 with debug mode, for more detail debug information.</p>
+<ol class="arabic simple">
+<li>Build v8 with debug mode</li>
+</ol>
+<div class="highlight-python"><pre>scons mode=debug            # x86
+scons mode=debug arch=x64   # amd64</pre>
+</div>
+<ol class="arabic simple" start="2">
+<li>Set or export DEBUG=1</li>
+</ol>
+<div class="highlight-python"><pre>set DEBUG=1 # Windows
+
+export DEBUG=1 # Unix</pre>
+</div>
+<ol class="arabic simple" start="3">
+<li>Build pyv8 with setup.py</li>
+</ol>
+<div class="highlight-python"><pre>python setup.py build</pre>
+</div>
+</div>
+<div class="section" id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">Fail to load PyV8.so with AttributeError exception</p>
+<blockquote>
+<div><p>If you got the exception &#8220;AttributeError: &#8216;Boost.Python.StaticProperty&#8217; object attribute &#8216;doc&#8217; is read-only&#8221;, please check your Python version. The Python 2.6.4 introduce a known issue which will break boost 1.40 or earlier version. Please use Python 2.5.x/2.6.3, or upgrade your boost to 1.41 or later.</p>
+</div></blockquote>
+</li>
+</ol>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="http://peak.telecommunity.com/DevCenter/setuptools">setuptools</a> is a collection of enhancements to the Python distutils (for Python 2.3.5 and up on most platforms; 64-bit platforms require a minimum of Python 2.4) that allow you to more easily build and distribute Python packages, especially ones that have dependencies on other packages.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><p class="first"><a class="reference external" href="http://www.boost.org/doc/libs/release/libs/python/doc/">Boost.Python</a> is a C++ library which enables seamless interoperability between C++ and the Python programming language. The new version has been rewritten from the ground up, with a more convenient and flexible interface, and many new capabilities, including support for:</p>
+<ul class="last simple">
+<li>References and Pointers</li>
+<li>Globally Registered Type Coercions</li>
+<li>Automatic Cross-Module Type Conversions</li>
+<li>Efficient Function Overloading</li>
+<li>C++ to Python Exception Translation</li>
+<li>Default Arguments</li>
+<li>Keyword Arguments</li>
+<li>Manipulating Python objects in C++</li>
+<li>Exporting C++ Iterators as Python Iterators</li>
+<li>Documentation Strings</li>
+</ul>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td><a class="reference external" href="http://en.wikipedia.org/wiki/Position-independent_code">Position-Independent Code (PIC)</a>  is machine instruction code that executes properly regardless of where in memory it resides. PIC is commonly used for shared libraries, so that the same library code can be loaded in a location in each program address space where it will not overlap any other uses of memory (for example, other shared libraries).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Build and Install</a><ul>
+<li><a class="reference internal" href="#build-steps">Build Steps</a><ul>
+<li><a class="reference internal" href="#precompiled-packages">Precompiled Packages</a></li>
+<li><a class="reference internal" href="#build-the-module">Build the module</a></li>
+<li><a class="reference internal" href="#build-the-distribution">Build the distribution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#third-party-library">Third Party Library</a><ul>
+<li><a class="reference internal" href="#python">Python</a></li>
+<li><a class="reference internal" href="#boost">Boost</a></li>
+<li><a class="reference internal" href="#google-v8">Google V8</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#debug-mode">Debug Mode</a></li>
+<li><a class="reference internal" href="#faq">FAQ</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="1minute.html"
+                        title="next chapter">One Minute Tutorial</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/build.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="1minute.html" title="One Minute Tutorial"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">PyV8 v1.0beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2011, Flier Lu.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.7.
+    </div>
+  </body>
+</html>
