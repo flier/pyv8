@@ -127,7 +127,8 @@ void CEngine::Expose(void)
     .value("all", v8::kAllocationActionAll);
 
   py::class_<CEngine, boost::noncopyable>("JSEngine", py::init<>())
-    .add_static_property("version", &CEngine::GetVersion)
+    .add_static_property("version", &CEngine::GetVersion, 
+                         "Get the V8 engine version")
 
     .add_static_property("dead", &v8::V8::IsDead,
                          "Check if V8 is dead and therefore unusable.")
@@ -135,10 +136,11 @@ void CEngine::Expose(void)
     .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
                          "the V8 thread id of the calling thread.")
 
-    .def("setFlags", &CEngine::SetFlags)
+    .def("setFlags", &CEngine::SetFlags, "Sets V8 flags from a string.")
     .staticmethod("setFlags")
 
-    .def("collect", &CEngine::CollectAllGarbage, (py::arg("force")=true))
+    .def("collect", &CEngine::CollectAllGarbage, (py::arg("force")=true),
+         "Performs a full garbage collection. Force compaction if the parameter is true.")
     .staticmethod("collect")
 
   #ifdef SUPPORT_SERIALIZE
@@ -181,9 +183,12 @@ void CEngine::Expose(void)
          "the size cannot be adjusted after the VM is initialized.")
     .staticmethod("setMemoryLimit")
 
-    .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback, (py::arg("callback"),
-                                                                                py::arg("space") = v8::kObjectSpaceAll, 
-                                                                                py::arg("action") = v8::kAllocationActionAll))
+    .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback, 
+                                        (py::arg("callback"),
+                                         py::arg("space") = v8::kObjectSpaceAll, 
+                                         py::arg("action") = v8::kAllocationActionAll),
+                                        "Enables the host application to provide a mechanism to be notified "
+                                        "and perform custom logging when V8 Allocates Executable Memory.")
     .staticmethod("setMemoryAllocationCallback")
 
     .def("precompile", &CEngine::PreCompile, (py::arg("source")))
