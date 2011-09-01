@@ -214,7 +214,7 @@ void CEngine::Expose(void)
 
   #ifdef SUPPORT_AST
     .def("visit", &CScript::visit, (py::arg("handler")), 
-         "Visit the AST of code with callback handler")
+         "Visit the AST of code with the callback handler.")
   #endif
     ;
 

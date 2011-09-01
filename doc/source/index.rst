@@ -3,6 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. _index:
+.. py:module:: PyV8
+.. testsetup:: *
+
+   from PyV8 import *
+
 Welcome to PyV8's documentation!
 ================================
 
@@ -12,26 +18,25 @@ and support to host the Google's v8 engine in a python script.
 
 You could create and enter a context to evaluate Javascript code in a few of code.
 
-.. code-block:: python
+.. doctest::
 
-    >>> import PyV8
-    >>> ctxt = PyV8.JSContext()          # create a context with an implicit global object
-    >>> ctxt.enter()                     # enter the context (also support with statement)
-    >>> ctxt.eval("1+2")                 # evalute the javascript expression
-    3                                    # return a native python int
+   >>> ctxt = JSContext()               # create a context with an implicit global object
+   >>> ctxt.enter()                     # enter the context (also support with statement)
+   >>> ctxt.eval("1+2")                 # evalute the javascript expression and return a native python int
+   3
 
 You also could invoke the Javascript function from Python, or vice versa.
 
-.. code-block:: python
+.. doctest::
 
-    >>> class Global(PyV8.JSClass):      # define a compatible javascript class
+    >>> class Global(JSClass):           # define a compatible javascript class
     ...   def hello(self):               # define a method
     ...     print "Hello World"
     ...
-    >>> ctxt2 = PyV8.JSContext(Global()) # create another context with the global object
+    >>> ctxt2 = JSContext(Global())      # create another context with the global object
     >>> ctxt2.enter()
     >>> ctxt2.eval("hello()")            # call the global object from javascript
-    Hello World                          # the output from python script
+    Hello World                          
 
 .. toctree::
    :maxdepth: 2

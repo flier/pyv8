@@ -74,22 +74,47 @@
 
         <span class="c"># do something</span>
 
-        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">,</span> <span class="n">precompied</span><span class="o">=</span><span class="n">buf</span><span class="p">)</span> <span class="c"># use the parsed data to improve performancee</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">,</span> <span class="n">precompiled</span><span class="o">=</span><span class="n">buf</span><span class="p">)</span> <span class="c"># use the parsed data to improve performancee</span>
 
         <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">source</span> <span class="c"># &quot;1+2&quot;</span>
         <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c"># 3</span>
 </pre></div>
 </div>
-<p><a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> contains some static attributes and methods for the global v8 engine, for example:</p>
-<ul class="simple">
-<li>Get the compiled v8 version with <a class="reference internal" href="#PyV8.JSEngine.version" title="PyV8.JSEngine.version"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.version</span></tt></a></li>
-<li>Check if V8 is dead and therefore unusable with <a class="reference internal" href="#PyV8.JSEngine.dead" title="PyV8.JSEngine.dead"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.dead</span></tt></a></li>
-<li>Force a full garbage collection with <a class="reference internal" href="#PyV8.JSEngine.collect" title="PyV8.JSEngine.collect"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.collect()</span></tt></a>.</li>
-<li>Releases any resources used by v8 and stops any utility threads with <a class="reference internal" href="#PyV8.JSEngine.dispose" title="PyV8.JSEngine.dispose"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.dispose()</span></tt></a></li>
-<li>Get the current v8 thread id with <a class="reference internal" href="#PyV8.JSEngine.currentThreadId" title="PyV8.JSEngine.currentThreadId"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.currentThreadId</span></tt></a></li>
-<li>Forcefully terminate the current JavaScript thread with <a class="reference internal" href="#PyV8.JSEngine.terminateAllThreads" title="PyV8.JSEngine.terminateAllThreads"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.terminateAllThreads()</span></tt></a></li>
-<li>Forcefully terminate execution of a JavaScript thread with <a class="reference internal" href="#PyV8.JSEngine.terminateThread" title="PyV8.JSEngine.terminateThread"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.terminateThread()</span></tt></a></li>
-</ul>
+<p>On the other hand, <a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> contains some static properties and methods for the global v8 engine, for example:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="42%" />
+<col width="58%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Property or Method</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.version" title="PyV8.JSEngine.version"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.version</span></tt></a></td>
+<td>Get the compiled v8 version</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.dead" title="PyV8.JSEngine.dead"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.dead</span></tt></a></td>
+<td>Check if V8 is dead and therefore unusable</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.collect" title="PyV8.JSEngine.collect"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.collect()</span></tt></a></td>
+<td>Force a full garbage collection</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.dispose" title="PyV8.JSEngine.dispose"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.dispose()</span></tt></a></td>
+<td>Releases any resources used by v8</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.currentThreadId" title="PyV8.JSEngine.currentThreadId"><tt class="xref py py-attr docutils literal"><span class="pre">JSEngine.currentThreadId</span></tt></a></td>
+<td>Get the current v8 thread id</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.terminateAllThreads" title="PyV8.JSEngine.terminateAllThreads"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.terminateAllThreads()</span></tt></a></td>
+<td>Forcefully terminate the current JavaScript thread</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSEngine.terminateThread" title="PyV8.JSEngine.terminateThread"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.terminateThread()</span></tt></a></td>
+<td>Forcefully terminate execution of a JavaScript thread</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="section" id="jsengine-the-backend-javascript-engine">
 <h2>JSEngine - the backend Javascript engine<a class="headerlink" href="#jsengine-the-backend-javascript-engine" title="Permalink to this headline">¶</a></h2>
@@ -316,10 +341,10 @@
 <dl class="class">
 <dt id="PyV8.JSScript">
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSScript</tt><a class="headerlink" href="#PyV8.JSScript" title="Permalink to this definition">¶</a></dt>
-<dd><p>JSScript is a compiled script</p>
+<dd><p>JSScript is the compiled script</p>
 <dl class="method">
 <dt id="PyV8.JSScript.run">
-<tt class="descname">run</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSScript.run" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">run</tt><big>(</big><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSScript.run" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>run( (JSScript)arg1) -&gt; object :</dt>
 <dd><p class="first">Execute the compiled code.</p>
@@ -333,16 +358,17 @@
 
 <dl class="method">
 <dt id="PyV8.JSScript.visit">
-<tt class="descname">visit</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSScript.visit" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">visit</tt><big>(</big><em>handler</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSScript.visit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>visit( (JSScript)arg1, (object)handler) -&gt; None :</dt>
-<dd><p class="first">Visit the AST of code with callback handler</p>
+<dd><p class="first">Visit the AST of code with the callback handler.</p>
 <dl class="last docutils">
 <dt>C++ signature :</dt>
 <dd>void visit(class CScript {lvalue},class boost::python::api::object)</dd>
 </dl>
 </dd>
 </dl>
+<p>Please refer to the <a class="reference internal" href="ast.html#ast"><em>Javascript AST (Abstract Syntax Tree)</em></a> page for more detail.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -361,9 +387,7 @@
 <table class="docutils footnote" frame="void" id="f1" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first"><a class="reference external" href="http://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Tree (AST)</a> is a tree representation of the abstract syntactic structure of source code written in a programming language. Each node of the tree denotes a construct occurring in the source code. The syntax is &#8216;abstract&#8217; in the sense that it does not represent every detail that appears in the real syntax. For instance, grouping parentheses are implicit in the tree structure, and a syntactic construct such as an if-condition-then expression may be denoted by a single node with two branches.</p>
-<p class="last">Please refer to the <a class="reference internal" href="ast.html#ast"><em>Javascript AST (Abstract Syntax Tree)</em></a> page for more detail.</p>
-</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><a class="reference external" href="http://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Tree (AST)</a> is a tree representation of the abstract syntactic structure of source code written in a programming language. Each node of the tree denotes a construct occurring in the source code. The syntax is &#8216;abstract&#8217; in the sense that it does not represent every detail that appears in the real syntax. For instance, grouping parentheses are implicit in the tree structure, and a syntactic construct such as an if-condition-then expression may be denoted by a single node with two branches.</td></tr>
 </tbody>
 </table>
 </div>

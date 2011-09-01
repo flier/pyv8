@@ -1,6 +1,10 @@
 .. _engine:
 .. py:module:: PyV8
 
+.. testsetup:: *
+
+   from PyV8 import *
+   
 Javascript Engine
 ==========================
 
@@ -11,7 +15,7 @@ Compile Script and Control Engine
 
 When you use :py:meth:`JSEngine.compile` compile a Javascript code, the v8 engine will parse the sytanx and store the AST in a :py:class:`JSScript` object. You could execute it with :py:meth:`JSScript.run` or access the source code with :py:attr:`JSScript.source` later.
 
-.. code-block:: python
+.. testcode::
 
         with JSContext() as ctxt:
             with JSEngine() as engine:
@@ -20,9 +24,15 @@ When you use :py:meth:`JSEngine.compile` compile a Javascript code, the v8 engin
                 print s.source # "1+2"
                 print s.run()  # 3
 
+.. testoutput::
+   :hide:
+
+   1+2
+   3
+
 You could only parse the sytanx with :py:meth:`JSEngine.precompile` before use it, which return a :py:class:`buffer` object contains some internal data. The buffer can't be executed directly, but could be used as the precompied parameter when call the :py:meth:`JSEngine.compile` later and improve the performance.
 
-.. code-block:: python
+.. testcode::
 
         with JSContext() as ctxt:
             with JSEngine() as engine:
@@ -30,21 +40,30 @@ You could only parse the sytanx with :py:meth:`JSEngine.precompile` before use i
 
                 # do something
 
-                s = engine.compile("1+2", precompied=buf) # use the parsed data to improve performancee
+                s = engine.compile("1+2", precompiled=buf) # use the parsed data to improve performancee
 
                 print s.source # "1+2"
                 print s.run()  # 3
 
-:py:class:`JSEngine` contains some static attributes and methods for the global v8 engine, for example:
+.. testoutput::
+   :hide:
 
-* Get the compiled v8 version with :py:attr:`JSEngine.version`
-* Check if V8 is dead and therefore unusable with :py:attr:`JSEngine.dead`
-* Force a full garbage collection with :py:meth:`JSEngine.collect`.
-* Releases any resources used by v8 and stops any utility threads with :py:meth:`JSEngine.dispose`
+   1+2
+   3
+   
+On the other hand, :py:class:`JSEngine` contains some static properties and methods for the global v8 engine, for example:
 
-* Get the current v8 thread id with :py:attr:`JSEngine.currentThreadId`
-* Forcefully terminate the current JavaScript thread with :py:meth:`JSEngine.terminateAllThreads`
-* Forcefully terminate execution of a JavaScript thread with :py:meth:`JSEngine.terminateThread`
+======================================= =====================================================
+Property or Method                      Description
+======================================= =====================================================
+:py:attr:`JSEngine.version`             Get the compiled v8 version
+:py:attr:`JSEngine.dead`                Check if V8 is dead and therefore unusable
+:py:meth:`JSEngine.collect`             Force a full garbage collection
+:py:meth:`JSEngine.dispose`             Releases any resources used by v8
+:py:attr:`JSEngine.currentThreadId`     Get the current v8 thread id
+:py:meth:`JSEngine.terminateAllThreads` Forcefully terminate the current JavaScript thread
+:py:meth:`JSEngine.terminateThread`     Forcefully terminate execution of a JavaScript thread
+======================================= =====================================================
 
 JSEngine - the backend Javascript engine
 ----------------------------------------
@@ -86,10 +105,17 @@ JSEngine - the backend Javascript engine
       The V8 thread id of the calling thread.
 
 JSScript - the compiled script
-----------------------------
+------------------------------
 .. autoclass:: JSScript
    :members:
    :inherited-members:
+   :exclude-members: run, visit
+
+   .. automethod:: run() -> object
+
+   .. automethod:: visit(handler) -> None
+
+      Please refer to the :ref:`ast` page for more detail.
 
 .. toctree::
    :maxdepth: 2
@@ -97,5 +123,3 @@ JSScript - the compiled script
 .. rubric:: Footnotes
 
 .. [#f1] `Abstract Syntax Tree (AST) <http://en.wikipedia.org/wiki/Abstract_syntax_tree>`_ is a tree representation of the abstract syntactic structure of source code written in a programming language. Each node of the tree denotes a construct occurring in the source code. The syntax is 'abstract' in the sense that it does not represent every detail that appears in the real syntax. For instance, grouping parentheses are implicit in the tree structure, and a syntactic construct such as an if-condition-then expression may be denoted by a single node with two branches.
-
-         Please refer to the :ref:`ast` page for more detail.

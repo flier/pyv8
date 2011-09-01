@@ -47,28 +47,27 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="welcome-to-pyv8-s-documentation">
+  <span class="target" id="module-PyV8"><span id="index"></span></span><div class="section" id="welcome-to-pyv8-s-documentation">
 <h1>Welcome to PyV8&#8217;s documentation!<a class="headerlink" href="#welcome-to-pyv8-s-documentation" title="Permalink to this headline">¶</a></h1>
 <p><a class="reference external" href="http://code.google.com/p/pyv8/">PyV8</a> is a python wrapper for the Google V8 engine <a class="footnote-reference" href="#f1" id="id1">[1]</a>,
 it act as a bridge between the Python and JavaScript objects,
 and support to host the Google&#8217;s v8 engine in a python script.</p>
 <p>You could create and enter a context to evaluate Javascript code in a few of code.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">PyV8</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">PyV8</span><span class="o">.</span><span class="n">JSContext</span><span class="p">()</span>          <span class="c"># create a context with an implicit global object</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>               <span class="c"># create a context with an implicit global object</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>                     <span class="c"># enter the context (also support with statement)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>                 <span class="c"># evalute the javascript expression</span>
-<span class="go">3                                    # return a native python int</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>                 <span class="c"># evalute the javascript expression and return a native python int</span>
+<span class="go">3</span>
 </pre></div>
 </div>
 <p>You also could invoke the Javascript function from Python, or vice versa.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Global</span><span class="p">(</span><span class="n">PyV8</span><span class="o">.</span><span class="n">JSClass</span><span class="p">):</span>      <span class="c"># define a compatible javascript class</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">Global</span><span class="p">(</span><span class="n">JSClass</span><span class="p">):</span>           <span class="c"># define a compatible javascript class</span>
 <span class="gp">... </span>  <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>               <span class="c"># define a method</span>
 <span class="gp">... </span>    <span class="k">print</span> <span class="s">&quot;Hello World&quot;</span>
 <span class="gp">...</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt2</span> <span class="o">=</span> <span class="n">PyV8</span><span class="o">.</span><span class="n">JSContext</span><span class="p">(</span><span class="n">Global</span><span class="p">())</span> <span class="c"># create another context with the global object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt2</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">Global</span><span class="p">())</span>      <span class="c"># create another context with the global object</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt2</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt2</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;hello()&quot;</span><span class="p">)</span>            <span class="c"># call the global object from javascript</span>
-<span class="go">Hello World                          # the output from python script</span>
+<span class="go">Hello World</span>
 </pre></div>
 </div>
 <div class="toctree-wrapper compound">
