@@ -5,7 +5,7 @@
 
 void CContext::Expose(void)
 {
-  py::class_<CIsolate, boost::noncopyable>("JSIsolate", py::no_init)
+  py::class_<CIsolate, boost::noncopyable>("JSIsolate", "JSIsolate is an isolated instance of the V8 engine.", py::no_init)
     .def(py::init<bool>((py::arg("owner") = false)))
 
     .add_static_property("current", &CIsolate::GetCurrent,
@@ -27,7 +27,7 @@ void CContext::Expose(void)
     py::objects::make_ptr_instance<CIsolate, 
     py::objects::pointer_holder<boost::shared_ptr<CIsolate>,CIsolate> > >();
 
-  py::class_<CContext, boost::noncopyable>("JSContext", py::no_init)
+  py::class_<CContext, boost::noncopyable>("JSContext", "JSContext is an execution context.", py::no_init)
     .def(py::init<const CContext&>("create a new context base on a exists context"))
     .def(py::init<py::object, py::list>((py::arg("global") = py::object(), 
                                          py::arg("extensions") = py::list()), 
@@ -38,11 +38,11 @@ void CContext::Expose(void)
     .add_property("locals", &CContext::GetGlobal, "Local variables within context")
     
     .add_static_property("entered", &CContext::GetEntered, 
-                         "the last entered context.")
+                         "The last entered context.")
     .add_static_property("current", &CContext::GetCurrent, 
-                         "the context that is on the top of the stack.")
+                         "The context that is on the top of the stack.")
     .add_static_property("calling", &CContext::GetCalling,
-                         "the context of the calling JavaScript code.")
+                         "The context of the calling JavaScript code.")
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
 

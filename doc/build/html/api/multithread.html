@@ -25,7 +25,7 @@
     <link rel="top" title="PyV8 v1.0beta documentation" href="../index.html" />
     <link rel="up" title="Public API" href="api.html" />
     <link rel="next" title="Debugger and Profiler" href="debugger.html" />
-    <link rel="prev" title="Javascript Engine" href="engine.html" /> 
+    <link rel="prev" title="Interoperability" href="wrapper.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,7 +41,7 @@
           <a href="debugger.html" title="Debugger and Profiler"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="engine.html" title="Javascript Engine"
+          <a href="wrapper.html" title="Interoperability"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">PyV8 v1.0beta documentation</a> &raquo;</li>
           <li><a href="api.html" accesskey="U">Public API</a> &raquo;</li> 
@@ -55,9 +55,16 @@
             
   <div class="section" id="multi-thread-and-lock">
 <span id="multithread"></span><h1>Multi-Thread and Lock<a class="headerlink" href="#multi-thread-and-lock" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="the-javascript-thread-and-isolate">
+<h2>The Javascript Thread and Isolate<a class="headerlink" href="#the-javascript-thread-and-isolate" title="Permalink to this headline">¶</a></h2>
+<p>V8 isolates have completely separate states. Objects from one isolate must not be used in other isolates.  When V8 is initialized a default isolate is implicitly created and entered.  The embedder can create additional isolates and use them in parallel in multiple threads.  An isolate can be entered by at most one thread at any given time.  The Locker/Unlocker API can be used to synchronize.</p>
+</div>
+<div class="section" id="jsisolate">
+<h2>JSIsolate<a class="headerlink" href="#jsisolate" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
+</div>
 </div>
 </div>
 
@@ -67,9 +74,20 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Multi-Thread and Lock</a><ul>
+<li><a class="reference internal" href="#the-javascript-thread-and-isolate">The Javascript Thread and Isolate</a></li>
+<li><a class="reference internal" href="#jsisolate">JSIsolate</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="engine.html"
-                        title="previous chapter">Javascript Engine</a></p>
+  <p class="topless"><a href="wrapper.html"
+                        title="previous chapter">Interoperability</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="debugger.html"
                         title="next chapter">Debugger and Profiler</a></p>
@@ -108,7 +126,7 @@
           <a href="debugger.html" title="Debugger and Profiler"
              >next</a> |</li>
         <li class="right" >
-          <a href="engine.html" title="Javascript Engine"
+          <a href="wrapper.html" title="Interoperability"
              >previous</a> |</li>
         <li><a href="../index.html">PyV8 v1.0beta documentation</a> &raquo;</li>
           <li><a href="api.html" >Public API</a> &raquo;</li> 

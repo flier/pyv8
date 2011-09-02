@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Two-Way Data Convert &mdash; PyV8 v1.0beta documentation</title>
+    <title>Interoperability &mdash; PyV8 v1.0beta documentation</title>
     <link rel="stylesheet" href="../_static/default.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -53,11 +53,70 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="two-way-data-convert">
-<span id="wrapper"></span><h1>Two-Way Data Convert<a class="headerlink" href="#two-way-data-convert" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-PyV8"><span id="wrapper"></span></span><div class="section" id="interoperability">
+<h1>Interoperability<a class="headerlink" href="#interoperability" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="type-conversion">
+<span id="typeconv"></span><h2>Type Conversion<a class="headerlink" href="#type-conversion" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="function-call">
+<span id="funcall"></span><h2>Function Call<a class="headerlink" href="#function-call" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="exception-translation">
+<span id="exctrans"></span><h2>Exception Translation<a class="headerlink" href="#exception-translation" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="jsclass">
+<h2>JSClass<a class="headerlink" href="#jsclass" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSClass">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSClass</tt><a class="headerlink" href="#PyV8.JSClass" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSClass.hasOwnProperty">
+<tt class="descname">hasOwnProperty</tt><big>(</big><em>name</em><big>)</big><a class="headerlink" href="#PyV8.JSClass.hasOwnProperty" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a Boolean value indicating whether an object has a property with the specified name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.isPrototypeOf">
+<tt class="descname">isPrototypeOf</tt><big>(</big><em>obj</em><big>)</big><a class="headerlink" href="#PyV8.JSClass.isPrototypeOf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a Boolean value indicating whether an object exists in the prototype chain of another object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.toLocaleString">
+<tt class="descname">toLocaleString</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSClass.toLocaleString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a value as a string value appropriate to the host environment&#8217;s current locale.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.toString">
+<tt class="descname">toString</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSClass.toString" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string representation of an object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.unwatch">
+<tt class="descname">unwatch</tt><big>(</big><em>prop</em><big>)</big><a class="headerlink" href="#PyV8.JSClass.unwatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a watchpoint set with the watch method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.valueOf">
+<tt class="descname">valueOf</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSClass.valueOf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the primitive value of the specified object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSClass.watch">
+<tt class="descname">watch</tt><big>(</big><em>prop</em>, <em>handler</em><big>)</big><a class="headerlink" href="#PyV8.JSClass.watch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Watches for a property to be assigned a value and runs a function when that occurs.</p>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
+</div>
 </div>
 </div>
 
@@ -67,6 +126,19 @@
       </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interoperability</a><ul>
+<li><a class="reference internal" href="#type-conversion">Type Conversion</a></li>
+<li><a class="reference internal" href="#function-call">Function Call</a></li>
+<li><a class="reference internal" href="#exception-translation">Exception Translation</a></li>
+<li><a class="reference internal" href="#jsclass">JSClass</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="context.html"
                         title="previous chapter">Javascript Context</a></p>

@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="top" title="PyV8 v1.0beta documentation" href="../index.html" />
     <link rel="up" title="Public API" href="api.html" />
-    <link rel="next" title="Two-Way Data Convert" href="wrapper.html" />
+    <link rel="next" title="Javascript Engine" href="engine.html" />
     <link rel="prev" title="Public API" href="api.html" /> 
   </head>
   <body>
@@ -38,7 +38,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="wrapper.html" title="Two-Way Data Convert"
+          <a href="engine.html" title="Javascript Engine"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="api.html" title="Public API"
@@ -53,14 +53,162 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <span class="target" id="module-PyV8"><span id="context"></span></span><div class="section" id="javascript-context">
-<h1>Javascript Context<a class="headerlink" href="#javascript-context" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="jscontext">
-<h2>JSContext<a class="headerlink" href="#jscontext" title="Permalink to this headline">¶</a></h2>
+  <span class="target" id="module-PyV8"></span><div class="section" id="javascript-context">
+<span id="context"></span><h1>Javascript Context<a class="headerlink" href="#javascript-context" title="Permalink to this headline">¶</a></h1>
+<div class="sidebar">
+<p class="first sidebar-title">execution context</p>
+<p>When control is transferred to ECMAScript executable code <a class="footnote-reference" href="#f2" id="id1">[2]</a>, control is entering an execution context.</p>
+<blockquote class="last">
+<div>&#8211; ECMA-262 3rd Chapter 10</div></blockquote>
+</div>
+<p>According to the ECMAScript <a class="footnote-reference" href="#f1" id="id2">[1]</a> standard, we need enter an execution context before execute any script code.</p>
+<p><a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> is a sandboxed execution context with its own set of built-in objects and functions.</p>
+<p>You could create a <a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> instance, enter it with <a class="reference internal" href="#PyV8.JSContext.enter" title="PyV8.JSContext.enter"><tt class="xref py py-meth docutils literal"><span class="pre">JSContext.enter()</span></tt></a>, and use it to execute code with <a class="reference internal" href="#PyV8.JSContext.eval" title="PyV8.JSContext.eval"><tt class="xref py py-meth docutils literal"><span class="pre">JSContext.eval()</span></tt></a>. The best practice is to leave the context with <a class="reference internal" href="#PyV8.JSContext.leave" title="PyV8.JSContext.leave"><tt class="xref py py-meth docutils literal"><span class="pre">JSContext.leave()</span></tt></a> if you never need it.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>               <span class="c"># create a context with an implicit global object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>                     <span class="c"># enter the context (also support with statement)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>                 <span class="c"># evalute the javascript expression and return a native python int</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">leave</span><span class="p">()</span>                     <span class="c"># leave the context and release the related resources</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>To ensure the context could be enter/leave at the right time, we suggest to use the <strong>with</strong> statement (Python 2.5 or later).</p>
+<blockquote class="last">
+<div><div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span> <span class="c"># 3</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<p>You could also check the current or calling context with the static properties.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="40%" />
+<col width="60%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Property</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><a class="reference internal" href="#PyV8.JSContext.current" title="PyV8.JSContext.current"><tt class="xref py py-attr docutils literal"><span class="pre">JSContext.current</span></tt></a></td>
+<td>The context that is on the top of the stack.</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSContext.entered" title="PyV8.JSContext.entered"><tt class="xref py py-attr docutils literal"><span class="pre">JSContext.entered</span></tt></a></td>
+<td>The last entered context.</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSContext.calling" title="PyV8.JSContext.calling"><tt class="xref py py-attr docutils literal"><span class="pre">JSContext.calling</span></tt></a></td>
+<td>The context of the calling JavaScript code.</td>
+</tr>
+<tr><td><a class="reference internal" href="#PyV8.JSContext.inContext" title="PyV8.JSContext.inContext"><tt class="xref py py-attr docutils literal"><span class="pre">JSContext.inContext</span></tt></a></td>
+<td>Returns true if V8 has a current context.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="global-object">
+<span id="gobj"></span><h2>Global Object<a class="headerlink" href="#global-object" title="Permalink to this headline">¶</a></h2>
+<div class="sidebar">
+<p class="first sidebar-title">global object</p>
+<p>There is a unique <em>global object</em> (15.1), which is created before control enters any execution context. Initially the global object has the following properties:</p>
+<ul class="simple">
+<li>Built-in objects such as Math, String, Date, parseInt, etc.</li>
+<li>Additional host defined properties.</li>
+</ul>
+<p>As control enters execution contexts, and as ECMAScript code is executed, additional properties may be added to the global object and the initial properties may be changed.</p>
+<blockquote class="last">
+<div>&#8211; ECMA-262 3rd Chapter 10.1.5</div></blockquote>
+</div>
+<p>The execution context has a global object, which could be access from the Python side with <a class="reference internal" href="#PyV8.JSContext.locals" title="PyV8.JSContext.locals"><tt class="xref py py-attr docutils literal"><span class="pre">JSContext.locals</span></tt></a>, or access from the Javascript side with the global namespace. The Python and Javascript code could use it to do seamless interoperable logic, PyV8 will automatic do the <a class="reference internal" href="wrapper.html#typeconv"><em>Type Conversion</em></a>, <a class="reference internal" href="wrapper.html#funcall"><em>Function Call</em></a> and <a class="reference internal" href="wrapper.html#exctrans"><em>Exception Translation</em></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;a = 1&quot;</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">a</span>     <span class="c"># 1</span>
+
+    <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">)</span>    <span class="c"># 2</span>
+</pre></div>
+</div>
+<p>If you want to provide more complicated properties and methods to the Javascript code, you could pass a customized global object instance when create the <a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Global</span><span class="p">(</span><span class="n">JSClass</span><span class="p">):</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s">&quot;1.0&quot;</span>
+
+    <span class="k">def</span> <span class="nf">hello</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Hello &quot;</span> <span class="o">+</span> <span class="n">name</span>
+
+<span class="k">with</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">Global</span><span class="p">())</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;version&quot;</span><span class="p">)</span>          <span class="c"># 1.0</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;hello(&#39;World&#39;)&quot;</span><span class="p">)</span>   <span class="c"># Hello World</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;hello.toString()&quot;</span><span class="p">)</span> <span class="c"># function () { [native code] }</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you want your global object more like a real Javascript object, you should inherit from the <a class="reference internal" href="wrapper.html#PyV8.JSClass" title="PyV8.JSClass"><tt class="xref py py-class docutils literal"><span class="pre">JSClass</span></tt></a> which provides a lot of helper methods such as <a class="reference internal" href="wrapper.html#PyV8.JSClass.toString" title="PyV8.JSClass.toString"><tt class="xref py py-meth docutils literal"><span class="pre">JSClass.toString()</span></tt></a>, <a class="reference internal" href="wrapper.html#PyV8.JSClass.watch" title="PyV8.JSClass.watch"><tt class="xref py py-meth docutils literal"><span class="pre">JSClass.watch()</span></tt></a> etc.</p>
+</div>
+</div>
+<div class="section" id="reuseable-extension">
+<span id="jsext"></span><h2>Reuseable Extension<a class="headerlink" href="#reuseable-extension" title="Permalink to this headline">¶</a></h2>
+<p>Besides the customized <a class="reference internal" href="#gobj"><em>Global Object</em></a>, there is a more powerful mechanism <a class="reference internal" href="#PyV8.JSExtension" title="PyV8.JSExtension"><tt class="xref py py-class docutils literal"><span class="pre">JSExtension</span></tt></a> which could encapsulate the related Javascript or Python script in a reusable module, and define it when create a <a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> instance.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">src</span> <span class="o">=</span> <span class="s">&#39;function hello(name) { return &quot;Hello &quot; + name + &quot; from Javascript&quot;; }&#39;</span>
+<span class="n">ext</span> <span class="o">=</span> <span class="n">JSExtension</span><span class="p">(</span><span class="s">&quot;hello/javascript&quot;</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">extensions</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;hello/javascript&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;hello(&#39;World&#39;)&quot;</span><span class="p">)</span> <span class="c"># Hello World from Javascript</span>
+</pre></div>
+</div>
+<p>The extension also could be implement with the Python code, just like the JNI <a class="footnote-reference" href="#f3" id="id3">[3]</a> for the Java.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">src</span> <span class="o">=</span> <span class="s">&quot;native function hello();&quot;</span>
+<span class="n">ext</span> <span class="o">=</span> <span class="n">JSExtension</span><span class="p">(</span><span class="s">&quot;hello/python&quot;</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">func</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">name</span><span class="p">:</span> <span class="s">&quot;Hello &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot; from Python&quot;</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">extensions</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;hello/python&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;hello(&#39;World&#39;)&quot;</span><span class="p">)</span> <span class="c"># Hello World from Python</span>
+</pre></div>
+</div>
+<p>If your extensions has dependencies extensions, you could define it in <a class="reference internal" href="#PyV8.JSExtension.__init__" title="PyV8.JSExtension.__init__"><tt class="xref py py-meth docutils literal"><span class="pre">JSExtension.__init__()</span></tt></a>, and check it later with the  <a class="reference internal" href="#PyV8.JSExtension.dependencies" title="PyV8.JSExtension.dependencies"><tt class="xref py py-attr docutils literal"><span class="pre">JSExtension.dependencies</span></tt></a> property. The v8 engine will load the extensions one by one base on its dependencies.</p>
+</div>
+<div class="section" id="jscontext-the-execution-context">
+<h2>JSContext - the execution context.<a class="headerlink" href="#jscontext-the-execution-context" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="PyV8.JSContext">
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSContext</tt><big>(</big><em>obj=None</em>, <em>extensions=None</em>, <em>ctxt=None</em><big>)</big><a class="headerlink" href="#PyV8.JSContext" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>JSContext is an execution context.</p>
+<dl class="method">
+<dt id="PyV8.JSContext.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>global=None</em>, <em>extensions=</em><span class="optional">[</span><span class="optional">]</span><big>)</big> &rarr; JSContext object<a class="headerlink" href="#PyV8.JSContext.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>global</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#object" title="(in Python v2.6)"><em>object</em></a>) &#8211; the global object</li>
+<li><strong>extensions</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><em>list</em></a>) &#8211; the name of extensions</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>ctxt</em><big>)</big> &rarr; JSContext object</dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><strong>ctxt</strong> (<em>JSContext</em>) &#8211; an exists <a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> instance</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body">a cloned <a class="reference internal" href="#PyV8.JSContext" title="PyV8.JSContext"><tt class="xref py py-class docutils literal"><span class="pre">JSContext</span></tt></a> instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyV8.JSContext.eval">
 <tt class="descname">eval</tt><big>(</big><em>source</em>, <em>name=''</em>, <em>line=-1</em>, <em>col=-1</em>, <em>precompiled=None</em><big>)</big> &rarr; object:<a class="headerlink" href="#PyV8.JSContext.eval" title="Permalink to this definition">¶</a></dt>
 <dd><p>eval( (JSContext)arg1, (str)source [, (str)name=&#8217;&#8217; [, (int)line=-1 [, (int)col=-1 [, (object)precompiled=None]]]]) -&gt; object :</p>
@@ -96,6 +244,40 @@
 </tr>
 </tbody>
 </table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSContext.__enter__">
+<tt class="descname">__enter__</tt><big>(</big><big>)</big> &rarr; JSContext object<a class="headerlink" href="#PyV8.JSContext.__enter__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSContext.__exit__">
+<tt class="descname">__exit__</tt><big>(</big><em>exc_type</em>, <em>exc_value</em>, <em>traceback</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSContext.__exit__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSContext.current">
+<tt class="descname">current</tt><a class="headerlink" href="#PyV8.JSContext.current" title="Permalink to this definition">¶</a></dt>
+<dd><p>The context that is on the top of the stack.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSContext.entered">
+<tt class="descname">entered</tt><a class="headerlink" href="#PyV8.JSContext.entered" title="Permalink to this definition">¶</a></dt>
+<dd><p>The last entered context.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSContext.calling">
+<tt class="descname">calling</tt><a class="headerlink" href="#PyV8.JSContext.calling" title="Permalink to this definition">¶</a></dt>
+<dd><p>The context of the calling JavaScript code.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSContext.inContext">
+<tt class="descname">inContext</tt><a class="headerlink" href="#PyV8.JSContext.inContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns true if V8 has a current context.</p>
 </dd></dl>
 
 <dl class="method">
@@ -135,57 +317,84 @@
 </dd></dl>
 
 </div>
-<div class="section" id="jsisolate">
-<h2>JSIsolate<a class="headerlink" href="#jsisolate" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="PyV8.JSIsolate">
-<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSIsolate</tt><a class="headerlink" href="#PyV8.JSIsolate" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="PyV8.JSIsolate.enter">
-<tt class="descname">enter</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSIsolate.enter" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>enter( (JSIsolate)arg1) -&gt; None :</dt>
-<dd><p class="first">Sets this isolate as the entered one for the current thread. Saves the previously entered one (if any), so that it can be restored when exiting.  Re-entering an isolate is allowed.</p>
-<dl class="last docutils">
-<dt>C++ signature :</dt>
-<dd>void enter(class CIsolate {lvalue})</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="method">
-<dt id="PyV8.JSIsolate.leave">
-<tt class="descname">leave</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSIsolate.leave" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>leave( (JSIsolate)arg1) -&gt; None :</dt>
-<dd><p class="first">Exits this isolate by restoring the previously entered one in the current thread. The isolate may still stay the same, if it was entered more than once.</p>
-<dl class="last docutils">
-<dt>C++ signature :</dt>
-<dd>void leave(class CIsolate {lvalue})</dd>
-</dl>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="jsextension">
-<h2>JSExtension<a class="headerlink" href="#jsextension" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="jsextension-reusable-script-module">
+<h2>JSExtension - reusable script module<a class="headerlink" href="#jsextension-reusable-script-module" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="PyV8.JSExtension">
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSExtension</tt><a class="headerlink" href="#PyV8.JSExtension" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="PyV8.JSExtension.register">
-<tt class="descname">register</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSExtension.register" title="Permalink to this definition">¶</a></dt>
-<dd><p>register( (JSExtension)arg1) -&gt; None :</p>
+<dd><p>JSExtension is a reusable script module.</p>
+<dl class="method">
+<dt id="PyV8.JSExtension.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>name</em>, <em>source</em>, <em>callback=None</em>, <em>dependencies=</em><span class="optional">[</span><span class="optional">]</span>, <em>register=True</em><big>)</big> &rarr; JSExtension object<a class="headerlink" href="#PyV8.JSExtension.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__init__( (object)arg1, (str)name, (str)source [, (object)callback=None [, (list)dependencies=[] [, (bool)register=True]]]) -&gt; None :</p>
 <blockquote>
 <div><dl class="docutils">
 <dt>C++ signature :</dt>
-<dd>void register(class CExtension {lvalue})</dd>
+<dd>void __init__(struct _object <a href="#id4"><span class="problematic" id="id5">*</span></a>,class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;,class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt; [,class boost::python::api::object=None [,class boost::python::list=[] [,bool=True]]])</dd>
 </dl>
 </div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#str" title="(in Python v2.6)"><em>str</em></a>) &#8211; the extension name</li>
+<li><strong>source</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#str" title="(in Python v2.6)"><em>str</em></a>) &#8211; the Javascript code</li>
+<li><strong>callback</strong> (<em>func</em>) &#8211; the native Python code</li>
+<li><strong>dependencies</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><em>list</em></a>) &#8211; the dependencies extensions</li>
+<li><strong>register</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#bool" title="(in Python v2.6)"><em>bool</em></a>) &#8211; register the extension</li>
+</ul>
+</td>
+</tr>
+<tr class="field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">A reusable <a class="reference internal" href="#PyV8.JSExtension" title="PyV8.JSExtension"><tt class="xref py py-class docutils literal"><span class="pre">JSExtension</span></tt></a> module</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSExtension.register">
+<tt class="descname">register</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSExtension.register" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>register( (JSExtension)arg1) -&gt; None :</dt>
+<dd><p class="first">Register the extension</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>void register(class CExtension {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSExtension.autoEnable">
+<tt class="descname">autoEnable</tt><a class="headerlink" href="#PyV8.JSExtension.autoEnable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable the extension by default.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSExtension.dependencies">
+<tt class="descname">dependencies</tt><a class="headerlink" href="#PyV8.JSExtension.dependencies" title="Permalink to this definition">¶</a></dt>
+<dd><p>The extension dependencies which will be load before this extension</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSExtension.name">
+<tt class="descname">name</tt><a class="headerlink" href="#PyV8.JSExtension.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of extension</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSExtension.registered">
+<tt class="descname">registered</tt><a class="headerlink" href="#PyV8.JSExtension.registered" title="Permalink to this definition">¶</a></dt>
+<dd><p>The extension has been registerd</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSExtension.source">
+<tt class="descname">source</tt><a class="headerlink" href="#PyV8.JSExtension.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>The source code of extension</p>
 </dd></dl>
 
 </dd></dl>
@@ -194,6 +403,31 @@
 <ul class="simple">
 </ul>
 </div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td><a class="reference external" href="http://en.wikipedia.org/wiki/ECMAScript">ECMAScript</a> is the scripting language standardized by Ecma International in the ECMA-262 specification and ISO/IEC 16262. The language is widely used for client-side scripting on the web, in the form of several well-known dialects such as JavaScript, JScript, and ActionScript.</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[2]</a></td><td><p class="first">There are three types of ECMAScript executable code:</p>
+<ul class="last simple">
+<li><em>Global code</em> is source text that is treated as an ECMAScript <em>Program</em>.</li>
+<li><em>Eval code</em> is the source text supplied to the built-in <strong>eval</strong> function.</li>
+<li><em>Function code</em> is source text that is parsed as part of a <em>FunctionBody</em>.</li>
+</ul>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td><a class="reference external" href="http://en.wikipedia.org/wiki/Java_Native_Interface">Java Native Interface (JNI)</a> is a programming framework that enables Java code running in a Java Virtual Machine (JVM) to call and to be called[1] by native applications (programs specific to a hardware and operating system platform) and libraries written in other languages such as C, C++ and assembly.</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -206,9 +440,10 @@
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Javascript Context</a><ul>
-<li><a class="reference internal" href="#jscontext">JSContext</a></li>
-<li><a class="reference internal" href="#jsisolate">JSIsolate</a></li>
-<li><a class="reference internal" href="#jsextension">JSExtension</a><ul>
+<li><a class="reference internal" href="#global-object">Global Object</a></li>
+<li><a class="reference internal" href="#reuseable-extension">Reuseable Extension</a></li>
+<li><a class="reference internal" href="#jscontext-the-execution-context">JSContext - the execution context.</a></li>
+<li><a class="reference internal" href="#jsextension-reusable-script-module">JSExtension - reusable script module</a><ul>
 </ul>
 </li>
 </ul>
@@ -219,8 +454,8 @@
   <p class="topless"><a href="api.html"
                         title="previous chapter">Public API</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="wrapper.html"
-                        title="next chapter">Two-Way Data Convert</a></p>
+  <p class="topless"><a href="engine.html"
+                        title="next chapter">Javascript Engine</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/api/context.txt"
@@ -253,7 +488,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="wrapper.html" title="Two-Way Data Convert"
+          <a href="engine.html" title="Javascript Engine"
              >next</a> |</li>
         <li class="right" >
           <a href="api.html" title="Public API"

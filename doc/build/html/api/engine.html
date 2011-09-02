@@ -24,8 +24,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="top" title="PyV8 v1.0beta documentation" href="../index.html" />
     <link rel="up" title="Public API" href="api.html" />
-    <link rel="next" title="Multi-Thread and Lock" href="multithread.html" />
-    <link rel="prev" title="Two-Way Data Convert" href="wrapper.html" /> 
+    <link rel="next" title="Interoperability" href="wrapper.html" />
+    <link rel="prev" title="Javascript Context" href="context.html" /> 
   </head>
   <body>
     <div class="related">
@@ -38,10 +38,10 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="multithread.html" title="Multi-Thread and Lock"
+          <a href="wrapper.html" title="Interoperability"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="wrapper.html" title="Two-Way Data Convert"
+          <a href="context.html" title="Javascript Context"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">PyV8 v1.0beta documentation</a> &raquo;</li>
           <li><a href="api.html" accesskey="U">Public API</a> &raquo;</li> 
@@ -56,31 +56,7 @@
   <span class="target" id="module-PyV8"><span id="engine"></span></span><div class="section" id="javascript-engine">
 <h1>Javascript Engine<a class="headerlink" href="#javascript-engine" title="Permalink to this headline">¶</a></h1>
 <p>Besides to execute a Javascript code with <a class="reference internal" href="context.html#PyV8.JSContext.eval" title="PyV8.JSContext.eval"><tt class="xref py py-meth docutils literal"><span class="pre">JSContext.eval()</span></tt></a>, you could create a new <a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> instance and compile the Javascript code with <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> before execute it. A <a class="reference internal" href="#PyV8.JSScript" title="PyV8.JSScript"><tt class="xref py py-class docutils literal"><span class="pre">JSScript</span></tt></a> object will be returned, and you could run it later with <a class="reference internal" href="#PyV8.JSScript.run" title="PyV8.JSScript.run"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.run()</span></tt></a> method many times, or visit its AST <a class="footnote-reference" href="#f1" id="id1">[1]</a> with <a class="reference internal" href="#PyV8.JSScript.visit" title="PyV8.JSScript.visit"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.visit()</span></tt></a>.</p>
-<div class="section" id="compile-script-and-control-engine">
-<h2>Compile Script and Control Engine<a class="headerlink" href="#compile-script-and-control-engine" title="Permalink to this headline">¶</a></h2>
-<p>When you use <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> compile a Javascript code, the v8 engine will parse the sytanx and store the AST in a <a class="reference internal" href="#PyV8.JSScript" title="PyV8.JSScript"><tt class="xref py py-class docutils literal"><span class="pre">JSScript</span></tt></a> object. You could execute it with <a class="reference internal" href="#PyV8.JSScript.run" title="PyV8.JSScript.run"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.run()</span></tt></a> or access the source code with <a class="reference internal" href="#PyV8.JSScript.source" title="PyV8.JSScript.source"><tt class="xref py py-attr docutils literal"><span class="pre">JSScript.source</span></tt></a> later.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
-    <span class="k">with</span> <span class="n">JSEngine</span><span class="p">()</span> <span class="k">as</span> <span class="n">engine</span><span class="p">:</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>
-
-        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">source</span> <span class="c"># &quot;1+2&quot;</span>
-        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c"># 3</span>
-</pre></div>
-</div>
-<p>You could only parse the sytanx with <a class="reference internal" href="#PyV8.JSEngine.precompile" title="PyV8.JSEngine.precompile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.precompile()</span></tt></a> before use it, which return a <tt class="xref py py-class docutils literal"><span class="pre">buffer</span></tt> object contains some internal data. The buffer can&#8217;t be executed directly, but could be used as the precompied parameter when call the <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> later and improve the performance.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
-    <span class="k">with</span> <span class="n">JSEngine</span><span class="p">()</span> <span class="k">as</span> <span class="n">engine</span><span class="p">:</span>
-        <span class="n">buf</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">precompile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>
-
-        <span class="c"># do something</span>
-
-        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">,</span> <span class="n">precompiled</span><span class="o">=</span><span class="n">buf</span><span class="p">)</span> <span class="c"># use the parsed data to improve performancee</span>
-
-        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">source</span> <span class="c"># &quot;1+2&quot;</span>
-        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c"># 3</span>
-</pre></div>
-</div>
-<p>On the other hand, <a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> contains some static properties and methods for the global v8 engine, for example:</p>
+<p><a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> also contains some static properties and methods for the global v8 engine, for example:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="42%" />
@@ -115,6 +91,31 @@
 </tr>
 </tbody>
 </table>
+<div class="section" id="compile-script-and-control-engine">
+<h2>Compile Script and Control Engine<a class="headerlink" href="#compile-script-and-control-engine" title="Permalink to this headline">¶</a></h2>
+<p>When you use <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> compile a Javascript code, the v8 engine will parse the sytanx and store the AST in a <a class="reference internal" href="#PyV8.JSScript" title="PyV8.JSScript"><tt class="xref py py-class docutils literal"><span class="pre">JSScript</span></tt></a> object. You could execute it with <a class="reference internal" href="#PyV8.JSScript.run" title="PyV8.JSScript.run"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.run()</span></tt></a> or access the source code with <a class="reference internal" href="#PyV8.JSScript.source" title="PyV8.JSScript.source"><tt class="xref py py-attr docutils literal"><span class="pre">JSScript.source</span></tt></a> later.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">JSEngine</span><span class="p">()</span> <span class="k">as</span> <span class="n">engine</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">source</span> <span class="c"># &quot;1+2&quot;</span>
+        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c"># 3</span>
+</pre></div>
+</div>
+<p>You could only parse the sytanx with <a class="reference internal" href="#PyV8.JSEngine.precompile" title="PyV8.JSEngine.precompile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.precompile()</span></tt></a> before use it, which return a <tt class="xref py py-class docutils literal"><span class="pre">buffer</span></tt> object contains some internal data. The buffer can&#8217;t be executed directly, but could be used as the precompied parameter when call the <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> later and improve the performance.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">JSEngine</span><span class="p">()</span> <span class="k">as</span> <span class="n">engine</span><span class="p">:</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">precompile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">)</span>
+
+        <span class="c"># do something</span>
+
+        <span class="n">s</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;1+2&quot;</span><span class="p">,</span> <span class="n">precompiled</span><span class="o">=</span><span class="n">buf</span><span class="p">)</span> <span class="c"># use the parsed data to improve performancee</span>
+
+        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">source</span> <span class="c"># &quot;1+2&quot;</span>
+        <span class="k">print</span> <span class="n">s</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>  <span class="c"># 3</span>
+</pre></div>
+</div>
+<p>If you need reuse the script in different contexts, you could refer to the <a class="reference internal" href="context.html#jsext"><em>Reuseable Extension</em></a>.</p>
 </div>
 <div class="section" id="jsengine-the-backend-javascript-engine">
 <h2>JSEngine - the backend Javascript engine<a class="headerlink" href="#jsengine-the-backend-javascript-engine" title="Permalink to this headline">¶</a></h2>
@@ -188,6 +189,16 @@
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSEngine.__enter__">
+<tt class="descname">__enter__</tt><big>(</big><big>)</big> &rarr; JSEngine object<a class="headerlink" href="#PyV8.JSEngine.__enter__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSEngine.__exit__">
+<tt class="descname">__exit__</tt><big>(</big><em>exc_type</em>, <em>exc_value</em>, <em>traceback</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSEngine.__exit__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="attribute">
 <dt id="PyV8.JSEngine.version">
@@ -341,7 +352,7 @@
 <dl class="class">
 <dt id="PyV8.JSScript">
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSScript</tt><a class="headerlink" href="#PyV8.JSScript" title="Permalink to this definition">¶</a></dt>
-<dd><p>JSScript is the compiled script</p>
+<dd><p>JSScript is a compiled JavaScript script.</p>
 <dl class="method">
 <dt id="PyV8.JSScript.run">
 <tt class="descname">run</tt><big>(</big><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSScript.run" title="Permalink to this definition">¶</a></dt>
@@ -412,11 +423,11 @@
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="wrapper.html"
-                        title="previous chapter">Two-Way Data Convert</a></p>
+  <p class="topless"><a href="context.html"
+                        title="previous chapter">Javascript Context</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="multithread.html"
-                        title="next chapter">Multi-Thread and Lock</a></p>
+  <p class="topless"><a href="wrapper.html"
+                        title="next chapter">Interoperability</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/api/engine.txt"
@@ -449,10 +460,10 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="multithread.html" title="Multi-Thread and Lock"
+          <a href="wrapper.html" title="Interoperability"
              >next</a> |</li>
         <li class="right" >
-          <a href="wrapper.html" title="Two-Way Data Convert"
+          <a href="context.html" title="Javascript Context"
              >previous</a> |</li>
         <li><a href="../index.html">PyV8 v1.0beta documentation</a> &raquo;</li>
           <li><a href="api.html" >Public API</a> &raquo;</li> 

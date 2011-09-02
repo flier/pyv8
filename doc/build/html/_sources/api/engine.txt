@@ -10,6 +10,20 @@ Javascript Engine
 
 Besides to execute a Javascript code with :py:meth:`JSContext.eval`, you could create a new :py:class:`JSEngine` instance and compile the Javascript code with :py:meth:`JSEngine.compile` before execute it. A :py:class:`JSScript` object will be returned, and you could run it later with :py:meth:`JSScript.run` method many times, or visit its AST [#f1]_ with :py:meth:`JSScript.visit`.
 
+:py:class:`JSEngine` also contains some static properties and methods for the global v8 engine, for example:
+
+======================================= =====================================================
+Property or Method                      Description
+======================================= =====================================================
+:py:attr:`JSEngine.version`             Get the compiled v8 version
+:py:attr:`JSEngine.dead`                Check if V8 is dead and therefore unusable
+:py:meth:`JSEngine.collect`             Force a full garbage collection
+:py:meth:`JSEngine.dispose`             Releases any resources used by v8
+:py:attr:`JSEngine.currentThreadId`     Get the current v8 thread id
+:py:meth:`JSEngine.terminateAllThreads` Forcefully terminate the current JavaScript thread
+:py:meth:`JSEngine.terminateThread`     Forcefully terminate execution of a JavaScript thread
+======================================= =====================================================
+
 Compile Script and Control Engine
 ---------------------------------
 
@@ -17,12 +31,12 @@ When you use :py:meth:`JSEngine.compile` compile a Javascript code, the v8 engin
 
 .. testcode::
 
-        with JSContext() as ctxt:
-            with JSEngine() as engine:
-                s = engine.compile("1+2")
+    with JSContext() as ctxt:
+        with JSEngine() as engine:
+            s = engine.compile("1+2")
 
-                print s.source # "1+2"
-                print s.run()  # 3
+            print s.source # "1+2"
+            print s.run()  # 3
 
 .. testoutput::
    :hide:
@@ -50,20 +64,8 @@ You could only parse the sytanx with :py:meth:`JSEngine.precompile` before use i
 
    1+2
    3
-   
-On the other hand, :py:class:`JSEngine` contains some static properties and methods for the global v8 engine, for example:
 
-======================================= =====================================================
-Property or Method                      Description
-======================================= =====================================================
-:py:attr:`JSEngine.version`             Get the compiled v8 version
-:py:attr:`JSEngine.dead`                Check if V8 is dead and therefore unusable
-:py:meth:`JSEngine.collect`             Force a full garbage collection
-:py:meth:`JSEngine.dispose`             Releases any resources used by v8
-:py:attr:`JSEngine.currentThreadId`     Get the current v8 thread id
-:py:meth:`JSEngine.terminateAllThreads` Forcefully terminate the current JavaScript thread
-:py:meth:`JSEngine.terminateThread`     Forcefully terminate execution of a JavaScript thread
-======================================= =====================================================
+If you need reuse the script in different contexts, you could refer to the :ref:`jsext`.
 
 JSEngine - the backend Javascript engine
 ----------------------------------------
@@ -91,6 +93,10 @@ JSEngine - the backend Javascript engine
       :param source: the Javascript code
       :type source: str or unicode
       :rtype: a buffer object contains the precompiled internal data
+
+   .. automethod:: __enter__() -> JSEngine object
+
+   .. automethod:: __exit__(exc_type, exc_value, traceback) -> None
 
    .. py:attribute:: version
 

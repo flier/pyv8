@@ -126,7 +126,7 @@ void CEngine::Expose(void)
     .value("free", v8::kAllocationActionFree)
     .value("all", v8::kAllocationActionAll);
 
-  py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is the backend Javascript engine.")
+  py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is a backend Javascript engine.")
     .def(py::init<>("Create a new script engine instance."))
     .add_static_property("version", &CEngine::GetVersion, 
                          "Get the V8 engine version.")
@@ -207,7 +207,7 @@ void CEngine::Expose(void)
                                          py::arg("precompiled") = py::object()))    
     ;
 
-  py::class_<CScript, boost::noncopyable>("JSScript", "JSScript is the compiled script", py::no_init)
+  py::class_<CScript, boost::noncopyable>("JSScript", "JSScript is a compiled JavaScript script.", py::no_init)
     .add_property("source", &CScript::GetSource, "the source code")
 
     .def("run", &CScript::Run, "Execute the compiled code.")
@@ -224,7 +224,7 @@ void CEngine::Expose(void)
 
 #ifdef SUPPORT_EXTENSION
 
-  py::class_<CExtension, boost::noncopyable>("JSExtension", "JSExtension is the reusable script module", py::no_init)    
+  py::class_<CExtension, boost::noncopyable>("JSExtension", "JSExtension is a reusable script module.", py::no_init)    
     .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"), 
                                                                                        py::arg("source"),
                                                                                        py::arg("callback") = py::object(),

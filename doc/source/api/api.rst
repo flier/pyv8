@@ -7,8 +7,8 @@ Public API
    :maxdepth: 2
 
    context
-   wrapper
    engine
+   wrapper
    multithread
    debugger
    ast
