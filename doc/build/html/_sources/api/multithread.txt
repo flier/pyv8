@@ -1,3 +1,9 @@
+.. py:module:: PyV8
+
+.. testsetup:: *
+
+   from PyV8 import *
+
 .. _multithread:
 
 Multi-Thread and Lock

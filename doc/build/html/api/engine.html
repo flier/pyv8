@@ -53,8 +53,8 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <span class="target" id="module-PyV8"><span id="engine"></span></span><div class="section" id="javascript-engine">
-<h1>Javascript Engine<a class="headerlink" href="#javascript-engine" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-PyV8"></span><div class="section" id="javascript-engine">
+<span id="engine"></span><h1>Javascript Engine<a class="headerlink" href="#javascript-engine" title="Permalink to this headline">¶</a></h1>
 <p>Besides to execute a Javascript code with <a class="reference internal" href="context.html#PyV8.JSContext.eval" title="PyV8.JSContext.eval"><tt class="xref py py-meth docutils literal"><span class="pre">JSContext.eval()</span></tt></a>, you could create a new <a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> instance and compile the Javascript code with <a class="reference internal" href="#PyV8.JSEngine.compile" title="PyV8.JSEngine.compile"><tt class="xref py py-meth docutils literal"><span class="pre">JSEngine.compile()</span></tt></a> before execute it. A <a class="reference internal" href="#PyV8.JSScript" title="PyV8.JSScript"><tt class="xref py py-class docutils literal"><span class="pre">JSScript</span></tt></a> object will be returned, and you could run it later with <a class="reference internal" href="#PyV8.JSScript.run" title="PyV8.JSScript.run"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.run()</span></tt></a> method many times, or visit its AST <a class="footnote-reference" href="#f1" id="id1">[1]</a> with <a class="reference internal" href="#PyV8.JSScript.visit" title="PyV8.JSScript.visit"><tt class="xref py py-meth docutils literal"><span class="pre">JSScript.visit()</span></tt></a>.</p>
 <p><a class="reference internal" href="#PyV8.JSEngine" title="PyV8.JSEngine"><tt class="xref py py-class docutils literal"><span class="pre">JSEngine</span></tt></a> also contains some static properties and methods for the global v8 engine, for example:</p>
 <table border="1" class="docutils">
@@ -352,7 +352,7 @@
 <dl class="class">
 <dt id="PyV8.JSScript">
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSScript</tt><a class="headerlink" href="#PyV8.JSScript" title="Permalink to this definition">¶</a></dt>
-<dd><p>JSScript is a compiled JavaScript script.</p>
+<dd><p>JSScript is the compiled script</p>
 <dl class="method">
 <dt id="PyV8.JSScript.run">
 <tt class="descname">run</tt><big>(</big><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSScript.run" title="Permalink to this definition">¶</a></dt>
@@ -372,7 +372,7 @@
 <tt class="descname">visit</tt><big>(</big><em>handler</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSScript.visit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>visit( (JSScript)arg1, (object)handler) -&gt; None :</dt>
-<dd><p class="first">Visit the AST of code with the callback handler.</p>
+<dd><p class="first">Visit the AST of code with callback handler</p>
 <dl class="last docutils">
 <dt>C++ signature :</dt>
 <dd>void visit(class CScript {lvalue},class boost::python::api::object)</dd>

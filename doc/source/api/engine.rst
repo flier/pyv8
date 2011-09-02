@@ -1,10 +1,11 @@
-.. _engine:
 .. py:module:: PyV8
 
 .. testsetup:: *
 
    from PyV8 import *
    
+.. _engine:
+
 Javascript Engine
 ==========================
 

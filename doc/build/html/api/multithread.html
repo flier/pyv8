@@ -53,7 +53,7 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="multi-thread-and-lock">
+  <span class="target" id="module-PyV8"></span><div class="section" id="multi-thread-and-lock">
 <span id="multithread"></span><h1>Multi-Thread and Lock<a class="headerlink" href="#multi-thread-and-lock" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="the-javascript-thread-and-isolate">
 <h2>The Javascript Thread and Isolate<a class="headerlink" href="#the-javascript-thread-and-isolate" title="Permalink to this headline">¶</a></h2>
@@ -61,6 +61,49 @@
 </div>
 <div class="section" id="jsisolate">
 <h2>JSIsolate<a class="headerlink" href="#jsisolate" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSIsolate">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSIsolate</tt><a class="headerlink" href="#PyV8.JSIsolate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSIsolate.__enter__">
+<tt class="descname">__enter__</tt><big>(</big><big>)</big> &rarr; JSIsolate object<a class="headerlink" href="#PyV8.JSIsolate.__enter__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSIsolate.__exit__">
+<tt class="descname">__exit__</tt><big>(</big><em>exc_type</em>, <em>exc_value</em>, <em>traceback</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSIsolate.__exit__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSIsolate.enter">
+<tt class="descname">enter</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSIsolate.enter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>enter( (JSIsolate)arg1) -&gt; None :</dt>
+<dd><p class="first">Sets this isolate as the entered one for the current thread. Saves the previously entered one (if any), so that it can be restored when exiting.  Re-entering an isolate is allowed.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>void enter(class CIsolate {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSIsolate.leave">
+<tt class="descname">leave</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSIsolate.leave" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>leave( (JSIsolate)arg1) -&gt; None :</dt>
+<dd><p class="first">Exits this isolate by restoring the previously entered one in the current thread. The isolate may still stay the same, if it was entered more than once.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>void leave(class CIsolate {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
