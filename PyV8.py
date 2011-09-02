@@ -20,9 +20,10 @@ __author__ = 'Flier Lu <flier.lu@gmail.com>'
 __version__ = '1.0'
 
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
-           "JSError", "JSArray", "JSClass", "JSEngine", "JSContext", \
-           "JSObjectSpace", "JSAllocationAction", \
-           "JSStackTrace", "JSStackFrame", "profiler", \
+           "JSError", "JSObject", "JSArray", "JSFunction",
+           "JSClass", "JSEngine", "JSContext",
+           "JSObjectSpace", "JSAllocationAction",
+           "JSStackTrace", "JSStackFrame", "profiler", 
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
 
 class JSAttribute(object):
@@ -61,7 +62,9 @@ class JSError(Exception):
 
 _PyV8._JSError._jsclass = JSError
 
+JSObject = _PyV8.JSObject
 JSArray = _PyV8.JSArray
+JSFunction = _PyV8.JSFunction
 JSExtension = _PyV8.JSExtension
 
 class JSLocker(_PyV8.JSLocker):

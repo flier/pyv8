@@ -55,8 +55,159 @@
             
   <span class="target" id="module-PyV8"><span id="wrapper"></span></span><div class="section" id="interoperability">
 <h1>Interoperability<a class="headerlink" href="#interoperability" title="Permalink to this headline">¶</a></h1>
+<p>As the most basic and important design principle, the PyV8 user doesn&#8217;t need pay additional efforts for interoperability. It means that your Python code could seamless access the property or call the function of Javascript code, or vice versa. PyV8 will do the dirty work under the table, such as <a class="reference internal" href="#typeconv"><em>Type Conversion</em></a>, <a class="reference internal" href="#funcall"><em>Function Call</em></a> and <a class="reference internal" href="#exctrans"><em>Exception Translation</em></a>.</p>
 <div class="section" id="type-conversion">
 <span id="typeconv"></span><h2>Type Conversion<a class="headerlink" href="#type-conversion" title="Permalink to this headline">¶</a></h2>
+<p>Python and Javascript has different type system and build-in primitives. PyV8 have to guess the conversion by the type of source value.</p>
+<p>When convert Python value to Javascript value, PyV8 will try the following rules first. The remaining unknown Python type will be convert to a plain Javascript object.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="39%" />
+<col width="20%" />
+<col width="20%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Python Type</th>
+<th class="head">Python Value</th>
+<th class="head">Javascript Type</th>
+<th class="head">Javascript Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><tt class="xref py py-class docutils literal"><span class="pre">NoneType</span></tt></td>
+<td>None</td>
+<td>Null <a class="footnote-reference" href="#f1" id="id1">[1]</a></td>
+<td>null</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#bool" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">bool()</span></tt></a></td>
+<td>True/False</td>
+<td>Boolean <a class="footnote-reference" href="#f2" id="id2">[2]</a></td>
+<td>true/false</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#int" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">int()</span></tt></a></td>
+<td>123</td>
+<td>Number <a class="footnote-reference" href="#f3" id="id3">[3]</a></td>
+<td>123</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#long" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">long()</span></tt></a></td>
+<td>123</td>
+<td>Number</td>
+<td>123</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#float" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">float()</span></tt></a></td>
+<td>3.14</td>
+<td>Number</td>
+<td>3.14</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#str" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">str()</span></tt></a></td>
+<td>&#8216;test&#8217;</td>
+<td>String <a class="footnote-reference" href="#f4" id="id4">[4]</a></td>
+<td>&#8216;test&#8217;</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#unicode" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">unicode()</span></tt></a></td>
+<td>u&#8217;test&#8217;</td>
+<td>String</td>
+<td>&#8216;test&#8217;</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/datetime.html#datetime.datetime" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">datetime.datetime</span></tt></a></td>
+<td>&nbsp;</td>
+<td>Date <a class="footnote-reference" href="#f5" id="id5">[5]</a></td>
+<td>&nbsp;</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/datetime.html#datetime.time" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">datetime.time</span></tt></a></td>
+<td>&nbsp;</td>
+<td>Date</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>builtin_function_or_method</td>
+<td>&nbsp;</td>
+<td>Function</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#type" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">type()</span></tt></a></td>
+<td>&nbsp;</td>
+<td>Function</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">All the Python <em>function</em>, <em>method</em> and <em>type</em> will be convert to a Javascript function, because even the Python <em>type</em> could be used as a constructor and create a new instance.</p>
+</div>
+<p>On the other hand, PyV8 will try the following rules to convert Javascript value to Python value.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="22%" />
+<col width="40%" />
+<col width="17%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Javascript Type</th>
+<th class="head">Javascript Value</th>
+<th class="head">Python Type</th>
+<th class="head">Python Value</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>Null</td>
+<td>null</td>
+<td><tt class="xref py py-class docutils literal"><span class="pre">NoneType</span></tt></td>
+<td>None</td>
+</tr>
+<tr><td>Undefined</td>
+<td>undefined</td>
+<td><tt class="xref py py-class docutils literal"><span class="pre">NoneType</span></tt></td>
+<td>None</td>
+</tr>
+<tr><td>Boolean</td>
+<td>true/false</td>
+<td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#bool" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">bool()</span></tt></a></td>
+<td>True/False</td>
+</tr>
+<tr><td>String</td>
+<td>&#8216;test&#8217;</td>
+<td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#str" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">str()</span></tt></a></td>
+<td>&#8216;test&#8217;</td>
+</tr>
+<tr><td>Number/Int32</td>
+<td>123</td>
+<td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#int" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">int()</span></tt></a></td>
+<td>123</td>
+</tr>
+<tr><td>Number</td>
+<td>3.14</td>
+<td><a class="reference external" href="http://docs.python.org/2.6/library/functions.html#float" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">float()</span></tt></a></td>
+<td>3.14</td>
+</tr>
+<tr><td>Date</td>
+<td>&nbsp;</td>
+<td><a class="reference external" href="http://docs.python.org/2.6/library/datetime.html#datetime.datetime" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">datetime.datetime</span></tt></a></td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Array <a class="footnote-reference" href="#f6" id="id6">[6]</a></td>
+<td>&nbsp;</td>
+<td><a class="reference internal" href="#PyV8.JSArray" title="PyV8.JSArray"><tt class="xref py py-class docutils literal"><span class="pre">JSArray</span></tt></a></td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Function</td>
+<td>&nbsp;</td>
+<td><a class="reference internal" href="#PyV8.JSFunction" title="PyV8.JSFunction"><tt class="xref py py-class docutils literal"><span class="pre">JSFunction</span></tt></a></td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>Object</td>
+<td>&nbsp;</td>
+<td><a class="reference internal" href="#PyV8.JSObject" title="PyV8.JSObject"><tt class="xref py py-class docutils literal"><span class="pre">JSObject</span></tt></a></td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Even ECMAScript standard has only one Number type for both integer and float number, Google V8 defined the standalone Integer/Int32/Uint32 class to improve the performance. PyV8 use the internal V8 type system to do the same job.</p>
+</div>
 </div>
 <div class="section" id="function-call">
 <span id="funcall"></span><h2>Function Call<a class="headerlink" href="#function-call" title="Permalink to this headline">¶</a></h2>
@@ -113,10 +264,505 @@
 
 </dd></dl>
 
+</div>
+<div class="section" id="jsobject">
+<h2>JSObject<a class="headerlink" href="#jsobject" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSObject">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSObject</tt><a class="headerlink" href="#PyV8.JSObject" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSObject.__getattr__">
+<tt class="descname">__getattr__</tt><big>(</big><em>name</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSObject.__getattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__getattr__( (JSObject)arg1, (str)arg2) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object __getattr__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;)</dd>
+</dl>
+</div></blockquote>
+<p>Called when an attribute lookup has not found the attribute in the usual places (i.e. it is not an instance attribute nor is it found in the class tree for self). name is the attribute name. This method should return the (computed) attribute value or raise an AttributeError exception.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getattr__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getattr__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__setattr__">
+<tt class="descname">__setattr__</tt><big>(</big><em>name</em>, <em>value</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSObject.__setattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__setattr__( (JSObject)arg1, (str)arg2, (object)arg3) -&gt; None :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>void __setattr__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;,class boost::python::api::object)</dd>
+</dl>
+</div></blockquote>
+<p>Called when an attribute assignment is attempted. This is called instead of the normal mechanism (i.e. store the value in the instance dictionary). name is the attribute name, value is the value to be assigned to it.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__setattr__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__setattr__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__delattr__">
+<tt class="descname">__delattr__</tt><big>(</big><em>name</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSObject.__delattr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__delattr__( (JSObject)arg1, (str)arg2) -&gt; None :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>void __delattr__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;)</dd>
+</dl>
+</div></blockquote>
+<p>Like __setattr__() but for attribute deletion instead of assignment. This should only be implemented if del obj.name is meaningful for the object.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__delattr__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__delattr__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__hash__">
+<tt class="descname">__hash__</tt><big>(</big><big>)</big> &rarr; int<a class="headerlink" href="#PyV8.JSObject.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__hash__( (JSObject)arg1) -&gt; int :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>int __hash__(class CJavascriptObject {lvalue})</dd>
+</dl>
+</div></blockquote>
+<p>Called by built-in function hash() and for operations on members of hashed collections including set, frozenset, and dict. __hash__() should return an integer. The only required property is that objects which compare equal have the same hash value; it is advised to somehow mix together (e.g. using exclusive or) the hash values for the components of the object that also play a part in comparison of objects.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__hash__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__hash__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSObject.__members__">
+<tt class="descname">__members__</tt><a class="headerlink" href="#PyV8.JSObject.__members__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deprecated, use the <a class="reference internal" href="#PyV8.JSObject.keys" title="PyV8.JSObject.keys"><tt class="xref py py-meth docutils literal"><span class="pre">JSObject.keys()</span></tt></a> to get a list of an object’s attributes.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#object.__members__" title="(in Python v2.6)"><tt class="xref py py-attr docutils literal"><span class="pre">object.__members__</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSObject.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__getitem__( (JSObject)arg1, (str)arg2) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object __getitem__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement evaluation of self[key]. For sequence types, the accepted keys should be integers and slice objects. Note that the special interpretation of negative indexes (if the class wishes to emulate a sequence type) is up to the __getitem__() method. If key is of an inappropriate type, TypeError may be raised; if of a value outside the set of indexes for the sequence (after any special interpretation of negative values), IndexError should be raised. For mapping types, if key is missing (not in the container), KeyError should be raised.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSObject.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__setitem__( (JSObject)arg1, (str)arg2, (object)arg3) -&gt; None :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>void __setitem__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;,class boost::python::api::object)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement assignment to self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support changes to the values for keys, or if new keys can be added, or for sequences if elements can be replaced. The same exceptions should be raised for improper key values as for the __getitem__() method.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__setitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__setitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__delitem__">
+<tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSObject.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__delitem__( (JSObject)arg1, (str)arg2) -&gt; None :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>void __delitem__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement deletion of self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support removal of keys, or for sequences if elements can be removed from the sequence. The same exceptions should be raised for improper key values as for the __getitem__() method.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__delitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__delitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>key</em><big>)</big> &rarr; bool<a class="headerlink" href="#PyV8.JSObject.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__contains__( (JSObject)arg1, (str)arg2) -&gt; bool :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>bool __contains__(class CJavascriptObject {lvalue},class std::basic_string&lt;char,struct std::char_traits&lt;char&gt;,class std::allocator&lt;char&gt; &gt;)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement membership test operators. Should return true if item is in self, false otherwise. For mapping objects, this should consider the keys of the mapping rather than the values or the key-item pairs.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__contains__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__contains__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__nonzero__">
+<tt class="descname">__nonzero__</tt><big>(</big><big>)</big> &rarr; bool<a class="headerlink" href="#PyV8.JSObject.__nonzero__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__nonzero__( (JSObject)arg1) -&gt; bool :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>bool __nonzero__(class CJavascriptObject {lvalue})</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement truth value testing and the built-in operation bool(); should return False or True, or their integer equivalents 0 or 1. When this method is not defined, __len__() is called, if it is defined, and the object is considered true if its result is nonzero. If a class defines neither __len__() nor __nonzero__(), all its instances are considered true.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__nonzero__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__nonzero__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__eq__">
+<tt class="descname">__eq__</tt><big>(</big><em>other</em><big>)</big> &rarr; bool<a class="headerlink" href="#PyV8.JSObject.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__eq__( (JSObject)arg1, (JSObject)arg2) -&gt; bool :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>bool __eq__(class CJavascriptObject {lvalue},class boost::shared_ptr&lt;class CJavascriptObject&gt;)</dd>
+</dl>
+</div></blockquote>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__eq__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__eq__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__ne__">
+<tt class="descname">__ne__</tt><big>(</big><em>other</em><big>)</big> &rarr; bool<a class="headerlink" href="#PyV8.JSObject.__ne__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__ne__( (JSObject)arg1, (JSObject)arg2) -&gt; bool :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>bool __ne__(class CJavascriptObject {lvalue},class boost::shared_ptr&lt;class CJavascriptObject&gt;)</dd>
+</dl>
+</div></blockquote>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__ne__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__ne__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__int__">
+<tt class="descname">__int__</tt><big>(</big><big>)</big> &rarr; int<a class="headerlink" href="#PyV8.JSObject.__int__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__int__( (JSObject)arg1) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>struct _object * __int__(class CJavascriptObject {lvalue})</dd>
+</dl>
+</div></blockquote>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__int__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__int__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__float__">
+<tt class="descname">__float__</tt><big>(</big><big>)</big> &rarr; float<a class="headerlink" href="#PyV8.JSObject.__float__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__float__( (JSObject)arg1) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>struct _object * __float__(class CJavascriptObject {lvalue})</dd>
+</dl>
+</div></blockquote>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__float__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__float__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big> &rarr; str<a class="headerlink" href="#PyV8.JSObject.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__str__( (JSObject)arg1) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>struct _object * __str__(class CJavascriptObject {lvalue})</dd>
+</dl>
+</div></blockquote>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__str__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__str__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.clone">
+<tt class="descname">clone</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSObject.clone" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>clone( (JSObject)arg1) -&gt; JSObject :</dt>
+<dd><p class="first">Clone the object.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::shared_ptr&lt;class CJavascriptObject&gt; clone(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSObject.keys">
+<tt class="descname">keys</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSObject.keys" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>keys( (JSObject)arg1) -&gt; list :</dt>
+<dd><p class="first">Get a list of an object¡¯s attributes.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::list keys(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="jsarray">
+<h2>JSArray<a class="headerlink" href="#jsarray" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSArray">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSArray</tt><a class="headerlink" href="#PyV8.JSArray" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSArray.__len__">
+<tt class="descname">__len__</tt><big>(</big><big>)</big> &rarr; int<a class="headerlink" href="#PyV8.JSArray.__len__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__len__( (JSArray)arg1) -&gt; int :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>unsigned int __len__(class CJavascriptArray {lvalue})</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement the built-in function len(). Should return the length of the object, an integer &gt;= 0. Also, an object that doesn’t define a __nonzero__() method and whose __len__() method returns zero is considered to be false in a Boolean context.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__len__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__len__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.__iter__">
+<tt class="descname">__iter__</tt><big>(</big><big>)</big> &rarr; iterator<a class="headerlink" href="#PyV8.JSArray.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__iter__( (object)arg1) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>struct boost::python::objects::iterator_range&lt;struct boost::python::return_value_policy&lt;struct boost::python::return_by_value,struct boost::python::default_call_policies&gt;,class CJavascriptArray::ArrayIterator&gt; __iter__(struct boost::python::back_reference&lt;class CJavascriptArray &amp;&gt;)</dd>
+</dl>
+</div></blockquote>
+<p>This method is called when an iterator is required for a container. This method should return a new iterator object that can iterate over all the objects in the container. For mappings, it should iterate over the keys of the container, and should also be made available as the method iterkeys().</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__iter__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__iter__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.clone">
+<tt class="descname">clone</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSArray.clone" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>clone( (JSObject)arg1) -&gt; JSObject :</dt>
+<dd><p class="first">Clone the object.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::shared_ptr&lt;class CJavascriptObject&gt; clone(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.keys">
+<tt class="descname">keys</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSArray.keys" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>keys( (JSObject)arg1) -&gt; list :</dt>
+<dd><p class="first">Get a list of an object¡¯s attributes.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::list keys(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="jsfunction">
+<h2>JSFunction<a class="headerlink" href="#jsfunction" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSFunction">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSFunction</tt><a class="headerlink" href="#PyV8.JSFunction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSFunction.__call__">
+<tt class="descname">__call__</tt><big>(</big><big>)</big> &rarr; iterator<a class="headerlink" href="#PyV8.JSFunction.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>object __call__(tuple args, dict kwds) :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>object __call__(tuple args, dict kwds)</dd>
+</dl>
+</div></blockquote>
+<p>Called when the instance is “called” as a function; if this method is defined, x(arg1, arg2, ...) is a shorthand for x.__call__(arg1, arg2, ...).</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__call__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__call__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSFunction.apply">
+<tt class="descname">apply</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSFunction.apply" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>apply( (JSFunction)arg1, (JSObject)self [, (list)args=[] [, (dict)kwds={}]]) -&gt; object :</dt>
+<dd><p class="first">Performs a function call using the parameters.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object apply(class CJavascriptFunction {lvalue},class boost::shared_ptr&lt;class CJavascriptObject&gt; [,class boost::python::list=[] [,class boost::python::dict={}]])</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSFunction.clone">
+<tt class="descname">clone</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSFunction.clone" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>clone( (JSObject)arg1) -&gt; JSObject :</dt>
+<dd><p class="first">Clone the object.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::shared_ptr&lt;class CJavascriptObject&gt; clone(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSFunction.keys">
+<tt class="descname">keys</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSFunction.keys" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>keys( (JSObject)arg1) -&gt; list :</dt>
+<dd><p class="first">Get a list of an object¡¯s attributes.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::list keys(class CJavascriptObject {lvalue})</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSFunction.coloff">
+<tt class="descname">coloff</tt><a class="headerlink" href="#PyV8.JSFunction.coloff" title="Permalink to this definition">¶</a></dt>
+<dd><p>The column offset of function in the script</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSFunction.linenum">
+<tt class="descname">linenum</tt><a class="headerlink" href="#PyV8.JSFunction.linenum" title="Permalink to this definition">¶</a></dt>
+<dd><p>The line number of function in the script</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSFunction.lineoff">
+<tt class="descname">lineoff</tt><a class="headerlink" href="#PyV8.JSFunction.lineoff" title="Permalink to this definition">¶</a></dt>
+<dd><p>The line offset of function in the script</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSFunction.name">
+<tt class="descname">name</tt><a class="headerlink" href="#PyV8.JSFunction.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of function</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="PyV8.JSFunction.resname">
+<tt class="descname">resname</tt><a class="headerlink" href="#PyV8.JSFunction.resname" title="Permalink to this definition">¶</a></dt>
+<dd><p>The resource name of script</p>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
 </div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="f1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first"><strong>Null Type</strong></p>
+<p class="last">The type Null has exactly one value, called null.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td><p class="first"><strong>Boolean Type</strong></p>
+<p class="last">The type Boolean represents a logical entity and consists of exactly two unique values. One is called true and the other is called false.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td><p class="first"><strong>Number Type</strong></p>
+<p class="last">The type <strong>Number</strong> is a set of values representing numbers. In ECMAScript, the set of values represents the double-precision 64-bit format IEEE 754 values including the special “Not-a-Number” (NaN) values, positive infinity, and negative infinity.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f4" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td><p class="first"><strong>String Type</strong></p>
+<p class="last">The type String is the set of all string values. A string value is a finite ordered sequence of zero or more 16-bit unsigned integer values.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f5" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[5]</a></td><td><p class="first"><strong>Date Object</strong></p>
+<p class="last">A Date object contains a number indicating a particular instant in time to within a millisecond. The number may also be NaN, indicating that the Date object does not represent a specific instant of time.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f6" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id6">[6]</a></td><td><p class="first"><strong>Array Object</strong></p>
+<p class="last">Array objects give special treatment to a certain class of property names. A property name P (in the form of a string value) is an array index if and only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to 232−1.</p>
+</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -132,7 +778,10 @@
 <li><a class="reference internal" href="#type-conversion">Type Conversion</a></li>
 <li><a class="reference internal" href="#function-call">Function Call</a></li>
 <li><a class="reference internal" href="#exception-translation">Exception Translation</a></li>
-<li><a class="reference internal" href="#jsclass">JSClass</a><ul>
+<li><a class="reference internal" href="#jsclass">JSClass</a></li>
+<li><a class="reference internal" href="#jsobject">JSObject</a></li>
+<li><a class="reference internal" href="#jsarray">JSArray</a></li>
+<li><a class="reference internal" href="#jsfunction">JSFunction</a><ul>
 </ul>
 </li>
 </ul>

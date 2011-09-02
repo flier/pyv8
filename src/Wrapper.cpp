@@ -39,12 +39,12 @@ void CWrapper::Expose(void)
     .def("__delattr__", &CJavascriptObject::DelAttr)    
 
     .def("__hash__", &CJavascriptObject::GetIdentityHash)
-    .def("clone", &CJavascriptObject::Clone)
+    .def("clone", &CJavascriptObject::Clone, "Clone the object.")
 
     .add_property("__members__", &CJavascriptObject::GetAttrList)
 
     // Emulating dict object
-    .def("keys", &CJavascriptObject::GetAttrList)
+    .def("keys", &CJavascriptObject::GetAttrList, "Get a list of an object¡¯s attributes.")
 
     .def("__getitem__", &CJavascriptObject::GetAttr)
     .def("__setitem__", &CJavascriptObject::SetAttr)
@@ -82,14 +82,15 @@ void CWrapper::Expose(void)
     .def("apply", &CJavascriptFunction::Apply, 
          (py::arg("self"), 
           py::arg("args") = py::list(), 
-          py::arg("kwds") = py::dict()))
-    .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName)
+          py::arg("kwds") = py::dict()), 
+          "Performs a function call using the parameters.")
+    .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName, "The name of function")
     .add_property("owner", &CJavascriptFunction::GetOwner)
 
-    .add_property("linenum", &CJavascriptFunction::GetLineNumber)
-    .add_property("resname", &CJavascriptFunction::GetResourceName)
-    .add_property("lineoff", &CJavascriptFunction::GetLineOffset)
-    .add_property("coloff", &CJavascriptFunction::GetColumnOffset)
+    .add_property("linenum", &CJavascriptFunction::GetLineNumber, "The line number of function in the script")
+    .add_property("resname", &CJavascriptFunction::GetResourceName, "The resource name of script")
+    .add_property("lineoff", &CJavascriptFunction::GetLineOffset, "The line offset of function in the script")
+    .add_property("coloff", &CJavascriptFunction::GetColumnOffset, "The column offset of function in the script")
     ;
 
   py::objects::class_value_wrapper<boost::shared_ptr<CJavascriptObject>, 
