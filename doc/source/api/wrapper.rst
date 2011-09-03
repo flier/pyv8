@@ -19,10 +19,10 @@ Python and Javascript has different type system and build-in primitives. PyV8 ha
 
 When convert Python value to Javascript value, PyV8 will try the following rules first. The remaining unknown Python type will be convert to a plain Javascript object.
 
-=============================   ===============     ===============     ================
+=============================   ===============     ==================  ================
 Python Type                     Python Value        Javascript Type     Javascript Value
-=============================   ===============     ===============     ================
-:py:class:`NoneType`            None                Null [#f1]_         null
+=============================   ===============     ==================  ================
+:py:class:`NoneType`            None                Object/Null [#f1]_  null
 :py:func:`bool`                 True/False          Boolean [#f2]_      true/false
 :py:func:`int`                  123                 Number [#f3]_       123
 :py:func:`long`                 123                 Number              123
@@ -31,15 +31,56 @@ Python Type                     Python Value        Javascript Type     Javascri
 :py:func:`unicode`              u'test'             String              'test'
 :py:class:`datetime.datetime`                       Date [#f5]_
 :py:class:`datetime.time`                           Date
-builtin_function_or_method                          Function
-:py:func:`type`                                     Function
-=============================   ===============     ===============     ================
+built-in function                                   Object/Function
+function/method                                     Object/Function
+:py:func:`type`                                     Object/Function
+=============================   ===============     ==================  ================
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> typeof = ctxt.eval("(function type(value) { return typeof value; })")
+    >>> protoof = ctxt.eval("(function protoof(value) { return Object.prototype.toString.apply(value); })")
+
+    >>> protoof(None)
+    '[object Null]'
+    >>> typeof(True)
+    'boolean'
+    >>> typeof(123)
+    'number'
+    >>> typeof(123l)
+    'number'
+    >>> typeof(3.14)
+    'number'
+    >>> typeof('test')
+    'string'
+    >>> typeof(u'test')
+    'string'
+
+    >>> from datetime import *
+    >>> protoof(datetime.now())
+    '[object Date]'
+    >>> protoof(date.today())
+    '[object Date]'
+    >>> protoof(time())
+    '[object Date]'
+
+    >>> protoof(abs)
+    '[object Function]'
+    >>> def test():
+    ...     pass
+    >>> protoof(test)
+    '[object Function]'
+    >>> protoof(int)
+    '[object Function]'
 
 .. note::
 
-    All the Python *function*, *method* and *type* will be convert to a Javascript function, because even the Python *type* could be used as a constructor and create a new instance.
+    All the Python *function*, *method* and *type* will be convert to a Javascript function object, because the Python *type* could be used as a constructor and create a new instance.
 
-On the other hand, PyV8 will try the following rules to convert Javascript value to Python value. 
+When reverse direction of conversion, PyV8 will try the following rules to map Javascript type to Python type.
 
 ===============     ================    =============================   ============
 Javascript Type     Javascript Value    Python Type                     Python Value
@@ -59,6 +100,32 @@ Object                                  :py:class:`JSObject`
 .. note::
 
     Even ECMAScript standard has only one Number type for both integer and float number, Google V8 defined the standalone Integer/Int32/Uint32 class to improve the performance. PyV8 use the internal V8 type system to do the same job.
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> type(ctxt.eval("null"))
+    <type 'NoneType'>
+    >>> type(ctxt.eval("undefined"))
+    <type 'NoneType'>
+    >>> type(ctxt.eval("true"))
+    <type 'bool'>
+    >>> type(ctxt.eval("'test'"))
+    <type 'str'>
+    >>> type(ctxt.eval("123"))
+    <type 'int'>
+    >>> type(ctxt.eval("3.14"))
+    <type 'float'>
+    >>> type(ctxt.eval("new Date()"))
+    <type 'datetime.datetime'>
+    >>> type(ctxt.eval("[1, 2, 3]"))
+    <class '_PyV8.JSArray'>
+    >>> type(ctxt.eval("(function() {})"))
+    <class '_PyV8.JSFunction'>
+    >>> type(ctxt.eval("new Object()"))
+    <class '_PyV8.JSObject'>
 
 .. _funcall:
 
@@ -172,11 +239,10 @@ JSArray
    :members:
    :inherited-members:
 
-   .. automethod:: __init__(len) -> JSArray object
-      :param int len: the array size
+   .. automethod:: __init__(size or items) -> JSArray object
 
-   .. automethod:: __init__(items) -> JSArray object
-      :param list items: the item list
+      :param int size: The array size
+      :param list items: The item list
 
    .. automethod:: __len__() -> int
 

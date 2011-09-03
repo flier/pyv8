@@ -843,7 +843,8 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 
     result = v8::Date::New(((double) mktime(&ts)) * 1000 + ms / 1000);    
   }
-  else if (PyFunction_Check(obj.ptr()) || PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
+  else if (PyCFunction_Check(obj.ptr()) || PyFunction_Check(obj.ptr()) || 
+           PyMethod_Check(obj.ptr()) || PyType_Check(obj.ptr()))
   {
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New();    
     py::object *object = new py::object(obj);
