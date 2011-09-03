@@ -762,7 +762,7 @@ class AST:
     SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
     This = _PyV8.AstThisFunction
 
-import datetime
+from datetime import *
 import unittest
 import logging
 import traceback
@@ -948,7 +948,7 @@ class TestWrapper(unittest.TestCase):
         class MyUnicode(unicode, JSClass):
             pass
 
-        class MyDateTime(datetime.time, JSClass):
+        class MyDateTime(time, JSClass):
             pass
 
         class Global(JSClass):
@@ -957,9 +957,9 @@ class TestWrapper(unittest.TestCase):
             var_float = 1.0
             var_str = 'str'
             var_unicode = u'unicode'
-            var_datetime = datetime.datetime.now()
-            var_date = datetime.date.today()
-            var_time = datetime.time()
+            var_datetime = datetime.now()
+            var_date = date.today()
+            var_time = time()
 
             var_myint = MyInteger()
             var_mystr = MyString('mystr')
@@ -988,6 +988,44 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('object', typeof('var_mystr'))
             self.assertEquals('object', typeof('var_myunicode'))
             self.assertEquals('object', typeof('var_mytime'))
+
+    def testJavascriptWrapper(self):
+        with JSContext() as ctxt:
+            self.assertEquals(type(None), type(ctxt.eval("null")))
+            self.assertEquals(type(None), type(ctxt.eval("undefined")))
+            self.assertEquals(bool, type(ctxt.eval("true")))
+            self.assertEquals(str, type(ctxt.eval("'test'")))
+            self.assertEquals(int, type(ctxt.eval("123")))
+            self.assertEquals(float, type(ctxt.eval("3.14")))
+            self.assertEquals(datetime, type(ctxt.eval("new Date()")))
+            self.assertEquals(JSArray, type(ctxt.eval("[1, 2, 3]")))
+            self.assertEquals(JSFunction, type(ctxt.eval("(function() {})")))
+            self.assertEquals(JSObject, type(ctxt.eval("new Object()")))
+
+    def testPythonWrapper(self):
+        with JSContext() as ctxt:
+            typeof = ctxt.eval("(function type(value) { return typeof value; })")
+            protoof = ctxt.eval("(function protoof(value) { return Object.prototype.toString.apply(value); })")
+
+            self.assertEquals('[object Null]', protoof(None))
+            self.assertEquals('boolean', typeof(True))
+            self.assertEquals('number', typeof(123))
+            self.assertEquals('number', typeof(123l))
+            self.assertEquals('number', typeof(3.14))
+            self.assertEquals('string', typeof('test'))
+            self.assertEquals('string', typeof(u'test'))
+
+            self.assertEquals('[object Date]', protoof(datetime.now()))
+            self.assertEquals('[object Date]', protoof(date.today()))
+            self.assertEquals('[object Date]', protoof(time()))
+
+            def test():
+                pass
+
+            self.assertEquals('[object Function]', protoof(abs))
+            self.assertEquals('[object Function]', protoof(test))
+            self.assertEquals('[object Function]', protoof(self.testPythonWrapper))
+            self.assertEquals('[object Function]', protoof(int))
 
     def testFunction(self):
         with JSContext() as ctxt:
@@ -1321,15 +1359,15 @@ class TestWrapper(unittest.TestCase):
 
             self.assert_(now1)
 
-            now2 = datetime.datetime.utcnow()
+            now2 = datetime.utcnow()
 
             delta = now2 - now1 if now2 > now1 else now1 - now2
 
-            self.assert_(delta < datetime.timedelta(seconds=1))
+            self.assert_(delta < timedelta(seconds=1))
 
             func = ctxt.eval("(function (d) { return d.toString(); })")
 
-            now = datetime.datetime.now()
+            now = datetime.now()
 
             self.assert_(str(func(now)).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
 
