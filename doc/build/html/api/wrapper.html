@@ -59,6 +59,8 @@
 <div class="section" id="type-conversion">
 <span id="typeconv"></span><h2>Type Conversion<a class="headerlink" href="#type-conversion" title="Permalink to this headline">¶</a></h2>
 <p>Python and Javascript has different type system and build-in primitives. PyV8 have to guess the conversion by the type of source value.</p>
+<div class="section" id="python-to-javascript">
+<h3>Python to Javascript<a class="headerlink" href="#python-to-javascript" title="Permalink to this headline">¶</a></h3>
 <p>When convert Python value to Javascript value, PyV8 will try the following rules first. The remaining unknown Python type will be convert to a plain Javascript object.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -180,6 +182,9 @@
 <p class="first admonition-title">Note</p>
 <p class="last">All the Python <em>function</em>, <em>method</em> and <em>type</em> will be convert to a Javascript function object, because the Python <em>type</em> could be used as a constructor and create a new instance.</p>
 </div>
+</div>
+<div class="section" id="javascript-to-python">
+<h3>Javascript to Python<a class="headerlink" href="#javascript-to-python" title="Permalink to this headline">¶</a></h3>
 <p>When reverse direction of conversion, PyV8 will try the following rules to map Javascript type to Python type.</p>
 <table border="1" class="docutils">
 <colgroup>
@@ -276,6 +281,155 @@
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;new Object()&quot;</span><span class="p">))</span>
 <span class="go">&lt;class &#39;_PyV8.JSObject&#39;&gt;</span>
 </pre></div>
+</div>
+</div>
+<div class="section" id="sequence-and-array">
+<h3>Sequence and Array<a class="headerlink" href="#sequence-and-array" title="Permalink to this headline">¶</a></h3>
+<div class="sidebar">
+<p class="first sidebar-title">sequence</p>
+<p class="last">An iterable which supports efficient element access using integer indices via the <a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getitem__()</span></tt></a> special method and defines a <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#len" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">len()</span></tt></a> method that returns the length of the sequence. Some built-in sequence types are <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">list()</span></tt></a>, <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#str" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">str()</span></tt></a>, <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#tuple" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">tuple()</span></tt></a>, and <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#unicode" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">unicode()</span></tt></a>.</p>
+</div>
+<p>Since Python haven&#8217;t build-in Array, it defined a sequence concept, you could access a object as a sequence if it implement the sequence interface.</p>
+<p>PyV8 provide the <a class="reference internal" href="#PyV8.JSArray" title="PyV8.JSArray"><tt class="xref py py-class docutils literal"><span class="pre">JSArray</span></tt></a> class which wrap the Javascript Array object, and act as a Python sequence. You could access and modify it just like a normal Python list.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The Javascript Array object support the Sparse Array <a class="footnote-reference" href="#f7" id="id7">[7]</a>, because it was implemented as a Associative Array <a class="footnote-reference" href="#f8" id="id8">[8]</a>, just like the <a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#dict" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a> class in the Python. So, if we add a new item in <a class="reference internal" href="#PyV8.JSArray" title="PyV8.JSArray"><tt class="xref py py-class docutils literal"><span class="pre">JSArray</span></tt></a> with a index value larger than the length, the padding item will always be None.</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span> <span class="o">=</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;[1, 2, 3]&#39;</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>            <span class="c"># via :py:meth:`JSArray.__getitem__`</span>
+<span class="go">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>          <span class="c"># via :py:meth:`JSArray.__len__`</span>
+<span class="go">3</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">2</span> <span class="ow">in</span> <span class="n">array</span>          <span class="c"># via :py:meth:`JSArray.__contains__`</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">array</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>        <span class="c"># via :py:meth:`JSArray.__delitem__`</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="mi">2</span> <span class="ow">in</span> <span class="n">array</span>
+<span class="go">False</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">array</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>        <span class="c"># via :py:meth:`JSArray.__setitem__`</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">array</span><span class="p">]</span>  <span class="c"># via :py:meth:`JSArray.__iter__`</span>
+<span class="go">[1, None, 3, None, None, 3]</span>
+</pre></div>
+</div>
+<p>On the other hand, your Javascript code could access all the Python sequence types as a array like object.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;array[1]&#39;</span><span class="p">)</span>
+<span class="go">2</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;delete array[1]&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">array</span>
+<span class="go">[1, 3]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;array[0] = 4&#39;</span><span class="p">)</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">array</span>
+<span class="go">[4, 3]</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;var sum=0; for (i in array) sum+= array[i]; sum&#39;</span><span class="p">)</span>
+<span class="go">7</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;0 in array&#39;</span><span class="p">)</span> <span class="c"># check whether the index is exists</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;3 in array&#39;</span><span class="p">)</span> <span class="c"># array contains the value 3 but not the index 3</span>
+<span class="go">False</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">len</span> <span class="o">=</span> <span class="nb">len</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;len(array)&#39;</span><span class="p">)</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The Python sequence doesn&#8217;t support the Javascript Array properties or methods, such as <em>length</em> etc. You could directly use the Python <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#len" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">len()</span></tt></a> function in the Javascript code.</p>
+</div>
+<p>If you want to pass a real Javascript Array, you could directly create a <a class="reference internal" href="#PyV8.JSArray" title="PyV8.JSArray"><tt class="xref py py-class docutils literal"><span class="pre">JSArray</span></tt></a> instance, pass a Python <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">list()</span></tt></a> as the parameter to the <a class="reference internal" href="#PyV8.JSArray.__init__" title="PyV8.JSArray.__init__"><tt class="xref py py-meth docutils literal"><span class="pre">JSArray.__init__()</span></tt></a> constructor.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="n">JSArray</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;Object.prototype.toString.apply(array)&quot;</span><span class="p">)</span>
+<span class="go">&#39;[object Array]&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;array.length&quot;</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="mapping-and-property">
+<h3>Mapping and Property<a class="headerlink" href="#mapping-and-property" title="Permalink to this headline">¶</a></h3>
+<div class="sidebar">
+<p class="first sidebar-title">mapping</p>
+<p class="last">A container object (such as dict) which supports arbitrary key lookups using the special method <a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getitem__()</span></tt></a>.</p>
+</div>
+<p>Like the sequence types, Python also defined the mapping types, such as <a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#dict" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a> etc.</p>
+<p>You could access the Python mapping with a named index or as a property, PyV8 will access the value base on its type.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">dict</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;a&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">:</span><span class="mi">2</span> <span class="p">}</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;dict[&#39;a&#39;]&quot;</span><span class="p">)</span>  <span class="c"># named index</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&#39;dict.a&#39;</span><span class="p">)</span>     <span class="c"># property</span>
+<span class="go">1</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;&#39;a&#39; in dict&quot;</span><span class="p">)</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;dict[&#39;c&#39;] = 3&quot;</span><span class="p">)</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">dict</span>
+<span class="go">{&#39;a&#39;: 1, &#39;c&#39;: 3, &#39;b&#39;: 2}</span>
+</pre></div>
+</div>
+<p>From the Python side, all the Javascript object could be access as a mapping. You could get the keys with <a class="reference internal" href="#PyV8.JSObject.keys" title="PyV8.JSObject.keys"><tt class="xref py py-meth docutils literal"><span class="pre">JSObject.keys()</span></tt></a>, or check whether a key is exists with <a class="reference internal" href="#PyV8.JSObject.__contains__" title="PyV8.JSObject.__contains__"><tt class="xref py py-meth docutils literal"><span class="pre">JSObject.__contains__()</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span> <span class="o">=</span> <span class="n">JSContext</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">enter</span><span class="p">()</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;var obj = {a:1, b:2};&quot;</span><span class="p">)</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span><span class="p">[</span><span class="s">&#39;a&#39;</span><span class="p">]</span>        <span class="c"># via :py:meth:`JSObject.__getitem__`</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">a</span>           <span class="c"># via :py:meth:`JSObject.__getattr__`</span>
+<span class="go">1</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="s">&#39;a&#39;</span> <span class="ow">in</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span>      <span class="c"># via :py:meth:`JSObject.__contains__`</span>
+<span class="go">True</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span><span class="p">[</span><span class="s">&#39;c&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>    <span class="c"># via :py:meth:`JSObject.__setitem__`</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">dict</span><span class="p">([(</span><span class="n">k</span><span class="p">,</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">()])</span>
+<span class="go">{&#39;a&#39;: 1, &#39;c&#39;: 3, &#39;b&#39;: 2}</span>
+</pre></div>
+</div>
+<p>The Python new-style object <a class="footnote-reference" href="#f9" id="id9">[9]</a> support to define a property with getter, setter and deleter. PyV8 will handle it if you build with SUPPORT_PROPERTY enabled (by default) in the Config.h file. The getter, setter or deleter will be call when the Javascript code access the property</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Global</span><span class="p">(</span><span class="n">JSClass</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">def</span> <span class="nf">getname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+    <span class="k">def</span> <span class="nf">setname</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+    <span class="k">def</span> <span class="nf">delname</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="s">&#39;deleted&#39;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">getname</span><span class="p">,</span> <span class="n">setname</span><span class="p">,</span> <span class="n">delname</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">Global</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">))</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">)</span>                 <span class="c"># test</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;this.name = &#39;flier&#39;;&quot;</span><span class="p">)</span> <span class="c"># flier</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">)</span>                 <span class="c"># flier</span>
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;delete name&quot;</span><span class="p">)</span>          <span class="c"># True</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="function-call">
@@ -625,14 +779,14 @@
 <blockquote>
 <div><dl class="docutils">
 <dt>C++ signature :</dt>
-<dd>void __init__(struct _object <a href="#id7"><span class="problematic" id="id8">*</span></a>,unsigned int)</dd>
+<dd>void __init__(struct _object <a href="#id10"><span class="problematic" id="id11">*</span></a>,unsigned int)</dd>
 </dl>
 </div></blockquote>
 <p>__init__( (object)arg1, (list)arg2) -&gt; None :</p>
 <blockquote>
 <div><dl class="docutils">
 <dt>C++ signature :</dt>
-<dd>void __init__(struct _object <a href="#id9"><span class="problematic" id="id10">*</span></a>,class boost::python::list)</dd>
+<dd>void __init__(struct _object <a href="#id12"><span class="problematic" id="id13">*</span></a>,class boost::python::list)</dd>
 </dl>
 </div></blockquote>
 <table class="docutils field-list" frame="void" rules="none">
@@ -667,6 +821,57 @@
 </dd></dl>
 
 <dl class="method">
+<dt id="PyV8.JSArray.__getitem__">
+<tt class="descname">__getitem__</tt><big>(</big><em>key</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSArray.__getitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__getitem__( (JSArray)arg1, (int)arg2) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object __getitem__(class CJavascriptArray {lvalue},unsigned int)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement evaluation of self[key]. For sequence types, the accepted keys should be integers and slice objects. Note that the special interpretation of negative indexes (if the class wishes to emulate a sequence type) is up to the __getitem__() method. If key is of an inappropriate type, TypeError may be raised; if of a value outside the set of indexes for the sequence (after any special interpretation of negative values), IndexError should be raised. For mapping types, if key is missing (not in the container), KeyError should be raised.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.__setitem__">
+<tt class="descname">__setitem__</tt><big>(</big><em>key</em>, <em>value</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSArray.__setitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__setitem__( (JSArray)arg1, (int)arg2, (object)arg3) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object __setitem__(class CJavascriptArray {lvalue},unsigned int,class boost::python::api::object)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement assignment to self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support changes to the values for keys, or if new keys can be added, or for sequences if elements can be replaced. The same exceptions should be raised for improper key values as for the __getitem__() method.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__setitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__setitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.__delitem__">
+<tt class="descname">__delitem__</tt><big>(</big><em>key</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSArray.__delitem__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__delitem__( (JSArray)arg1, (int)arg2) -&gt; object :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object __delitem__(class CJavascriptArray {lvalue},unsigned int)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement deletion of self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support removal of keys, or for sequences if elements can be removed from the sequence. The same exceptions should be raised for improper key values as for the __getitem__() method.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__delitem__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__delitem__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
 <dt id="PyV8.JSArray.__iter__">
 <tt class="descname">__iter__</tt><big>(</big><big>)</big> &rarr; iterator<a class="headerlink" href="#PyV8.JSArray.__iter__" title="Permalink to this definition">¶</a></dt>
 <dd><p>__iter__( (object)arg1) -&gt; object :</p>
@@ -680,6 +885,23 @@
 <div class="admonition-see-also admonition seealso">
 <p class="first admonition-title">See also</p>
 <p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__iter__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__iter__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSArray.__contains__">
+<tt class="descname">__contains__</tt><big>(</big><em>item</em><big>)</big> &rarr; bool<a class="headerlink" href="#PyV8.JSArray.__contains__" title="Permalink to this definition">¶</a></dt>
+<dd><p>__contains__( (JSArray)arg1, (object)arg2) -&gt; bool :</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>C++ signature :</dt>
+<dd>bool __contains__(class CJavascriptArray {lvalue},class boost::python::api::object)</dd>
+</dl>
+</div></blockquote>
+<p>Called to implement membership test operators. Should return true if item is in self, false otherwise. For mapping objects, this should consider the keys of the mapping rather than the values or the key-item pairs.</p>
+<div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__contains__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__contains__()</span></tt></a></p>
 </div>
 </dd></dl>
 
@@ -863,6 +1085,32 @@
 </td></tr>
 </tbody>
 </table>
+<table class="docutils footnote" frame="void" id="f7" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[7]</a></td><td><p class="first"><a class="reference external" href="http://en.wikipedia.org/wiki/Sparse_array">Sparse Array</a></p>
+<p class="last">A sparse array is an array in which most of the elements have the same value (known as the default value—usually 0 or null). The occurence of zero elements in a large array is both computational and storage inconvenient. An array in which there is large number of zero elements is referred to as being sparse.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f8" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id8">[8]</a></td><td><p class="first"><a class="reference external" href="http://en.wikipedia.org/wiki/Associative_array">Associative Array</a></p>
+<p class="last">An associative array (also associative container, map, mapping, dictionary, finite map, table, and in query processing, an index or index file) is an abstract data type composed of a collection of unique keys and a collection of values, where each key is associated with one value (or set of values). The operation of finding the value associated with a key is called a lookup or indexing, and this is the most important operation supported by an associative array. The relationship between a key and its value is sometimes called a mapping or binding. For example, if the value associated with the key &#8220;joel&#8221; is 1, we say that our array maps &#8220;joel&#8221; to 1. Associative arrays are very closely related to the mathematical concept of a function with a finite domain. As a consequence, a common and important use of associative arrays is in memoization.</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="f9" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id9">[9]</a></td><td><p class="first"><a class="reference external" href="http://docs.python.org/reference/datamodel.html#new-style-and-classic-classes">new-style class</a>
+Any class which inherits from <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt>. This includes all built-in types like <a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><tt class="xref py py-func docutils literal"><span class="pre">list()</span></tt></a> and <a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#dict" title="(in Python v2.6)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a>. Only new-style classes can use Python’s newer, versatile features like <tt class="xref py py-meth docutils literal"><span class="pre">object.__slots__()</span></tt>, descriptors, properties, and <a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getattribute__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getattribute__()</span></tt></a>.</p>
+<p>New-style classes were introduced in Python 2.2 to unify classes and types. A new-style class is neither more nor less than a user-defined type. If x is an instance of a new-style class, then type(x) is typically the same as x.__class__ (although this is not guaranteed - a new-style class instance is permitted to override the value returned for x.__class__).</p>
+<p class="last">The major motivation for introducing new-style classes is to provide a unified object model with a full meta-model. It also has a number of practical benefits, like the ability to subclass most built-in types, or the introduction of “descriptors”, which enable computed properties.</p>
+</td></tr>
+</tbody>
+</table>
 </div>
 </div>
 
@@ -875,7 +1123,13 @@
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Interoperability</a><ul>
-<li><a class="reference internal" href="#type-conversion">Type Conversion</a></li>
+<li><a class="reference internal" href="#type-conversion">Type Conversion</a><ul>
+<li><a class="reference internal" href="#python-to-javascript">Python to Javascript</a></li>
+<li><a class="reference internal" href="#javascript-to-python">Javascript to Python</a></li>
+<li><a class="reference internal" href="#sequence-and-array">Sequence and Array</a></li>
+<li><a class="reference internal" href="#mapping-and-property">Mapping and Property</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#function-call">Function Call</a></li>
 <li><a class="reference internal" href="#exception-translation">Exception Translation</a></li>
 <li><a class="reference internal" href="#jsclass">JSClass</a></li>

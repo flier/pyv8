@@ -17,6 +17,9 @@ Type Conversion
 
 Python and Javascript has different type system and build-in primitives. PyV8 have to guess the conversion by the type of source value.
 
+Python to Javascript
+^^^^^^^^^^^^^^^^^^^^
+
 When convert Python value to Javascript value, PyV8 will try the following rules first. The remaining unknown Python type will be convert to a plain Javascript object.
 
 =============================   ===============     ==================  ================
@@ -80,6 +83,9 @@ function/method                                     Object/Function
 
     All the Python *function*, *method* and *type* will be convert to a Javascript function object, because the Python *type* could be used as a constructor and create a new instance.
 
+Javascript to Python
+^^^^^^^^^^^^^^^^^^^^
+
 When reverse direction of conversion, PyV8 will try the following rules to map Javascript type to Python type.
 
 ===============     ================    =============================   ============
@@ -126,6 +132,176 @@ Object                                  :py:class:`JSObject`
     <class '_PyV8.JSFunction'>
     >>> type(ctxt.eval("new Object()"))
     <class '_PyV8.JSObject'>
+
+Sequence and Array
+^^^^^^^^^^^^^^^^^^
+
+.. sidebar:: sequence
+
+    An iterable which supports efficient element access using integer indices via the :py:meth:`object.__getitem__` special method and defines a :py:func:`len` method that returns the length of the sequence. Some built-in sequence types are :py:func:`list`, :py:func:`str`, :py:func:`tuple`, and :py:func:`unicode`. 
+
+Since Python haven't build-in Array, it defined a sequence concept, you could access a object as a sequence if it implement the sequence interface.
+
+PyV8 provide the :py:class:`JSArray` class which wrap the Javascript Array object, and act as a Python sequence. You could access and modify it just like a normal Python list.
+
+.. note::
+
+    The Javascript Array object support the Sparse Array [#f7]_, because it was implemented as a Associative Array [#f8]_, just like the :py:class:`dict` class in the Python. So, if we add a new item in :py:class:`JSArray` with a index value larger than the length, the padding item will always be None.
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> array = ctxt.eval('[1, 2, 3]')
+
+    >>> array[1]            # via :py:meth:`JSArray.__getitem__`
+    2
+    >>> len(array)          # via :py:meth:`JSArray.__len__`
+    3
+
+    >>> 2 in array          # via :py:meth:`JSArray.__contains__`
+    True
+    >>> del array[1]        # via :py:meth:`JSArray.__delitem__`
+    >>> 2 in array
+    False
+
+    >>> array[5] = 3        # via :py:meth:`JSArray.__setitem__`
+    >>> [i for i in array]  # via :py:meth:`JSArray.__iter__`
+    [1, None, 3, None, None, 3]
+
+On the other hand, your Javascript code could access all the Python sequence types as a array like object. 
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> ctxt.locals.array = [1, 2, 3]
+
+    >>> ctxt.eval('array[1]')
+    2
+
+    >>> ctxt.eval('delete array[1]')
+    True
+    >>> ctxt.locals.array
+    [1, 3]
+
+    >>> ctxt.eval('array[0] = 4')
+    4
+    >>> ctxt.locals.array
+    [4, 3]
+
+    >>> ctxt.eval('var sum=0; for (i in array) sum+= array[i]; sum')
+    7
+
+    >>> ctxt.eval('0 in array') # check whether the index is exists
+    True
+    >>> ctxt.eval('3 in array') # array contains the value 3 but not the index 3
+    False
+
+    >>> ctxt.locals.len = len
+    >>> ctxt.eval('len(array)')
+    2
+
+.. note::
+
+    The Python sequence doesn't support the Javascript Array properties or methods, such as *length* etc. You could directly use the Python :py:func:`len` function in the Javascript code.
+
+If you want to pass a real Javascript Array, you could directly create a :py:class:`JSArray` instance, pass a Python :py:func:`list` as the parameter to the :py:meth:`JSArray.__init__` constructor.
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> ctxt.locals.array = JSArray([1, 2, 3])
+
+    >>> ctxt.eval("Object.prototype.toString.apply(array)")
+    '[object Array]'
+    >>> ctxt.eval("array.length")
+    3
+
+Mapping and Property
+^^^^^^^^^^^^^^^^^^^^
+
+.. sidebar:: mapping
+
+    A container object (such as dict) which supports arbitrary key lookups using the special method :py:meth:`object.__getitem__`.
+
+Like the sequence types, Python also defined the mapping types, such as :py:class:`dict` etc.
+
+You could access the Python mapping with a named index or as a property, PyV8 will access the value base on its type.
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> ctxt.locals.dict = { 'a':1, 'b':2 }
+
+    >>> ctxt.eval("dict['a']")  # named index
+    1
+    >>> ctxt.eval('dict.a')     # property
+    1
+
+    >>> ctxt.eval("'a' in dict")
+    True
+
+    >>> ctxt.eval("dict['c'] = 3")
+    3
+    >>> ctxt.locals.dict
+    {'a': 1, 'c': 3, 'b': 2}
+
+From the Python side, all the Javascript object could be access as a mapping. You could get the keys with :py:meth:`JSObject.keys`, or check whether a key is exists with :py:meth:`JSObject.__contains__`.
+
+.. doctest::
+
+    >>> ctxt = JSContext()
+    >>> ctxt.enter()
+
+    >>> ctxt.eval("var obj = {a:1, b:2};")
+
+    >>> ctxt.locals.obj['a']        # via :py:meth:`JSObject.__getitem__`
+    1
+    >>> ctxt.locals.obj.a           # via :py:meth:`JSObject.__getattr__`
+    1
+
+    >>> 'a' in ctxt.locals.obj      # via :py:meth:`JSObject.__contains__`
+    True
+
+    >>> ctxt.locals.obj['c'] = 3    # via :py:meth:`JSObject.__setitem__`
+    >>> dict([(k, ctxt.locals.obj[k]) for k in ctxt.locals.obj.keys()])
+    {'a': 1, 'c': 3, 'b': 2}
+
+The Python new-style object [#f9]_ support to define a property with getter, setter and deleter. PyV8 will handle it if you build with SUPPORT_PROPERTY enabled (by default) in the Config.h file. The getter, setter or deleter will be call when the Javascript code access the property
+
+.. testcode::
+
+    class Global(JSClass):
+        def __init__(self, name):
+            self._name = name
+        def getname(self):
+            return self._name
+        def setname(self, name):
+            self._name = name
+        def delname(self):
+            self._name = 'deleted'
+        name = property(getname, setname, delname)
+
+    with JSContext(Global('test')) as ctxt:
+        print ctxt.eval("name")                 # test
+        print ctxt.eval("this.name = 'flier';") # flier
+        print ctxt.eval("name")                 # flier
+        print ctxt.eval("delete name")          # True
+
+.. testoutput::
+   :hide:
+
+   test
+   flier
+   flier
+   True
 
 .. _funcall:
 
@@ -250,12 +426,36 @@ JSArray
 
        .. seealso:: :py:meth:`object.__len__`
 
+   .. automethod:: __getitem__(key) -> object
+
+        Called to implement evaluation of self[key]. For sequence types, the accepted keys should be integers and slice objects. Note that the special interpretation of negative indexes (if the class wishes to emulate a sequence type) is up to the __getitem__() method. If key is of an inappropriate type, TypeError may be raised; if of a value outside the set of indexes for the sequence (after any special interpretation of negative values), IndexError should be raised. For mapping types, if key is missing (not in the container), KeyError should be raised.
+
+        .. seealso:: :py:meth:`object.__getitem__`
+
+   .. automethod:: __setitem__(key, value) -> None
+
+        Called to implement assignment to self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support changes to the values for keys, or if new keys can be added, or for sequences if elements can be replaced. The same exceptions should be raised for improper key values as for the __getitem__() method.
+
+        .. seealso:: :py:meth:`object.__setitem__`
+
+   .. automethod:: __delitem__(key) -> None
+
+        Called to implement deletion of self[key]. Same note as for __getitem__(). This should only be implemented for mappings if the objects support removal of keys, or for sequences if elements can be removed from the sequence. The same exceptions should be raised for improper key values as for the __getitem__() method.
+
+        .. seealso:: :py:meth:`object.__delitem__`
+        
    .. automethod:: __iter__() -> iterator
 
        This method is called when an iterator is required for a container. This method should return a new iterator object that can iterate over all the objects in the container. For mappings, it should iterate over the keys of the container, and should also be made available as the method iterkeys().
 
        .. seealso:: :py:meth:`object.__iter__`
 
+   .. automethod:: __contains__(item) -> bool
+
+       Called to implement membership test operators. Should return true if item is in self, false otherwise. For mapping objects, this should consider the keys of the mapping rather than the values or the key-item pairs.
+
+       .. seealso:: :py:meth:`object.__contains__`
+       
 JSFunction
 ----------
 
@@ -297,3 +497,18 @@ JSFunction
 .. [#f6] **Array Object**
 
         Array objects give special treatment to a certain class of property names. A property name P (in the form of a string value) is an array index if and only if ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal to 232−1.
+
+.. [#f7] `Sparse Array <http://en.wikipedia.org/wiki/Sparse_array>`_
+
+        A sparse array is an array in which most of the elements have the same value (known as the default value—usually 0 or null). The occurence of zero elements in a large array is both computational and storage inconvenient. An array in which there is large number of zero elements is referred to as being sparse.
+
+.. [#f8] `Associative Array <http://en.wikipedia.org/wiki/Associative_array>`_
+
+        An associative array (also associative container, map, mapping, dictionary, finite map, table, and in query processing, an index or index file) is an abstract data type composed of a collection of unique keys and a collection of values, where each key is associated with one value (or set of values). The operation of finding the value associated with a key is called a lookup or indexing, and this is the most important operation supported by an associative array. The relationship between a key and its value is sometimes called a mapping or binding. For example, if the value associated with the key "joel" is 1, we say that our array maps "joel" to 1. Associative arrays are very closely related to the mathematical concept of a function with a finite domain. As a consequence, a common and important use of associative arrays is in memoization.
+
+.. [#f9] `new-style class <http://docs.python.org/reference/datamodel.html#new-style-and-classic-classes>`_
+        Any class which inherits from :py:class:`object`. This includes all built-in types like :py:func:`list` and :py:class:`dict`. Only new-style classes can use Python’s newer, versatile features like :py:meth:`object.__slots__`, descriptors, properties, and :py:meth:`object.__getattribute__`.
+        
+        New-style classes were introduced in Python 2.2 to unify classes and types. A new-style class is neither more nor less than a user-defined type. If x is an instance of a new-style class, then type(x) is typically the same as x.__class__ (although this is not guaranteed - a new-style class instance is permitted to override the value returned for x.__class__).
+        
+        The major motivation for introducing new-style classes is to provide a unified object model with a full meta-model. It also has a number of practical benefits, like the ability to subclass most built-in types, or the introduction of “descriptors”, which enable computed properties.
