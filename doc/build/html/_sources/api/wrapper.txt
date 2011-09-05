@@ -313,6 +313,55 @@ Function Call
 Exception Translation
 ---------------------
 
+Base on the mentioned design principle, PyV8 will translate the exception between Python and Javascript, you could directly use **try...except** statement to handle the Javascript exception in the Python code, and vice versa.
+
+.. testcode::
+
+    with JSContext() as ctxt:
+        try:
+            ctxt.eval("throw Error('test');")
+        except JSError, e:
+            print e             # JSError: Error: test (  @ 1 : 6 )  -> throw Error('test');
+            print e.name
+            print e.message
+
+.. testoutput::
+   :hide:
+
+   JSError: Error: test (  @ 1 : 6 )  -> throw Error('test');
+   Error
+   test
+
+If the Javascript code throw a well known exception, it will be translate to an equivalent Python exception. Other Javascript exceptions will be wrapped as a :py:class:`JSError` instance. You could access the :py:class:`JSError` properties for more detail.
+
+====================    ========================
+Javascript Exception    Python Exception
+====================    ========================
+RangeError              :py:exc:`IndexError`
+ReferenceError          :py:exc:`ReferenceError`
+SyntaxError             :py:exc:`SyntaxError`
+TypeError               :py:exc:`TypeError`
+Error                   :py:class:`JSError`
+====================    ========================
+
+From the Javascript side, you could also use **try...catch** statement to catch the Python exception.
+
+.. testcode::
+
+    class Global(JSClass):
+        def raiseIndexError(self):
+            return [1, 2, 3][5]
+
+    with JSContext(Global()) as ctxt:
+        ctxt.eval("try { this.raiseIndexError(); } catch (e) { msg = e; }")
+
+        print ctxt.locals.msg   # RangeError: list index out of range
+
+.. testoutput::
+   :hide:
+
+   RangeError: list index out of range
+   
 JSClass
 -------
 
@@ -468,6 +517,69 @@ JSFunction
        Called when the instance is “called” as a function; if this method is defined, x(arg1, arg2, ...) is a shorthand for x.__call__(arg1, arg2, ...).
 
        .. seealso:: :py:meth:`object.__call__`
+
+JSError
+-------
+
+.. autoclass:: JSError
+   :members:
+   :inherited-members:
+
+   .. automethod:: __str__() -> str
+
+      .. seealso:: :py:meth:`object.__str__`
+
+   .. automethod:: __unicode__() -> unicode
+
+      .. seealso:: :py:meth:`object.__unicode__`
+
+   .. automethod:: __getattribute__(attr) -> object
+
+      .. seealso:: :py:meth:`object.__getattribute__`
+
+   .. py:attribute:: name -> str
+
+      The exception name.
+
+   .. py:attribute:: message -> str
+
+      The exception message.
+
+   .. py:attribute:: scriptName -> str
+
+      The script name which throw the exception.
+
+   .. py:attribute:: lineNum -> int
+
+      The line number of error statement.
+
+   .. py:attribute:: startPos -> int
+
+      The start position of error statement in the script.
+
+   .. py:attribute:: endPos -> int
+
+      The end position of error statement in the script.
+
+   .. py:attribute:: startCol -> int
+
+      The start column of error statement in the script.
+
+   .. py:attribute:: endCol -> int
+
+      The end column of error statement in the script.
+
+   .. py:attribute:: sourceLine -> str
+
+      The source line of error statement.
+
+   .. py:attribute:: stackTrace -> str
+
+      The stack trace of error statement.
+
+   .. py:method:: print_tb(out=sys.stdout -> file object) -> None
+
+      Print the stack trace of error statement.
 
 .. toctree::
    :maxdepth: 2

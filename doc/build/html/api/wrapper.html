@@ -437,6 +437,56 @@
 </div>
 <div class="section" id="exception-translation">
 <span id="exctrans"></span><h2>Exception Translation<a class="headerlink" href="#exception-translation" title="Permalink to this headline">¶</a></h2>
+<p>Base on the mentioned design principle, PyV8 will translate the exception between Python and Javascript, you could directly use <strong>try...except</strong> statement to handle the Javascript exception in the Python code, and vice versa.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="n">JSContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;throw Error(&#39;test&#39;);&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">JSError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">e</span>             <span class="c"># JSError: Error: test (  @ 1 : 6 )  -&gt; throw Error(&#39;test&#39;);</span>
+        <span class="k">print</span> <span class="n">e</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">print</span> <span class="n">e</span><span class="o">.</span><span class="n">message</span>
+</pre></div>
+</div>
+<p>If the Javascript code throw a well known exception, it will be translate to an equivalent Python exception. Other Javascript exceptions will be wrapped as a <a class="reference internal" href="#PyV8.JSError" title="PyV8.JSError"><tt class="xref py py-class docutils literal"><span class="pre">JSError</span></tt></a> instance. You could access the <a class="reference internal" href="#PyV8.JSError" title="PyV8.JSError"><tt class="xref py py-class docutils literal"><span class="pre">JSError</span></tt></a> properties for more detail.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">Javascript Exception</th>
+<th class="head">Python Exception</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>RangeError</td>
+<td><tt class="xref py py-exc docutils literal"><span class="pre">IndexError</span></tt></td>
+</tr>
+<tr><td>ReferenceError</td>
+<td><tt class="xref py py-exc docutils literal"><span class="pre">ReferenceError</span></tt></td>
+</tr>
+<tr><td>SyntaxError</td>
+<td><tt class="xref py py-exc docutils literal"><span class="pre">SyntaxError</span></tt></td>
+</tr>
+<tr><td>TypeError</td>
+<td><tt class="xref py py-exc docutils literal"><span class="pre">TypeError</span></tt></td>
+</tr>
+<tr><td>Error</td>
+<td><a class="reference internal" href="#PyV8.JSError" title="PyV8.JSError"><tt class="xref py py-class docutils literal"><span class="pre">JSError</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+<p>From the Javascript side, you could also use <strong>try...catch</strong> statement to catch the Python exception.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Global</span><span class="p">(</span><span class="n">JSClass</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">raiseIndexError</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="n">JSContext</span><span class="p">(</span><span class="n">Global</span><span class="p">())</span> <span class="k">as</span> <span class="n">ctxt</span><span class="p">:</span>
+    <span class="n">ctxt</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="s">&quot;try { this.raiseIndexError(); } catch (e) { msg = e; }&quot;</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">ctxt</span><span class="o">.</span><span class="n">locals</span><span class="o">.</span><span class="n">msg</span>   <span class="c"># RangeError: list index out of range</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="jsclass">
 <h2>JSClass<a class="headerlink" href="#jsclass" title="Permalink to this headline">¶</a></h2>
@@ -1032,6 +1082,107 @@
 
 </dd></dl>
 
+</div>
+<div class="section" id="jserror">
+<h2>JSError<a class="headerlink" href="#jserror" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="PyV8.JSError">
+<em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSError</tt><big>(</big><em>impl</em><big>)</big><a class="headerlink" href="#PyV8.JSError" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="PyV8.JSError.__str__">
+<tt class="descname">__str__</tt><big>(</big><big>)</big> &rarr; str<a class="headerlink" href="#PyV8.JSError.__str__" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__str__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__str__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSError.__unicode__">
+<tt class="descname">__unicode__</tt><big>(</big><big>)</big> &rarr; unicode<a class="headerlink" href="#PyV8.JSError.__unicode__" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__unicode__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__unicode__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSError.__getattribute__">
+<tt class="descname">__getattribute__</tt><big>(</big><em>attr</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSError.__getattribute__" title="Permalink to this definition">¶</a></dt>
+<dd><div class="admonition-see-also admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__getattribute__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__getattribute__()</span></tt></a></p>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">name -&gt; str</tt></dt>
+<dd><p>The exception name.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">message -&gt; str</tt></dt>
+<dd><p>The exception message.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">scriptName -&gt; str</tt></dt>
+<dd><p>The script name which throw the exception.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">lineNum -&gt; int</tt></dt>
+<dd><p>The line number of error statement.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">startPos -&gt; int</tt></dt>
+<dd><p>The start position of error statement in the script.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">endPos -&gt; int</tt></dt>
+<dd><p>The end position of error statement in the script.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">startCol -&gt; int</tt></dt>
+<dd><p>The start column of error statement in the script.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">endCol -&gt; int</tt></dt>
+<dd><p>The end column of error statement in the script.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">sourceLine -&gt; str</tt></dt>
+<dd><p>The source line of error statement.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<tt class="descname">stackTrace -&gt; str</tt></dt>
+<dd><p>The stack trace of error statement.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PyV8.JSError.print_tb">
+<tt class="descname">print_tb</tt><big>(</big><em>out=sys.stdout -&gt; file object</em><big>)</big> &rarr; None<a class="headerlink" href="#PyV8.JSError.print_tb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the stack trace of error statement.</p>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
 <ul class="simple">
 </ul>
@@ -1135,7 +1286,8 @@ Any class which inherits from <tt class="xref py py-class docutils literal"><spa
 <li><a class="reference internal" href="#jsclass">JSClass</a></li>
 <li><a class="reference internal" href="#jsobject">JSObject</a></li>
 <li><a class="reference internal" href="#jsarray">JSArray</a></li>
-<li><a class="reference internal" href="#jsfunction">JSFunction</a><ul>
+<li><a class="reference internal" href="#jsfunction">JSFunction</a></li>
+<li><a class="reference internal" href="#jserror">JSError</a><ul>
 </ul>
 </li>
 </ul>

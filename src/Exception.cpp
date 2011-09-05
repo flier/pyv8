@@ -61,17 +61,17 @@ void CJavascriptException::Expose(void)
   py::class_<CJavascriptException>("_JSError", py::no_init)
     .def(str(py::self))
 
-    .add_property("name", &CJavascriptException::GetName)
-    .add_property("message", &CJavascriptException::GetMessage)
-    .add_property("scriptName", &CJavascriptException::GetScriptName)
-    .add_property("lineNum", &CJavascriptException::GetLineNumber)
-    .add_property("startPos", &CJavascriptException::GetStartPosition)
-    .add_property("endPos", &CJavascriptException::GetEndPosition)
-    .add_property("startCol", &CJavascriptException::GetStartColumn)
-    .add_property("endCol", &CJavascriptException::GetEndColumn)
-    .add_property("sourceLine", &CJavascriptException::GetSourceLine)
-    .add_property("stackTrace", &CJavascriptException::GetStackTrace)
-    .def("print_tb", &CJavascriptException::PrintCallStack);
+    .add_property("name", &CJavascriptException::GetName, "The exception name.")
+    .add_property("message", &CJavascriptException::GetMessage, "The exception message.")
+    .add_property("scriptName", &CJavascriptException::GetScriptName, "The script name which throw the exception.")
+    .add_property("lineNum", &CJavascriptException::GetLineNumber, "The line number of error statement.")
+    .add_property("startPos", &CJavascriptException::GetStartPosition, "The start position of error statement in the script.")
+    .add_property("endPos", &CJavascriptException::GetEndPosition, "The end position of error statement in the script.")
+    .add_property("startCol", &CJavascriptException::GetStartColumn, "The start column of error statement in the script.")
+    .add_property("endCol", &CJavascriptException::GetEndColumn, "The end column of error statement in the script.")
+    .add_property("sourceLine", &CJavascriptException::GetSourceLine, "The source line of error statement.")
+    .add_property("stackTrace", &CJavascriptException::GetStackTrace, "The stack trace of error statement.")
+    .def("print_tb", &CJavascriptException::PrintCallStack, (py::arg("file") = py::object()), "Print the stack trace of error statement.");
 
   py::register_exception_translator<CJavascriptException>(ExceptionTranslator::Translate);
 
@@ -426,5 +426,7 @@ void CJavascriptException::PrintCallStack(py::object file)
 {  
   CPythonGIL python_gil;
 
-  m_msg->PrintCurrentStackTrace(::PyFile_AsFile(file.ptr()));
+  PyObject *out = file.is_none() ? ::PySys_GetObject("stdout") : file.ptr();
+
+  m_msg->PrintCurrentStackTrace(::PyFile_AsFile(out));
 }
