@@ -475,12 +475,6 @@ public:
   bool inside_with() const  { return as<v8i::VariableProxy>()->inside_with(); }
 };
 
-class CAstSlot : public CAstExpression
-{
-public:
-  CAstSlot(v8i::Slot *slot) : CAstExpression(slot) {}
-};
-
 class CAstProperty : public CAstExpression
 {
 public:
@@ -735,7 +729,7 @@ inline py::object CAstScope::GetFunction(void) const
 { 
   if (m_scope->function())
   {
-    CAstVariable var(m_scope->function());
+    CAstVariableProxy var(m_scope->function());
 
     return to_python(var);
   }

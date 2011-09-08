@@ -1,3 +1,30 @@
+// Copyright 2011 the V8 project authors. All rights reserved.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+//       copyright notice, this list of conditions and the following
+//       disclaimer in the documentation and/or other materials provided
+//       with the distribution.
+//     * Neither the name of Google Inc. nor the names of its
+//       contributors may be used to endorse or promote products derived
+//       from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 #include <stdarg.h>
 
 #include <src/v8.h>
@@ -253,28 +280,6 @@ void PrettyPrinter::VisitArrayLiteral(ArrayLiteral* node) {
     Visit(node->values()->at(i));
   }
   Print(" ]");
-}
-
-
-void PrettyPrinter::VisitSlot(Slot* node) {
-  switch (node->type()) {
-    case Slot::PARAMETER:
-      Print("parameter[%d]", node->index());
-      break;
-    case Slot::LOCAL:
-      Print("local[%d]", node->index());
-      break;
-    case Slot::CONTEXT:
-      Print("context[%d]", node->index());
-      break;
-    case Slot::LOOKUP:
-      Print("lookup[");
-      PrintLiteral(node->var()->name(), false);
-      Print("]");
-      break;
-    default:
-      UNREACHABLE();
-  }
 }
 
 
@@ -723,7 +728,7 @@ void AstPrinter::VisitDeclaration(Declaration* node) {
   if (node->fun() == NULL) {
     // var or const declarations
     PrintLiteralWithModeIndented(Variable::Mode2String(node->mode()),
-                                 node->proxy()->AsVariable(),
+                                 node->proxy()->var(),
                                  node->proxy()->name());
   } else {
     // function declarations
@@ -931,19 +936,30 @@ void AstPrinter::VisitArrayLiteral(ArrayLiteral* node) {
 }
 
 
-void AstPrinter::VisitSlot(Slot* node) {
-  PrintIndented("SLOT ");
-  PrettyPrinter::VisitSlot(node);
-  Print("\n");
-}
-
-
 void AstPrinter::VisitVariableProxy(VariableProxy* node) {
-  PrintLiteralWithModeIndented("VAR PROXY", node->AsVariable(), node->name());
   Variable* var = node->var();
-  if (var != NULL && var->rewrite() != NULL) {
+
+  PrintLiteralWithModeIndented("VAR PROXY", var, node->name());
+  
+  if (var)  
+  { 
     IndentedScope indent(this);
-    Visit(var->rewrite());
+    switch (var->location()) {
+      case Variable::UNALLOCATED:
+        break;
+      case Variable::PARAMETER:
+        Print("parameter[%d]", var->index());
+        break;
+      case Variable::LOCAL:
+        Print("local[%d]", var->index());
+        break;
+      case Variable::CONTEXT:
+        Print("context[%d]", var->index());
+        break;
+      case Variable::LOOKUP:
+        Print("lookup");
+        break;
+    }
   }
 }
 
@@ -1259,42 +1275,40 @@ void JsonAstBuilder::VisitConditional(Conditional* expr) {
 }
 
 
-void JsonAstBuilder::VisitSlot(Slot* expr) {
-  TagScope tag(this, "Slot");
+void JsonAstBuilder::VisitVariableProxy(VariableProxy* expr) {
+  TagScope tag(this, "Variable");  
   {
     AttributesScope attributes(this);
-    switch (expr->type()) {
-      case Slot::PARAMETER:
-        AddAttribute("type", "PARAMETER");
-        break;
-      case Slot::LOCAL:
-        AddAttribute("type", "LOCAL");
-        break;
-      case Slot::CONTEXT:
-        AddAttribute("type", "CONTEXT");
-        break;
-      case Slot::LOOKUP:
-        AddAttribute("type", "LOOKUP");
-        break;
-    }
-    AddAttribute("index", expr->index());
-  }
-}
+    Variable* var = expr->var();
 
-
-void JsonAstBuilder::VisitVariableProxy(VariableProxy* expr) {
-  if (expr->var() == NULL || expr->var()->rewrite() == NULL) {
-    TagScope tag(this, "VariableProxy");
+    if (var == NULL)
     {
-      AttributesScope attributes(this);
       AddAttribute("name", expr->name());
-      if (expr->var())
-      {
-        AddAttribute("mode", Variable::Mode2String(expr->var()->mode()));
-      }      
     }
-  } else {
-    Visit(expr->var()->rewrite());
+    else
+    {
+      AddAttribute("name", var->name());
+      switch (var->location()) {
+        case Variable::UNALLOCATED:
+          AddAttribute("location", "UNALLOCATED");
+          break;
+        case Variable::PARAMETER:
+          AddAttribute("location", "PARAMETER");
+          AddAttribute("index", var->index());
+          break;
+        case Variable::LOCAL:
+          AddAttribute("location", "LOCAL");
+          AddAttribute("index", var->index());
+          break;
+        case Variable::CONTEXT:
+          AddAttribute("location", "CONTEXT");
+          AddAttribute("index", var->index());
+          break;
+        case Variable::LOOKUP:
+          AddAttribute("location", "LOOKUP");
+          break;
+      }
+    }
   }
 }
 

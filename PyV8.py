@@ -744,7 +744,6 @@ class AST:
     RegExp = _PyV8.AstRegExpLiteral
     Array = _PyV8.AstArrayLiteral
     VarProxy = _PyV8.AstVariableProxy
-    Slot = _PyV8.AstSlot
     Property = _PyV8.AstProperty
     Call = _PyV8.AstCall
     CallNew = _PyV8.AstCallNew
@@ -2113,9 +2112,9 @@ class TestAST(unittest.TestCase):
 """, checker.ast)
         self.assertEquals([u'FunctionLiteral', {u'name': u''},
             [u'Declaration', {u'mode': u'VAR'},
-                [u'VariableProxy', {u'name': u'i'}]
+                [u'Variable', {u'name': u'i'}]
             ], [u'Declaration', {u'mode':u'VAR'},
-                [u'VariableProxy', {u'name': u'j'}]
+                [u'Variable', {u'name': u'j'}]
             ], [u'Block',
                 [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
                     [u'Literal', {u'handle':u'i'}],

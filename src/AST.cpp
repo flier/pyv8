@@ -234,10 +234,7 @@ void CAstNode::Expose(void)
     .add_property("isThis", &CAstVariableProxy::is_this)
     .add_property("insideWith", &CAstVariableProxy::inside_with)
     ;
-
-  py::class_<CAstSlot, py::bases<CAstExpression> >("AstSlot", py::no_init)
-    ;
-
+  
   py::class_<CAstProperty, py::bases<CAstExpression> >("AstProperty", py::no_init)
     ;
 
