@@ -1250,11 +1250,20 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);
   
-  std::vector< v8::Handle<v8::Value> > params(::PyList_Size(args.ptr()));
+  size_t args_count = ::PyList_Size(args.ptr()), kwds_count = ::PyMapping_Size(kwds.ptr());
 
-  for (size_t i=0; i<params.size(); i++)
+  std::vector< v8::Handle<v8::Value> > params(args_count + kwds_count);
+
+  for (size_t i=0; i<args_count; i++)
   {
     params[i] = CPythonObject::Wrap(args[i]);
+  }
+
+  py::list values = kwds.values();
+
+  for (size_t i=0; i<kwds_count; i++)
+  {
+    params[args_count+i] = CPythonObject::Wrap(values[i]);
   }
   
   v8::Handle<v8::Value> result;

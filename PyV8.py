@@ -727,8 +727,7 @@ class AST:
     Continue = _PyV8.AstContinueStatement
     Break = _PyV8.AstBreakStatement
     Return = _PyV8.AstReturnStatement
-    WithEnter = _PyV8.AstWithEnterStatement
-    WithExit = _PyV8.AstWithExitStatement
+    With = _PyV8.AstWithStatement
     Case = _PyV8.AstCaseClause
     Switch = _PyV8.AstSwitchStatement
     Try = _PyV8.AstTryStatement
@@ -2276,7 +2275,7 @@ class TestAST(unittest.TestCase):
                 stmt.tryBlock.visit(self)
 
                 self.assertEquals("err", str(stmt.variable.name))
-                self.assertEquals("{ { s = err; } <exit context> }", str(stmt.catchBlock))
+                self.assertEquals("{ s = err; }", str(stmt.catchBlock))
 
             def onTryFinallyStatement(self, stmt):
                 self.called += 1

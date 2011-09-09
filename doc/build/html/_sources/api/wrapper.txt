@@ -1,9 +1,10 @@
-.. _wrapper:
 .. py:module:: PyV8
 
 .. testsetup:: *
 
    from PyV8 import *
+
+.. _wrapper:
 
 Interoperability
 ================
@@ -305,8 +306,10 @@ The Python new-style object [#f9]_ support to define a property with getter, set
 
 .. _funcall:
 
-Function Call
--------------
+Function and Constructor
+------------------------
+
+
 
 .. _exctrans:
 
@@ -512,12 +515,23 @@ JSFunction
    :members:
    :inherited-members:
 
-   .. automethod:: __call__() -> iterator
+   .. automethod:: __call__(*args, **kwds) -> object
 
        Called when the instance is “called” as a function; if this method is defined, x(arg1, arg2, ...) is a shorthand for x.__call__(arg1, arg2, ...).
 
+      :param list args: the argument list
+      :param dict kwds: the argument dictionary whose keys are strings
+
        .. seealso:: :py:meth:`object.__call__`
 
+   .. automethod:: apply(self, args=[], kwds={}) -> object
+
+      The function is called with *args* as the argument list; the number of arguments is the length of the tuple. If the optional *kwds* argument is present, it must be a dictionary whose keys are strings. It specifies keyword arguments to be added to the end of the argument list.
+
+      :param self: The :py:class:`JSObject` instance as self
+      :type self: :py:class:`JSObject`
+      :param list args: the argument list
+      :param dict kwds: the argument dictionary whose keys are strings
 JSError
 -------
 

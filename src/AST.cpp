@@ -136,14 +136,11 @@ void CAstNode::Expose(void)
     .add_property("expression", &CAstReturnStatement::expression)
     ;
 
-  py::class_<CAstWithStatement, py::bases<CAstStatement> >("AstWithEnterStatement", py::no_init)
+  py::class_<CAstWithStatement, py::bases<CAstStatement> >("AstWithStatement", py::no_init)
     .add_property("expression", &CAstWithStatement::expression)
     .add_property("statement", &CAstWithStatement::statement)
     ;
-
-  py::class_<CAstExitContextStatement, py::bases<CAstStatement> >("AstWithExitStatement", py::no_init)
-    ;
-
+  
   py::class_<CAstCaseClause>("AstCaseClause", py::no_init)
     ;
 

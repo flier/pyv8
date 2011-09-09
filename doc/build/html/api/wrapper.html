@@ -53,9 +53,9 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <span class="target" id="module-PyV8"><span id="wrapper"></span></span><div class="section" id="interoperability">
-<h1>Interoperability<a class="headerlink" href="#interoperability" title="Permalink to this headline">¶</a></h1>
-<p>As the most basic and important design principle, the PyV8 user doesn&#8217;t need pay additional efforts for interoperability. It means that your Python code could seamless access the property or call the function of Javascript code, or vice versa. PyV8 will do the dirty work under the table, such as <a class="reference internal" href="#typeconv"><em>Type Conversion</em></a>, <a class="reference internal" href="#funcall"><em>Function Call</em></a> and <a class="reference internal" href="#exctrans"><em>Exception Translation</em></a>.</p>
+  <span class="target" id="module-PyV8"></span><div class="section" id="interoperability">
+<span id="wrapper"></span><h1>Interoperability<a class="headerlink" href="#interoperability" title="Permalink to this headline">¶</a></h1>
+<p>As the most basic and important design principle, the PyV8 user doesn&#8217;t need pay additional efforts for interoperability. It means that your Python code could seamless access the property or call the function of Javascript code, or vice versa. PyV8 will do the dirty work under the table, such as <a class="reference internal" href="#typeconv"><em>Type Conversion</em></a>, <a class="reference internal" href="#funcall"><em>Function and Constructor</em></a> and <a class="reference internal" href="#exctrans"><em>Exception Translation</em></a>.</p>
 <div class="section" id="type-conversion">
 <span id="typeconv"></span><h2>Type Conversion<a class="headerlink" href="#type-conversion" title="Permalink to this headline">¶</a></h2>
 <p>Python and Javascript has different type system and build-in primitives. PyV8 have to guess the conversion by the type of source value.</p>
@@ -432,8 +432,8 @@
 </div>
 </div>
 </div>
-<div class="section" id="function-call">
-<span id="funcall"></span><h2>Function Call<a class="headerlink" href="#function-call" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="function-and-constructor">
+<span id="funcall"></span><h2>Function and Constructor<a class="headerlink" href="#function-and-constructor" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="exception-translation">
 <span id="exctrans"></span><h2>Exception Translation<a class="headerlink" href="#exception-translation" title="Permalink to this headline">¶</a></h2>
@@ -993,24 +993,67 @@
 <em class="property">class </em><tt class="descclassname">PyV8.</tt><tt class="descname">JSFunction</tt><a class="headerlink" href="#PyV8.JSFunction" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="PyV8.JSFunction.__call__">
-<tt class="descname">__call__</tt><big>(</big><big>)</big> &rarr; iterator<a class="headerlink" href="#PyV8.JSFunction.__call__" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">__call__</tt><big>(</big><em>*args</em>, <em>**kwds</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSFunction.__call__" title="Permalink to this definition">¶</a></dt>
 <dd><p>object __call__(tuple args, dict kwds) :</p>
 <blockquote>
+<div><blockquote>
 <div><dl class="docutils">
 <dt>C++ signature :</dt>
 <dd>object __call__(tuple args, dict kwds)</dd>
 </dl>
 </div></blockquote>
 <p>Called when the instance is “called” as a function; if this method is defined, x(arg1, arg2, ...) is a shorthand for x.__call__(arg1, arg2, ...).</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>args</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><em>list</em></a>) &#8211; the argument list</li>
+<li><strong>kwds</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#dict" title="(in Python v2.6)"><em>dict</em></a>) &#8211; <p>the argument dictionary whose keys are strings</p>
 <div class="admonition-see-also admonition seealso">
 <p class="first admonition-title">See also</p>
 <p class="last"><a class="reference external" href="http://docs.python.org/2.6/reference/datamodel.html#object.__call__" title="(in Python v2.6)"><tt class="xref py py-meth docutils literal"><span class="pre">object.__call__()</span></tt></a></p>
 </div>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="PyV8.JSFunction.apply">
-<tt class="descname">apply</tt><big>(</big><big>)</big><a class="headerlink" href="#PyV8.JSFunction.apply" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">apply</tt><big>(</big><em>self</em>, <em>args=</em><span class="optional">[</span><span class="optional">]</span>, <em>kwds={}</em><big>)</big> &rarr; object<a class="headerlink" href="#PyV8.JSFunction.apply" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>apply( (JSFunction)arg1, (JSObject)self [, (list)args=[] [, (dict)kwds={}]]) -&gt; object :</dt>
+<dd><p class="first">Performs a function call using the parameters.</p>
+<dl class="last docutils">
+<dt>C++ signature :</dt>
+<dd>class boost::python::api::object apply(class CJavascriptFunction {lvalue},class boost::shared_ptr&lt;class CJavascriptObject&gt; [,class boost::python::list=[] [,class boost::python::dict={}]])</dd>
+</dl>
+</dd>
+</dl>
+<p>The function is called with <em>args</em> as the argument list; the number of arguments is the length of the tuple. If the optional <em>kwds</em> argument is present, it must be a dictionary whose keys are strings. It specifies keyword arguments to be added to the end of the argument list.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>self</strong> (<a class="reference internal" href="#PyV8.JSObject" title="PyV8.JSObject"><tt class="xref py py-class docutils literal"><span class="pre">JSObject</span></tt></a>) &#8211; The <a class="reference internal" href="#PyV8.JSObject" title="PyV8.JSObject"><tt class="xref py py-class docutils literal"><span class="pre">JSObject</span></tt></a> instance as self</li>
+<li><strong>args</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/functions.html#list" title="(in Python v2.6)"><em>list</em></a>) &#8211; the argument list</li>
+<li><strong>kwds</strong> (<a class="reference external" href="http://docs.python.org/2.6/library/stdtypes.html#dict" title="(in Python v2.6)"><em>dict</em></a>) &#8211; the argument dictionary whose keys are strings</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">apply</tt><big>(</big><big>)</big></dt>
 <dd><dl class="docutils">
 <dt>apply( (JSFunction)arg1, (JSObject)self [, (list)args=[] [, (dict)kwds={}]]) -&gt; object :</dt>
 <dd><p class="first">Performs a function call using the parameters.</p>
@@ -1281,7 +1324,7 @@ Any class which inherits from <tt class="xref py py-class docutils literal"><spa
 <li><a class="reference internal" href="#mapping-and-property">Mapping and Property</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#function-call">Function Call</a></li>
+<li><a class="reference internal" href="#function-and-constructor">Function and Constructor</a></li>
 <li><a class="reference internal" href="#exception-translation">Exception Translation</a></li>
 <li><a class="reference internal" href="#jsclass">JSClass</a></li>
 <li><a class="reference internal" href="#jsobject">JSObject</a></li>

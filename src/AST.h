@@ -315,12 +315,6 @@ public:
   py::object statement(void) const { return to_python(as<v8i::WithStatement>()->statement()); }
 };
 
-class CAstExitContextStatement : public CAstStatement
-{
-public:
-  CAstExitContextStatement(v8i::ExitContextStatement *stat) : CAstStatement(stat) {}
-};
-
 class CAstCaseClause 
 {
   v8i::CaseClause *m_clause;
