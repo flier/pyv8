@@ -66,7 +66,7 @@ T _to_string(v8i::Handle<v8i::String> str)
   else
   {
     int len = 0;
-    v8i::SmartPointer<char> buf = str->ToCString(v8i::DISALLOW_NULLS, v8i::FAST_STRING_TRAVERSAL, &len);
+    v8i::SmartArrayPointer<char> buf = str->ToCString(v8i::DISALLOW_NULLS, v8i::FAST_STRING_TRAVERSAL, &len);
 
     return T(*buf, len);
   }
