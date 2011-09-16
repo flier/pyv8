@@ -588,7 +588,7 @@ class Document(Node):
     onCreateElement = None
     
     def createElement(self, tagname):        
-        element = DOMImplementation.createHTMLElement(self.doc, BeautifulSoup.Tag(self.doc, tagname))
+        element = DOMImplementation.createHTMLElement(self, BeautifulSoup.Tag(self.doc, tagname))
         
         if self.onCreateElement:
             self.onCreateElement(element)
@@ -730,7 +730,26 @@ class HTMLElement(Element, ElementCSSInlineStyle):
     title = attr_property("title")
     lang = attr_property("lang")
     dir = attr_property("dir")
-    className = attr_property("class")    
+    className = attr_property("class")
+    
+    @property
+    def innerHTML(self):
+        if not self.hasChildNodes():
+            return ""
+
+        html = StringIO()
+
+        for tag in self.tag.contents:
+            html.write(str(tag).strip())
+
+        return html.getvalue()
+
+    @innerHTML.setter
+    def innerHTML(self, html):
+        dom = BeautifulSoup.BeautifulSoup(html)
+
+        for node in dom.contents:
+            self.tag.append(node)
     
 class HTMLHtmlElement(HTMLElement):
     version = attr_property("version")
@@ -1166,7 +1185,7 @@ class HTMLDocument(Document):
     
     def getElementById(self, elementId):
         tag = self.doc.find(id=elementId)
-        return DOMImplementation.createHTMLElement(self.doc, tag) if tag else None
+        return DOMImplementation.createHTMLElement(self, tag) if tag else None
 
     def getElementsByName(self, elementName):
         tags = self.doc.findAll(attrs={'name': elementName})
@@ -1478,6 +1497,21 @@ class HTMLDocumentTest(unittest.TestCase):
         forms = self.doc.getElementsByName('first')
         
         self.assertEquals(1, len(forms))
+
+        self.assertEquals('<p id="test">Hello World!</p>' +
+                          '<form name="first"></form>' +
+                          '<form name="second"></form>' +
+                          '<a href="#">link</a>' +
+                          '<a name="#">anchor</a>',
+                          self.doc.getElementsByTagName('body')[0].innerHTML)
+        self.assertEquals("Hello World!", p.innerHTML)
+        self.assertEquals("", self.doc.getElementsByTagName('form')[0].innerHTML)
+
+        self.assertEquals(None, self.doc.getElementById('inner'))
+
+        self.doc.getElementsByTagName('form')[0].innerHTML = "<div id='inner'/>"
+
+        self.assertEquals(u'DIV', self.doc.getElementById('inner').tagName)
         
     def testDocument(self):
         self.assertEquals("this is a test", self.doc.title)
