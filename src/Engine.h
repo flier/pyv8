@@ -124,7 +124,7 @@ public:
   CExtension(const std::string& name, const std::string& source, py::object callback, py::list dependencies, bool autoRegister);
 
   const std::string GetName(void) { return m_extension->name(); }
-  const std::string GetSource(void) { return m_extension->source(); }
+  const std::string GetSource(void) { return std::string(m_extension->source()->data(), m_extension->source()->length()); }
 
   bool IsRegistered(void) { return m_registered; }
   void Register(void);

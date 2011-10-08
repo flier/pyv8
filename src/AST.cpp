@@ -289,13 +289,6 @@ void CAstNode::Expose(void)
     .add_property("pos", &CAstCompareOperation::position)
     ;
 
-  py::class_<CAstCompareToNull, py::bases<CAstExpression> >("AstCompareToNull", py::no_init)
-    .add_property("strict", &CAstCompareToNull::is_strict)
-
-    .add_property("op", &CAstCompareToNull::op)
-    .add_property("expression", &CAstCompareToNull::expression)
-    ;
-
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
     .add_property("condition", &CAstConditional::condition)
     .add_property("thenExpr", &CAstConditional::then_expression)

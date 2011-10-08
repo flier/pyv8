@@ -56,7 +56,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(V8_HOME);$(V8_HOME)\include;$(BOOST_HOME);$(PYTHON_HOME)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;_WINDOWS;_USE_32BIT_TIME_T;BOOST_PYTHON_STATIC_LIB;OBJECT_PRINT;LIVE_OBJECT_LIST;V8_TARGET_ARCH_IA32;V8_NATIVE_REGEXP;V8_ENABLE_CHECKS;V8_FAST_TLS;ENABLE_VMSTATE_TRACKING;ENABLE_HEAP_PROTECTION;ENABLE_LOGGING_AND_PROFILING;ENABLE_DEBUGGER_SUPPORT;ENABLE_DISASSEMBLER;INSPECTOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;_WINDOWS;_USE_32BIT_TIME_T;BOOST_PYTHON_STATIC_LIB;OBJECT_PRINT;LIVE_OBJECT_LIST;V8_TARGET_ARCH_IA32;V8_NATIVE_REGEXP;V8_ENABLE_CHECKS;V8_FAST_TLS;ENABLE_VMSTATE_TRACKING;ENABLE_LOGGING_AND_PROFILING;ENABLE_DEBUGGER_SUPPORT;ENABLE_DISASSEMBLER;INSPECTOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
       <MinimalRebuild>true</MinimalRebuild>

@@ -551,17 +551,6 @@ public:
   int position(void) const { return as<v8i::CompareOperation>()->position(); }
 };
 
-class CAstCompareToNull : public CAstExpression
-{
-public:
-  CAstCompareToNull(v8i::CompareToNull *op) : CAstExpression(op) {}
-
-  v8i::Token::Value op(void) const { return as<v8i::CompareToNull>()->op(); }
-  py::object expression(void) const { return to_python(as<v8i::CompareToNull>()->expression()); }
-
-  bool is_strict(void) const { return as<v8i::CompareToNull>()->is_strict(); }
-};
-
 class CAstConditional : public CAstExpression
 {
 public:

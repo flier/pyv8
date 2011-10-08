@@ -752,7 +752,6 @@ class AST:
     BinOp = _PyV8.AstBinaryOperation
     CountOp = _PyV8.AstCountOperation
     CompOp = _PyV8.AstCompareOperation
-    CompNull = _PyV8.AstCompareToNull
     Conditional = _PyV8.AstConditional
     Assignment = _PyV8.AstAssignment
     Throw = _PyV8.AstThrow
@@ -2393,21 +2392,17 @@ class TestAST(unittest.TestCase):
             def onCompareOperation(self, expr):
                 self.called += 1
 
-                self.assertEquals(AST.Op.EQ, expr.op)
+                if self.called == 4:
+                    self.assertEquals(AST.Op.EQ, expr.op)
+                    self.assertEquals(68, expr.pos) # i==j
+                else:
+                    self.assertEquals(AST.Op.EQ_STRICT, expr.op)
+                    self.assertEquals(82, expr.pos) # i===j
+
                 self.assertEquals("i", str(expr.left))
                 self.assertEquals("j", str(expr.right))
-                self.assertEquals(68, expr.pos)
 
                 #print "comp", expr
-
-            def onCompareToNull(self, expr):
-                self.called += 1
-
-                self.assertEquals(AST.Op.EQ_STRICT, expr.op)
-                self.assertEquals("i", expr.expression.name)
-                self.assert_(expr.strict)
-
-                #print "compnull", expr
 
             def onConditional(self, expr):
                 self.called += 1
@@ -2416,8 +2411,8 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("i", str(expr.thenExpr))
                 self.assertEquals("j", str(expr.elseExpr))
 
-                self.assertEquals(115, expr.thenExprPos)
-                self.assertEquals(117, expr.elseExprPos)
+                self.assertEquals(112, expr.thenExprPos)
+                self.assertEquals(114, expr.elseExprPos)
 
         self.assertEquals(7, OperationChecker(self).test("""
         var i, j;
@@ -2425,7 +2420,7 @@ class TestAST(unittest.TestCase):
         i+=1;
         i++;
         i==j;
-        i===null;
+        i===j;
         ~i;
         i>j?i:j;
         """))
