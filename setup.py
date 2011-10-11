@@ -215,9 +215,12 @@ elif is_linux or is_freebsd:
     if is_freebsd:
         libraries += ["execinfo"]
 
-    if hasattr(os, 'uname') and os.uname()[-1] == 'x86_64':
-        extra_link_args += ["-fPIC"]
-        macros += [("V8_TARGET_ARCH_X64", None)]
+    if hasattr(os, 'uname'):
+        if os.uname()[-1] in ('x86_64', 'amd64'):
+            extra_link_args += ["-fPIC"]
+            macros += [("V8_TARGET_ARCH_X64", None)]
+        elif os.uname()[-1].startswith('arm'):
+            macros += [("V8_TARGET_ARCH_ARM", None)]
     else:
         macros += [("V8_TARGET_ARCH_IA32", None)]
 
@@ -326,14 +329,15 @@ class build(_build):
         with open(scons, 'r') as f:
             build_script = f.read()
 
-        x64 = [k for k, v in macros if k == 'V8_TARGET_ARCH_X64']
+        is_x64 = [k for k, v in macros if k == 'V8_TARGET_ARCH_X64']
+        is_arm = [k for k, v in macros if k == 'V8_TARGET_ARCH_ARM']
         
         fixed_build_script = build_script.replace('-fno-rtti', '') \
                                          .replace('-fno-exceptions', '') \
                                          .replace('-Werror', '') \
                                          .replace('/WX', '').replace('/GR-', '')
 
-        if x64 and os.name != 'nt':
+        if is_x64 and os.name != 'nt':
             fixed_build_script = fixed_build_script.replace("['$DIALECTFLAGS', '$WARNINGFLAGS']", "['$DIALECTFLAGS', '$WARNINGFLAGS', '-fPIC']")
 
         if build_script == fixed_build_script:
@@ -351,7 +355,7 @@ class build(_build):
 
         options = {
             'mode': 'debug' if DEBUG else 'release',
-            'arch': 'x64' if x64 else 'ia32',
+            'arch': 'x64' if is_x64 else 'arm' if is_arm else 'ia32',
             'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
             'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
             'vmstate': 'on' if V8_VMSTATE_TRACKING else 'off',
