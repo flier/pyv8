@@ -126,7 +126,7 @@ public:
 
   CAstScope scope(void) const { return CAstScope(m_var->scope()); }
   py::object name(void) const { return to_python(m_var->name()); }
-  v8i::Variable::Mode mode(void) const { return m_var->mode(); }
+  v8i::VariableMode mode(void) const { return m_var->mode(); }
 
   bool is_global(void) const { return m_var->is_global(); }
   bool is_this(void) const { return m_var->is_this(); }
@@ -217,7 +217,7 @@ public:
   CAstDeclaration(v8i::Declaration *decl) : CAstNode(decl) {}
 
   CAstVariableProxy GetProxy(void) const;
-  v8i::Variable::Mode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
+  v8i::VariableMode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
   py::object GetFunction(void) const;
 };
 

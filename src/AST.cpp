@@ -21,14 +21,15 @@ void CAstNode::Expose(void)
     .def("parameter", &CAstScope::GetParameter, (py::args("index")))
     ;
 
-  py::enum_<v8i::Variable::Mode>("AstVariableMode")
-    .value("var", v8i::Variable::VAR)
-    .value("const", v8i::Variable::CONST)
-    .value("dynamic", v8i::Variable::DYNAMIC)
-    .value("global", v8i::Variable::DYNAMIC_GLOBAL)
-    .value("local", v8i::Variable::DYNAMIC_LOCAL)
-    .value("internal", v8i::Variable::INTERNAL)
-    .value("temporary", v8i::Variable::TEMPORARY)
+  py::enum_<v8i::VariableMode>("AstVariableMode")
+    .value("var", v8i::VAR)
+    .value("const", v8i::CONST)
+    .value("let", v8i::LET)
+    .value("dynamic", v8i::DYNAMIC)
+    .value("global", v8i::DYNAMIC_GLOBAL)
+    .value("local", v8i::DYNAMIC_LOCAL)
+    .value("internal", v8i::INTERNAL)
+    .value("temporary", v8i::TEMPORARY)
     ;
 
   py::class_<CAstVariable>("AstVariable", py::no_init)
