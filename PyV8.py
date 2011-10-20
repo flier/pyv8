@@ -905,6 +905,9 @@ class TestWrapper(unittest.TestCase):
                 var_f = 1.0;
                 var_s = "test";
                 var_b = true;
+                var_s_obj = new String("test");
+                var_b_obj = new Boolean(true);
+                var_f_obj = new Number(1.5);
             """)
 
             vars = ctxt.locals
@@ -927,6 +930,10 @@ class TestWrapper(unittest.TestCase):
             self.assert_(var_b)
             self.assert_(bool(var_b))
 
+            self.assertEquals("test", vars.var_s_obj)
+            self.assert_(vars.var_b_obj)
+            self.assertEquals(1.5, vars.var_f_obj)
+
             attrs = dir(ctxt.locals)
 
             self.assert_(attrs)
@@ -934,6 +941,9 @@ class TestWrapper(unittest.TestCase):
             self.assert_("var_f" in attrs)
             self.assert_("var_s" in attrs)
             self.assert_("var_b" in attrs)
+            self.assert_("var_s_obj" in attrs)
+            self.assert_("var_b_obj" in attrs)
+            self.assert_("var_f_obj" in attrs)
 
     def testExactConverter(self):
         class MyInteger(int, JSClass):

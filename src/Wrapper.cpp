@@ -1073,8 +1073,28 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
     return py::str(*str, str.length());
   }
-  if (value->IsBoolean()) return py::object(py::handle<>(py::borrowed(value->BooleanValue() ? Py_True : Py_False)));
-  if (value->IsNumber()) return py::object(py::handle<>(::PyFloat_FromDouble(value->NumberValue())));
+  if (value->IsStringObject())
+  {
+    v8::String::Utf8Value str(value.As<v8::StringObject>()->StringValue());
+
+    return py::str(*str, str.length());
+  }
+  if (value->IsBoolean()) 
+  {
+    return py::object(py::handle<>(py::borrowed(value->BooleanValue() ? Py_True : Py_False)));
+  }
+  if (value->IsBooleanObject())
+  {
+    return py::object(py::handle<>(py::borrowed(value.As<v8::BooleanObject>()->BooleanValue() ? Py_True : Py_False)));
+  }
+  if (value->IsNumber()) 
+  {
+    return py::object(py::handle<>(::PyFloat_FromDouble(value->NumberValue())));
+  }
+  if (value->IsNumberObject())
+  {
+    return py::object(py::handle<>(::PyFloat_FromDouble(value.As<v8::NumberObject>()->NumberValue())));
+  }
   if (value->IsDate())
   {
     double n = v8::Handle<v8::Date>::Cast(value)->NumberValue();
