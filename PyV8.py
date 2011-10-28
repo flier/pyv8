@@ -2228,7 +2228,6 @@ class TestAST(unittest.TestCase):
                     self.assert_(var.isValidLeftHandSide)
                     self.assertFalse(var.isArguments)
                     self.assertFalse(var.isThis)
-                    self.assertFalse(var.insideWith)
                 elif var.name == 'hello':
                     self.assertEquals(AST.VarMode.var, decl.mode)
                     self.assert_(decl.function)

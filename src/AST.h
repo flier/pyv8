@@ -98,7 +98,7 @@ public:
   bool IsGlobal(void) const { return m_scope->is_global_scope(); }
 
   bool CallsEval(void) const { return m_scope->calls_eval(); }
-  bool OuterScopeCallsEval(void) const { return m_scope->outer_scope_calls_eval(); }
+  bool OuterScopeCallsEval(void) const { return m_scope->calls_eval(); }
 
   bool InsideWith(void) const { return m_scope->inside_with(); }
   bool ContainsWith(void) const { return m_scope->contains_with(); }
@@ -466,7 +466,6 @@ public:
   py::object name(void) const { return to_python(as<v8i::VariableProxy>()->name()); }
   py::object var(void) const { v8i::Variable *var = as<v8i::VariableProxy>()->var(); return var ? py::object(CAstVariable(var)) : py::object();  }
   bool is_this() const  { return as<v8i::VariableProxy>()->is_this(); }
-  bool inside_with() const  { return as<v8i::VariableProxy>()->inside_with(); }
 };
 
 class CAstProperty : public CAstExpression
