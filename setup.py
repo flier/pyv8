@@ -236,7 +236,8 @@ elif is_osx: # contribute by progrium and alec
     # scons arch=x64 library=static
 
     include_dirs += [
-        "/opt/local/include", # use MacPorts to install Boost
+        "/opt/local/include", # MacPorts$ sudo port install boost
+        "/usr/local/include", # HomeBrew$ brew install boost
     ]
 
     library_dirs += [
