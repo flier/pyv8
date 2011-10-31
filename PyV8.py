@@ -1600,6 +1600,22 @@ class TestWrapper(unittest.TestCase):
 
             self.assert_(ctxt.eval("typeof(s.z) === 'undefined'"))
 
+    def testRaiseExceptionInGetter(self):
+        class Document(JSClass):
+            def __getattr__(self, name):
+                if name == 'y':
+                    raise TypeError()
+
+                return JSClass.__getattr__(self, name)
+
+        class Global(JSClass):
+            def __init__(self):
+                self.document = Document()
+
+        with JSContext(Global()) as ctxt:
+            self.assertEquals(None, ctxt.eval('document.x'))
+            self.assertRaises(TypeError, ctxt.eval, 'document.y')
+
 class TestMultithread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.active)
