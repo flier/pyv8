@@ -79,11 +79,16 @@ void CWrapper::Expose(void)
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)    
     .def("__call__", py::raw_function(&CJavascriptFunction::CallWithArgs))
 
-    .def("apply", &CJavascriptFunction::Apply, 
+    .def("invoke", &CJavascriptFunction::Apply, 
          (py::arg("self"), 
           py::arg("args") = py::list(), 
           py::arg("kwds") = py::dict()), 
           "Performs a function call using the parameters.")
+    .def("invoke", &CJavascriptFunction::Invoke, 
+          (py::arg("args") = py::list(), 
+           py::arg("kwds") = py::dict()), 
+          "Performs a binding method call using the parameters.")
+
     .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName, "The name of function")
     .add_property("owner", &CJavascriptFunction::GetOwner)
 
@@ -1310,6 +1315,7 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
 
   return CJavascriptObject::Wrap(result);
 }
+
 py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
 {
   v8::HandleScope handle_scope;

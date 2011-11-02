@@ -67,6 +67,16 @@ JSArray = _PyV8.JSArray
 JSFunction = _PyV8.JSFunction
 JSExtension = _PyV8.JSExtension
 
+def func_apply(self, thisArg, argArray=[]):
+    if isinstance(thisArg, JSObject):
+        return self.invoke(thisArg, argArray)
+
+    this = JSContext.current.eval("(%s)" % json.dumps(thisArg))
+
+    return self.invoke(this, argArray)
+
+JSFunction.apply = func_apply
+
 class JSLocker(_PyV8.JSLocker):
     def __enter__(self):
         self.enter()
@@ -1076,6 +1086,23 @@ class TestWrapper(unittest.TestCase):
 
         with JSContext(Global()) as ctxt:
             self.assertEquals("hello flier", ctxt.eval("hello('flier')"))
+
+    def testJSFunction(self):
+        with JSContext() as ctxt:
+            hello = ctxt.eval("(function (name) { return 'hello ' + name; })")
+
+            self.assert_(isinstance(hello, _PyV8.JSFunction))
+            self.assertEquals("hello flier", hello('flier'))
+            self.assertEquals("hello flier", hello.invoke(['flier']))
+
+            obj = ctxt.eval("({ 'name': 'flier', 'hello': function (name) { return 'hello ' + name + ' from ' + this.name; }})")
+            hello = obj.hello
+            self.assert_(isinstance(hello, JSFunction))
+            self.assertEquals("hello flier from flier", hello('flier'))
+
+            tester = ctxt.eval("({ 'name': 'tester' })")
+            self.assertEquals("hello flier from tester", hello.invoke(tester, ['flier']))
+            self.assertEquals("hello flier from json", hello.apply({ 'name': 'json' }, ['flier']))
 
     def testJSError(self):
         with JSContext() as ctxt:
