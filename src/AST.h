@@ -185,7 +185,6 @@ class CAstExpression : public CAstNode
 protected:
   CAstExpression(v8i::Expression *expr) : CAstNode(expr) {}
 public:
-  bool IsTrivial(void) { return as<v8i::Expression>()->IsTrivial(); }
   bool IsPropertyName(void) { return as<v8i::Expression>()->IsPropertyName(); }
 };
 
@@ -398,8 +397,7 @@ class CAstLiteral : public CAstExpression
 public:
   CAstLiteral(v8i::Literal *lit) : CAstExpression(lit) {}
 
-  bool IsTrivial(void) const { return as<v8i::Literal>()->IsTrivial(); }
-  bool IsPropertyName(void) const { return as<v8i::Literal>()->IsPropertyName(); }
+  const std::string AsPropertyName(void) const { return to_string(as<v8i::Literal>()->AsPropertyName()); }
   bool IsNull(void) const { return as<v8i::Literal>()->IsNull(); }
   bool IsTrue(void) const { return as<v8i::Literal>()->IsTrue(); }
   bool IsFalse(void) const { return as<v8i::Literal>()->IsFalse(); }

@@ -73,8 +73,7 @@ void CAstNode::Expose(void)
     ;
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
-    .add_property("trivial", &CAstExpression::IsTrivial)
-    .add_property("propertyName", &CAstExpression::IsPropertyName)
+    .add_property("isPropertyName", &CAstExpression::IsPropertyName)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
@@ -187,6 +186,7 @@ void CAstNode::Expose(void)
     .add_property("isNull", &CAstLiteral::IsNull)
     .add_property("isTrue", &CAstLiteral::IsTrue)
     .add_property("isFalse", &CAstLiteral::IsFalse)
+    .add_property("asPropertyName", &CAstLiteral::AsPropertyName)
     ;
 
   py::class_<CAstMaterializedLiteral, py::bases<CAstExpression> >("AstMaterializedLiteral", py::no_init)

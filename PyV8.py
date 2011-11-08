@@ -2195,8 +2195,7 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("{ s = \"even\"; }", str(stmt.thenStatement))
                 self.assertEquals("{ s = \"odd\"; }", str(stmt.elseStatement))
 
-                self.assertFalse(stmt.condition.trivial)
-                self.assertFalse(stmt.condition.propertyName)
+                self.assertFalse(stmt.condition.isPropertyName)
 
         self.assertEquals(1, IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
 
@@ -2361,8 +2360,7 @@ class TestAST(unittest.TestCase):
             def onLiteral(self, litr):
                 self.called += 1
 
-                self.assert_(litr.trivial)
-                self.assertFalse(litr.propertyName)
+                self.assertFalse(litr.isPropertyName)
                 self.assertFalse(litr.isNull)
                 self.assertFalse(litr.isTrue)
 
