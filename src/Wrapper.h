@@ -190,6 +190,7 @@ public:
   void SetName(const std::string name);
 
   int GetLineNumber(void) const;
+  int GetColumnNumber(void) const;
   const std::string GetResourceName(void) const;
   int GetLineOffset(void) const;
   int GetColumnOffset(void) const;

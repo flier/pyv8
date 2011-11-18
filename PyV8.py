@@ -1067,6 +1067,7 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals("test", func.name)
             self.assertEquals("", func.resname)
             self.assertEquals(0, func.linenum)
+            self.assertEquals(14, func.colnum)
             self.assertEquals(0, func.lineoff)
             self.assertEquals(0, func.coloff)
             

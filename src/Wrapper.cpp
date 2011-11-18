@@ -93,6 +93,7 @@ void CWrapper::Expose(void)
     .add_property("owner", &CJavascriptFunction::GetOwner)
 
     .add_property("linenum", &CJavascriptFunction::GetLineNumber, "The line number of function in the script")
+    .add_property("colnum", &CJavascriptFunction::GetColumnNumber, "The column number of function in the script")
     .add_property("resname", &CJavascriptFunction::GetResourceName, "The resource name of script")
     .add_property("lineoff", &CJavascriptFunction::GetLineOffset, "The line offset of function in the script")
     .add_property("coloff", &CJavascriptFunction::GetColumnOffset, "The column offset of function in the script")
@@ -1357,6 +1358,14 @@ int CJavascriptFunction::GetLineNumber(void) const
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
 
   return func->GetScriptLineNumber();
+}
+int CJavascriptFunction::GetColumnNumber(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  return func->GetScriptColumnNumber();
 }
 const std::string CJavascriptFunction::GetResourceName(void) const
 {
