@@ -99,7 +99,13 @@ public:
   }
 
 #ifdef SUPPORT_AST
-  void visit(py::object handler) const;
+  enum LanguageMode
+  {
+    CLASSIC_MODE = 0,
+    STRICT_MODE,
+    EXTENDED_MODE,
+  };
+  void visit(py::object handler, LanguageMode mode=CLASSIC_MODE) const;
 #endif
 
   const std::string GetSource(void) const;

@@ -32,6 +32,7 @@
 #ifdef SUPPORT_AST
   #include "src/parser.h"
   #include "src/compiler.h"
+  #include "src/scanner.h"
 
   #include "AST.h"
 #endif
@@ -126,6 +127,11 @@ void CEngine::Expose(void)
     .value("free", v8::kAllocationActionFree)
     .value("all", v8::kAllocationActionAll);
 
+  py::enum_<CScript::LanguageMode>("JSLanguageMode")
+    .value("CLASSIC", CScript::CLASSIC_MODE)
+    .value("STRICT", CScript::STRICT_MODE)
+    .value("EXTENDED", CScript::EXTENDED_MODE);
+  
   py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is a backend Javascript engine.")
     .def(py::init<>("Create a new script engine instance."))
     .add_static_property("version", &CEngine::GetVersion, 
@@ -213,7 +219,8 @@ void CEngine::Expose(void)
     .def("run", &CScript::Run, "Execute the compiled code.")
 
   #ifdef SUPPORT_AST
-    .def("visit", &CScript::visit, (py::arg("handler")), 
+    .def("visit", &CScript::visit, (py::arg("handler"),
+                                    py::arg("mode") = CScript::CLASSIC_MODE), 
          "Visit the AST of code with the callback handler.")
   #endif
     ;
@@ -526,7 +533,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 #ifdef SUPPORT_AST
 
-void CScript::visit(py::object handler) const
+void CScript::visit(py::object handler, LanguageMode mode) const
 {
   v8::HandleScope handle_scope;
 
@@ -545,8 +552,8 @@ void CScript::visit(py::object handler) const
   v8i::PostponeInterruptsScope postpone(isolate);  
 
   script->set_context_data((*isolate->global_context())->data());
-
-  if (v8i::ParserApi::Parse(&info))
+  
+  if (v8i::ParserApi::Parse(&info, mode))
   {
     if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
     {
