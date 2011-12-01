@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 
-import sys, os
+import sys, os, re
 
 try:
     from cStringIO import StringIO
@@ -59,6 +59,44 @@ class JSError(Exception):
             return getattr(impl, attr)
         except AttributeError:
             return super(JSError, self).__getattribute__(attr)
+
+    RE_FRAME = re.compile(r"\s+at\s(?:new\s)?(?P<func>.+)\s\((?P<file>[^:]+):?(?P<row>\d+)?:?(?P<col>\d+)?\)")
+    RE_FUNC = re.compile(r"\s+at\s(?:new\s)?(?P<func>.+)\s\((?P<file>[^\)]+)\)")
+    RE_FILE = re.compile(r"\s+at\s(?P<file>[^:]+):?(?P<row>\d+)?:?(?P<col>\d+)?")
+
+    @staticmethod
+    def parse_stack(value):
+        stack = []
+
+        def int_or_nul(value):
+            return int(value) if value else None
+
+        for line in value.split('\n')[1:]:
+            m = JSError.RE_FRAME.match(line)
+
+            if m:
+                stack.append((m.group('func'), m.group('file'), int_or_nul(m.group('row')), int_or_nul(m.group('col'))))
+                continue
+
+            m = JSError.RE_FUNC.match(line)
+
+            if m:
+                stack.append((m.group('func'), m.group('file'), None, None))
+                continue
+
+            m = JSError.RE_FILE.match(line)
+
+            if m:
+                stack.append((None, m.group('file'), int_or_nul(m.group('row')), int_or_nul(m.group('col'))))
+                continue
+
+            assert line
+
+        return stack
+
+    @property
+    def frames(self):
+        return self.parse_stack(self.stackTrace)
 
 _PyV8._JSError._jsclass = JSError
 
@@ -1140,6 +1178,24 @@ class TestWrapper(unittest.TestCase):
                                      '    at Error (unknown source)\n' +
                                      '    at hello (test:14:35)\n' +
                                      '    at test:17:25', e.stackTrace)
+
+    def testParseStack(self):
+        self.assertEquals([
+            ('Error', 'unknown source', None, None),
+            ('test', 'native', None, None),
+            ('<anonymous>', 'test0', 3, 5),
+            ('f', 'test1', 2, 19),
+            ('g', 'test2', 1, 15),
+            (None, 'test3', 1, None),
+            (None, 'test3', 1, 1),
+        ], JSError.parse_stack("""Error: err
+            at Error (unknown source)
+            at test (native)
+            at new <anonymous> (test0:3:5)
+            at f (test1:2:19)
+            at g (test2:1:15)
+            at test3:1
+            at test3:1:1"""))
 
     def testStackTrace(self):
         class Global(JSClass):
