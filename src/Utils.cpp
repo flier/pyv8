@@ -8,15 +8,8 @@
 #include <iterator>
 
 #include "utf8.h"
-
-#undef COMPILER
-
-#include "src/v8.h"
-
-#include "src/bootstrapper.h"
-#include "src/natives.h"
-
 #include "Locker.h"
+#include "V8Internal.h"
 
 v8::Handle<v8::String> ToString(const std::string& str)
 {

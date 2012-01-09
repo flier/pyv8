@@ -4,14 +4,7 @@
 #include <string>
 
 #ifdef SUPPORT_DEBUGGER
-
-  #undef COMPILER
-  #include "src/v8.h"
-  #include "src/api.h"
-  #include "src/debug.h"
-  #include "src/natives.h"
-  namespace v8i = v8::internal;
-
+  #include "V8Internal.h"
 #endif
 
 #include "Context.h"

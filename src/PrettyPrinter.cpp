@@ -27,12 +27,8 @@
 
 #include <stdarg.h>
 
-#include <src/v8.h>
-
+#include "V8Internal.h"
 #include "PrettyPrinter.h"
-
-#include <src/scopes.h>
-#include <src/platform.h>
 
 namespace v8 {
   namespace internal {

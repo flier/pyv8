@@ -150,6 +150,7 @@ $(OutDir)PyV8.py -v
     <ClInclude Include="Locker.h" />
     <ClInclude Include="PrettyPrinter.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="V8Internal.h" />
     <ClInclude Include="Wrapper.h" />
     <ClInclude Include="utf8.h" />
     <ClInclude Include="utf8\checked.h" />

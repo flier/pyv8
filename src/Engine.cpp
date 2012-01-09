@@ -2,38 +2,13 @@
 
 #include <boost/preprocessor.hpp>
 
-#if defined(SUPPORT_EXTENSION) || defined(SUPPORT_PROFILER)
-
-  #undef COMPILER
-  #include "src/v8.h"
-
-  namespace v8i = v8::internal;
-
-#endif
+#include "V8Internal.h"
 
 #ifdef SUPPORT_SERIALIZE
-
-  #undef COMPILER
-  #include "src/v8.h"
-
-  #include "src/bootstrapper.h"
-  #include "src/natives.h"
-  #include "src/platform.h"
-  #include "src/serialize.h"
-  #include "src/stub-cache.h"
-  #include "src/heap.h"
-
   CEngine::CounterTable CEngine::m_counters;
-
-  namespace v8i = v8::internal;
-
 #endif
 
 #ifdef SUPPORT_AST
-  #include "src/parser.h"
-  #include "src/compiler.h"
-  #include "src/scanner.h"
-
   #include "AST.h"
 #endif
 

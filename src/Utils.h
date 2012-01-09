@@ -42,6 +42,14 @@ using std::isnan;
 #include <boost/python.hpp>
 namespace py = boost::python;
 
+#ifdef _WIN32
+  #undef FP_NAN
+  #undef FP_INFINITE
+  #undef FP_ZERO
+  #undef FP_SUBNORMAL
+  #undef FP_NORMAL
+#endif
+
 #include <v8.h>
 
 #ifdef _WIN32
