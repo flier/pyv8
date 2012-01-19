@@ -687,7 +687,7 @@ void CProfiler::Start(void)
   char params[] = "--prof --prof_auto --logfile=*";
 
   v8::V8::SetFlagsFromString(params, strlen(params));
-  LOGGER->Setup();
+  LOGGER->SetUp();
 }
 
 void CProfiler::Stop(void)
