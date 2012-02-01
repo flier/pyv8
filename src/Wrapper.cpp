@@ -95,6 +95,7 @@ void CWrapper::Expose(void)
     .add_property("linenum", &CJavascriptFunction::GetLineNumber, "The line number of function in the script")
     .add_property("colnum", &CJavascriptFunction::GetColumnNumber, "The column number of function in the script")
     .add_property("resname", &CJavascriptFunction::GetResourceName, "The resource name of script")
+    .add_property("inferredname", &CJavascriptFunction::GetInferredName, "Name inferred from variable or property assignment of this function")
     .add_property("lineoff", &CJavascriptFunction::GetLineOffset, "The line offset of function in the script")
     .add_property("coloff", &CJavascriptFunction::GetColumnOffset, "The column offset of function in the script")
     ;
@@ -1374,6 +1375,16 @@ const std::string CJavascriptFunction::GetResourceName(void) const
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
   
   v8::String::Utf8Value name(v8::Handle<v8::String>::Cast(func->GetScriptOrigin().ResourceName()));
+
+  return std::string(*name, name.length());
+}
+const std::string CJavascriptFunction::GetInferredName(void) const
+{
+  v8::HandleScope handle_scope;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
+
+  v8::String::Utf8Value name(v8::Handle<v8::String>::Cast(func->GetInferredName()));
 
   return std::string(*name, name.length());
 }

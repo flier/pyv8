@@ -1895,12 +1895,14 @@ class TestEngine(unittest.TestCase):
                 function 函数() { return 变量.length; }
 
                 函数();
+
+                var func = function () {};
                 """
 
                 data = engine.precompile(src)
 
                 self.assert_(data)
-                self.assertEquals(48, len(data))
+                self.assertEquals(68, len(data))
 
                 s = engine.compile(src, precompiled=data)
 
@@ -1924,6 +1926,8 @@ class TestEngine(unittest.TestCase):
                 setattr(ctxt.locals, u'变量'.encode('utf-8'), u'测试长字符串')
 
                 self.assertEquals(6, func())
+
+                self.assertEquals("func", ctxt.locals.func.inferredname)
 
     def testExtension(self):
         extSrc = """function hello(name) { return "hello " + name + " from javascript"; }"""

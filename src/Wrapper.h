@@ -192,6 +192,7 @@ public:
   int GetLineNumber(void) const;
   int GetColumnNumber(void) const;
   const std::string GetResourceName(void) const;
+  const std::string GetInferredName(void) const;
   int GetLineOffset(void) const;
   int GetColumnOffset(void) const;
 
