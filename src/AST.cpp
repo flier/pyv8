@@ -91,7 +91,31 @@ void CAstNode::Expose(void)
   py::class_<CAstDeclaration, py::bases<CAstNode> >("AstDeclaration", py::no_init)
     .add_property("proxy", &CAstDeclaration::GetProxy)
     .add_property("mode", &CAstDeclaration::GetMode)
-    .add_property("function", &CAstDeclaration::GetFunction)
+    .add_property("scope", &CAstDeclaration::GetScope)
+    ;
+
+  py::class_<CAstVariableDeclaration, py::bases<CAstDeclaration> >("AstVariableDeclaration", py::no_init)
+    .add_property("function", &CAstVariableDeclaration::GetFunction)
+    ;
+
+  py::class_<CAstModule, py::bases<CAstNode> >("AstModule", py::no_init)
+    ;
+
+  py::class_<CAstModuleDeclaration, py::bases<CAstDeclaration> >("AstModuleDeclaration", py::no_init)
+    .add_property("module", &CAstModuleDeclaration::GetModule)
+    ;
+
+  py::class_<CAstModuleLiteral, py::bases<CAstModule> >("AstModuleLiteral", py::no_init)
+    .add_property("body", &CAstModuleLiteral::GetBody)
+    ;
+
+  py::class_<CAstModuleVariable, py::bases<CAstModule> >("AstModuleVariable", py::no_init)
+    .add_property("proxy", &CAstModuleVariable::GetProxy)
+    ;
+
+  py::class_<CAstModulePath, py::bases<CAstModule> >("AstModulePath", py::no_init)
+    .add_property("module", &CAstModulePath::GetModule)
+    .add_property("name", &CAstModulePath::GetName)
     ;
 
   py::class_<CAstIterationStatement, py::bases<CAstBreakableStatement> >("AstIterationStatement", py::no_init)

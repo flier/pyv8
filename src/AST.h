@@ -215,9 +215,64 @@ class CAstDeclaration : public CAstNode
 public:
   CAstDeclaration(v8i::Declaration *decl) : CAstNode(decl) {}
 
-  CAstVariableProxy GetProxy(void) const;
-  v8i::VariableMode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
-  py::object GetFunction(void) const;
+  py::object GetProxy(void) const;
+  v8i::VariableMode GetMode(void) const { return as<v8i::Declaration>()->mode(); }  
+  CAstScope GetScope(void) const { return CAstScope(as<v8i::Declaration>()->scope()); }
+};
+
+class CAstVariableDeclaration : public CAstDeclaration
+{
+public:
+  CAstVariableDeclaration(v8i::Declaration *decl) : CAstDeclaration(decl) {}
+
+  py::object GetFunction(void) const { return to_python(as<v8i::VariableDeclaration>()->fun()); }
+};
+
+class CAstModule : public CAstNode
+{
+public:
+  CAstModule(v8i::Module *mod) : CAstNode(mod) {}
+};
+
+class CAstModuleLiteral : public CAstModule
+{
+public:
+  CAstModuleLiteral(v8i::ModuleLiteral *mod) : CAstModule(mod) {}
+
+  py::object GetBody(void) const { return to_python(as<v8i::ModuleLiteral>()->body()); }
+};
+
+class CAstModuleVariable : public CAstModule
+{
+public:
+  CAstModuleVariable(v8i::ModuleVariable *mod) : CAstModule(mod) {}
+
+  py::object GetProxy(void) const { return to_python(as<v8i::ModuleVariable>()->proxy()); }
+};
+
+class CAstModulePath : public CAstModule
+{
+public:
+  CAstModulePath(v8i::ModulePath *mod) : CAstModule(mod) {}
+
+  py::object GetModule(void) const { return to_python(as<v8i::ModulePath>()->module()); }
+  const std::string GetName(void) const { return to_string(as<v8i::ModulePath>()->name()); }
+};
+
+class CAstModuleUrl : public CAstModule
+{
+public:
+  CAstModuleUrl(v8i::ModuleUrl *mod) : CAstModule(mod) {}
+
+  const std::string GetUrl(void) const { return to_string(as<v8i::ModuleUrl>()->url()); }
+};
+
+class CAstModuleDeclaration : public CAstDeclaration
+{
+public:
+  CAstModuleDeclaration(v8i::ModuleDeclaration *decl) : CAstDeclaration(decl) {}
+
+  py::object GetModule(void) const { return to_python(as<v8i::ModuleDeclaration>()->module()); }
 };
 
 class CAstIterationStatement : public CAstBreakableStatement
@@ -734,19 +789,7 @@ inline py::object CAstScope::GetArguments(void) const
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }
 
-inline CAstVariableProxy CAstDeclaration::GetProxy(void) const { return CAstVariableProxy(as<v8i::Declaration>()->proxy()); }
-
-inline py::object CAstDeclaration::GetFunction(void) const 
-{ 
-  if (as<v8i::Declaration>()->fun())
-  {
-    CAstFunctionLiteral func(as<v8i::Declaration>()->fun());
-
-    return to_python(func);
-  }
-  
-  return py::object(); 
-}
+inline py::object CAstDeclaration::GetProxy(void) const { return to_python(as<v8i::Declaration>()->proxy()); }
 
 inline py::list CAstTargetCollector::GetTargets(void) const { return to_python<CAstLabel>(as<v8i::TargetCollector>()->targets()); }
 

@@ -3,6 +3,8 @@
 from __future__ import with_statement
 
 import sys, os, re
+import thread
+import logging
 
 try:
     from cStringIO import StringIO
@@ -766,6 +768,12 @@ class AST:
     Breakable = _PyV8.AstBreakableStatement
     Block = _PyV8.AstBlock
     Declaration = _PyV8.AstDeclaration
+    VariableDeclaration = _PyV8.AstVariableDeclaration
+    Module = _PyV8.AstModule
+    ModuleDeclaration = _PyV8.AstModuleDeclaration
+    ModuleLiteral = _PyV8.AstModuleLiteral
+    ModuleVariable = _PyV8.AstModuleVariable
+    ModulePath = _PyV8.AstModulePath
     Iteration = _PyV8.AstIterationStatement
     DoWhile = _PyV8.AstDoWhileStatement
     While = _PyV8.AstWhileStatement
@@ -809,7 +817,6 @@ class AST:
 
 from datetime import *
 import unittest
-import logging
 import traceback
 
 class TestContext(unittest.TestCase):
@@ -2319,7 +2326,7 @@ class TestAST(unittest.TestCase):
 
     def testCallStatements(self):
         class CallStatementChecker(TestAST.Checker):
-            def onDeclaration(self, decl):
+            def onVariableDeclaration(self, decl):
                 self.called += 1
 
                 var = decl.proxy

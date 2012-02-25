@@ -1,4 +1,4 @@
-// Copyright 2011 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -53,7 +53,7 @@ void PrettyPrinter::VisitBlock(Block* node) {
 }
 
 
-void PrettyPrinter::VisitDeclaration(Declaration* node) {
+void PrettyPrinter::VisitVariableDeclaration(VariableDeclaration* node) {
   Print("var ");
   PrintLiteral(node->proxy()->name(), false);
   if (node->fun() != NULL) {
@@ -61,6 +61,38 @@ void PrettyPrinter::VisitDeclaration(Declaration* node) {
     PrintFunctionLiteral(node->fun());
   }
   Print(";");
+}
+
+
+void PrettyPrinter::VisitModuleDeclaration(ModuleDeclaration* node) {
+  Print("module ");
+  PrintLiteral(node->proxy()->name(), false);
+  Print(" = ");
+  Visit(node->module());
+  Print(";");
+}
+
+
+void PrettyPrinter::VisitModuleLiteral(ModuleLiteral* node) {
+  VisitBlock(node->body());
+}
+
+
+void PrettyPrinter::VisitModuleVariable(ModuleVariable* node) {
+  Visit(node->proxy());
+}
+
+
+void PrettyPrinter::VisitModulePath(ModulePath* node) {
+  Visit(node->module());
+  Print(".");
+  PrintLiteral(node->name(), false);
+}
+
+
+void PrettyPrinter::VisitModuleUrl(ModuleUrl* node) {
+  Print("at ");
+  PrintLiteral(node->url(), true);
 }
 
 
@@ -442,6 +474,7 @@ void PrettyPrinter::Print(const char* format, ...) {
 
 
 void PrettyPrinter::PrintStatements(ZoneList<Statement*>* statements) {
+  if (statements == NULL) return;
   for (int i = 0; i < statements->length(); i++) {
     if (i != 0) Print(" ");
     Visit(statements->at(i));
@@ -705,7 +738,7 @@ void AstPrinter::VisitBlock(Block* node) {
 }
 
 
-void AstPrinter::VisitDeclaration(Declaration* node) {
+void AstPrinter::VisitVariableDeclaration(VariableDeclaration* node) {
   if (node->fun() == NULL) {
     // var or const declarations
     PrintLiteralWithModeIndented(Variable::Mode2String(node->mode()),
@@ -719,6 +752,35 @@ void AstPrinter::VisitDeclaration(Declaration* node) {
     PrintLiteral(node->fun()->name(), false);
     Print("\n");
   }
+}
+
+
+void AstPrinter::VisitModuleDeclaration(ModuleDeclaration* node) {
+  IndentedScope indent(this, "MODULE");
+  PrintLiteralIndented("NAME", node->proxy()->name(), true);
+  Visit(node->module());
+}
+
+
+void AstPrinter::VisitModuleLiteral(ModuleLiteral* node) {
+  VisitBlock(node->body());
+}
+
+
+void AstPrinter::VisitModuleVariable(ModuleVariable* node) {
+  Visit(node->proxy());
+}
+
+
+void AstPrinter::VisitModulePath(ModulePath* node) {
+  IndentedScope indent(this, "PATH");
+  PrintIndentedVisit("MODULE", node->module());
+  PrintLiteralIndented("NAME", node->name(), false);
+}
+
+
+void AstPrinter::VisitModuleUrl(ModuleUrl* node) {
+  PrintLiteralIndented("URL", node->url(), true);
 }
 
 
@@ -1399,7 +1461,7 @@ void JsonAstBuilder::VisitThisFunction(ThisFunction* expr) {
 }
 
 
-void JsonAstBuilder::VisitDeclaration(Declaration* decl) {
+void JsonAstBuilder::VisitVariableDeclaration(VariableDeclaration* decl) {
   TagScope tag(this, "Declaration");
   {
     AttributesScope attributes(this);
@@ -1407,6 +1469,45 @@ void JsonAstBuilder::VisitDeclaration(Declaration* decl) {
   }
   Visit(decl->proxy());
   if (decl->fun() != NULL) Visit(decl->fun());
+}
+
+
+void JsonAstBuilder::VisitModuleDeclaration(ModuleDeclaration* node) {
+  TagScope tag(this, "Module");
+  {
+    AttributesScope attributes(this);
+    AddAttribute("name", node->proxy()->name());
+  }
+  Visit(node->module());
+}
+
+
+void JsonAstBuilder::VisitModuleLiteral(ModuleLiteral* node) {
+  VisitBlock(node->body());
+}
+
+
+void JsonAstBuilder::VisitModuleVariable(ModuleVariable* node) {
+  Visit(node->proxy());
+}
+
+
+void JsonAstBuilder::VisitModulePath(ModulePath* node) {
+  TagScope tag(this, "Module");
+  {
+    AttributesScope attributes(this);
+    AddAttribute("name", node->name());
+  }
+  Visit(node->module());
+}
+
+
+void JsonAstBuilder::VisitModuleUrl(ModuleUrl* node) {
+  TagScope tag(this, "Module");
+  {
+    AttributesScope attributes(this);
+    AddAttribute("url", node->url());
+  }
 }
 
 }}
