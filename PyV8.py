@@ -2333,12 +2333,17 @@ class TestAST(unittest.TestCase):
 
                 if var.name == 's':
                     self.assertEquals(AST.VarMode.var, decl.mode)
-                    self.assertEquals(None, decl.function)
 
                     self.assert_(var.isValidLeftHandSide)
                     self.assertFalse(var.isArguments)
                     self.assertFalse(var.isThis)
-                elif var.name == 'hello':
+
+            def onFunctionDeclaration(self, decl):
+                self.called += 1
+
+                var = decl.proxy
+
+                if var.name == 'hello':
                     self.assertEquals(AST.VarMode.var, decl.mode)
                     self.assert_(decl.function)
                     self.assertEquals('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
