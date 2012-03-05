@@ -223,9 +223,15 @@ public:
 class CAstVariableDeclaration : public CAstDeclaration
 {
 public:
-  CAstVariableDeclaration(v8i::Declaration *decl) : CAstDeclaration(decl) {}
+  CAstVariableDeclaration(v8i::VariableDeclaration *decl) : CAstDeclaration(decl) {}
+};
 
-  py::object GetFunction(void) const { return to_python(as<v8i::VariableDeclaration>()->fun()); }
+class CAstFunctionDeclaration : public CAstDeclaration
+{
+public:
+	CAstFunctionDeclaration(v8i::FunctionDeclaration *decl) : CAstDeclaration(decl) {}
+
+	py::object GetFunction(void) const { return to_python(as<v8i::FunctionDeclaration>()->fun()); }
 };
 
 class CAstModule : public CAstNode
@@ -273,6 +279,20 @@ public:
   CAstModuleDeclaration(v8i::ModuleDeclaration *decl) : CAstDeclaration(decl) {}
 
   py::object GetModule(void) const { return to_python(as<v8i::ModuleDeclaration>()->module()); }
+};
+
+class CAstImportDeclaration : public CAstDeclaration
+{
+public:
+	CAstImportDeclaration(v8i::ImportDeclaration *decl) : CAstDeclaration(decl) {}
+
+	py::object GetModule(void) const { return to_python(as<v8i::ImportDeclaration>()->module()); }
+};
+
+class CAstExportDeclaration : public CAstDeclaration
+{
+public:
+	CAstExportDeclaration(v8i::ExportDeclaration *decl) : CAstDeclaration(decl) {}
 };
 
 class CAstIterationStatement : public CAstBreakableStatement

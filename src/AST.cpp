@@ -95,8 +95,11 @@ void CAstNode::Expose(void)
     ;
 
   py::class_<CAstVariableDeclaration, py::bases<CAstDeclaration> >("AstVariableDeclaration", py::no_init)
-    .add_property("function", &CAstVariableDeclaration::GetFunction)
     ;
+
+  py::class_<CAstFunctionDeclaration, py::bases<CAstDeclaration> >("AstFunctionDeclaration", py::no_init)
+	  .add_property("function", &CAstFunctionDeclaration::GetFunction)
+	  ;
 
   py::class_<CAstModule, py::bases<CAstNode> >("AstModule", py::no_init)
     ;
@@ -104,6 +107,13 @@ void CAstNode::Expose(void)
   py::class_<CAstModuleDeclaration, py::bases<CAstDeclaration> >("AstModuleDeclaration", py::no_init)
     .add_property("module", &CAstModuleDeclaration::GetModule)
     ;
+
+  py::class_<CAstImportDeclaration, py::bases<CAstDeclaration> >("AstImportDeclaration", py::no_init)
+	  .add_property("module", &CAstImportDeclaration::GetModule)
+	  ;
+
+  py::class_<CAstExportDeclaration, py::bases<CAstDeclaration> >("AstExportDeclaration", py::no_init)
+	  ;
 
   py::class_<CAstModuleLiteral, py::bases<CAstModule> >("AstModuleLiteral", py::no_init)
     .add_property("body", &CAstModuleLiteral::GetBody)
