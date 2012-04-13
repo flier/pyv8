@@ -61,9 +61,8 @@ void CWrapper::Expose(void)
     .def("__ne__", &CJavascriptObject::Unequals)
     ;
 
-  py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)
-    .def(py::init<size_t>())
-    .def(py::init<py::list>())    
+  py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)    
+    .def(py::init<py::object>())    
 
     .def("__len__", &CJavascriptArray::Length)
 
@@ -1171,25 +1170,58 @@ void CJavascriptArray::LazyConstructor(void)
 
   v8::HandleScope handle_scope;
 
+  v8::Handle<v8::Array> array;
+
   if (m_items.ptr() == Py_None)
   {
-    v8::Handle<v8::Array> array = v8::Array::New(m_size);
-
-    m_obj = v8::Persistent<v8::Object>::New(array);  
+    array = v8::Array::New(m_size);
   }
-  else
+  else if (PyInt_CheckExact(m_items.ptr()))
   {
-    size_t size = ::PyList_Size(m_items.ptr());
-
-    v8::Handle<v8::Array> array = v8::Array::New(size);
-
-    for (size_t i=0; i<size; i++)
-    {
-      array->Set(v8::Integer::New(i), CPythonObject::Wrap(m_items[i]));
-    }
-
-    m_obj = v8::Persistent<v8::Object>::New(array);  
+    m_size = PyInt_AS_LONG(m_items.ptr());
+    array = v8::Array::New(m_size);
   }
+  else if (PyLong_CheckExact(m_items.ptr()))
+  {
+    m_size = PyLong_AsLong(m_items.ptr());
+    array = v8::Array::New(m_size);
+  }
+  else if (PyList_Check(m_items.ptr())) 
+  {
+    m_size = PyList_GET_SIZE(m_items.ptr());
+    array = v8::Array::New(m_size);
+
+    for (Py_ssize_t i=0; i<m_size; i++)
+    {
+      array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(m_items.ptr(), i))))));
+    }    
+  }
+  else if (PyTuple_Check(m_items.ptr()))
+  {
+    m_size = PyTuple_GET_SIZE(m_items.ptr());
+    array = v8::Array::New(m_size);
+
+    for (Py_ssize_t i=0; i<m_size; i++)
+    {
+      array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyTuple_GET_ITEM(m_items.ptr(), i))))));
+    }
+  }
+  else if (PyGen_Check(m_items.ptr()))
+  {
+    array = v8::Array::New();
+
+    py::object iter(py::handle<>(::PyObject_GetIter(m_items.ptr())));
+
+    m_size = 0;
+    PyObject *item = NULL;
+
+    while (NULL != (item = ::PyIter_Next(iter.ptr())))
+    {
+      array->Set(v8::Uint32::New(m_size++), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(item)))));
+    } 
+  }
+
+  m_obj = v8::Persistent<v8::Object>::New(array); 
 }
 size_t CJavascriptArray::Length(void) 
 {

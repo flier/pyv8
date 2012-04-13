@@ -117,7 +117,7 @@ public:
 
 class CJavascriptArray : public CJavascriptObject, public ILazyObject
 {
-  py::list m_items;
+  py::object m_items;
   size_t m_size;
 public:
   class ArrayIterator 
@@ -144,11 +144,9 @@ public:
 
   }
 
-  CJavascriptArray(size_t size) : m_size(size) {}
-  CJavascriptArray(py::list items) 
-    : m_items(items), m_size(::PyList_Size(items.ptr()))
+  CJavascriptArray(py::object items) 
+    : m_items(items), m_size(0)
   {
-
   }
 
   size_t Length(void);
