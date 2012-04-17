@@ -784,7 +784,7 @@ inline py::object CAstScope::GetFunction(void) const
 { 
   if (m_scope->function())
   {
-    CAstVariableProxy var(m_scope->function());
+    CAstVariableDeclaration var(m_scope->function());
 
     return to_python(var);
   }
