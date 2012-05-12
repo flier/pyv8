@@ -877,7 +877,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
     result = func_tmpl->GetFunction();
 
   #ifdef SUPPORT_TRACE_LIFECYCLE
-    ObjectTracer::Trace(result, object);
+    if (!result.IsEmpty()) ObjectTracer::Trace(result, object);
   #endif
   }
   else
@@ -885,15 +885,19 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
     static v8::Persistent<v8::ObjectTemplate> s_template = CreateObjectTemplate();
 
     v8::Handle<v8::Object> instance = s_template->NewInstance();
-    py::object *object = new py::object(obj);
 
-    instance->SetInternalField(0, v8::External::New(object));
+    if (!instance.IsEmpty())
+    {
+      py::object *object = new py::object(obj);
+
+      instance->SetInternalField(0, v8::External::New(object));
+
+    #ifdef SUPPORT_TRACE_LIFECYCLE
+      ObjectTracer::Trace(instance, object);
+    #endif
+    }
 
     result = instance;
-
-  #ifdef SUPPORT_TRACE_LIFECYCLE
-    ObjectTracer::Trace(result, object);
-  #endif
   }
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
