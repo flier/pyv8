@@ -88,6 +88,8 @@ void CWrapper::Expose(void)
            py::arg("kwds") = py::dict()), 
           "Performs a binding method call using the parameters.")
 
+    .def("setName", &CJavascriptFunction::SetName)
+
     .add_property("name", &CJavascriptFunction::GetName, &CJavascriptFunction::SetName, "The name of function")
     .add_property("owner", &CJavascriptFunction::GetOwner)
 
@@ -1379,7 +1381,7 @@ const std::string CJavascriptFunction::GetName(void) const
   return std::string(*name, name.length());
 }
 
-void CJavascriptFunction::SetName(const std::string name)
+void CJavascriptFunction::SetName(const std::string& name)
 {
   v8::HandleScope handle_scope;
   

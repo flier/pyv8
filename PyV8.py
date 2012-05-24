@@ -1117,10 +1117,12 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(0, func.coloff)
             
             #TODO fix me, why the setter doesn't work?
+            # func.name = "hello"
+            # it seems __setattr__ was called instead of CJavascriptFunction::SetName
 
-            func.name = "hello"
+            func.setName("hello")
 
-            #self.assertEquals("hello", func.name)
+            self.assertEquals("hello", func.name)
 
     def testCall(self):
         class Hello(object):

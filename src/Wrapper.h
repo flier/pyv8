@@ -185,7 +185,7 @@ public:
   py::object Invoke(py::list args, py::dict kwds);
 
   const std::string GetName(void) const;
-  void SetName(const std::string name);
+  void SetName(const std::string& name);
 
   int GetLineNumber(void) const;
   int GetColumnNumber(void) const;
