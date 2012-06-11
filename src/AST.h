@@ -203,7 +203,7 @@ class CAstBlock : public CAstBreakableStatement
 public:
   CAstBlock(v8i::Block *block) : CAstBreakableStatement(block) {}
 
-  void AddStatement(CAstStatement& stmt) { as<v8i::Block>()->AddStatement(stmt.as<v8i::Statement>()); }
+  void AddStatement(CAstStatement& stmt) { as<v8i::Block>()->AddStatement(stmt.as<v8i::Statement>(), v8i::Isolate::Current()->zone()); }
 
   py::list GetStatements(void) { return to_python(as<v8i::Block>()->statements()); }
 
