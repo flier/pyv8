@@ -10,6 +10,12 @@
 #include <descrobject.h>
 #include <datetime.h>
 
+#undef COMPILER
+#include "src/v8.h"
+#include "src/isolate.h"
+
+namespace v8i = v8::internal;
+
 #include "Context.h"
 #include "Utils.h"
 
@@ -18,6 +24,11 @@
     ::PyErr_Clear(); \
     ::PyErr_SetString(PyExc_RuntimeError, "execution is terminating"); \
     return returnValue; \
+  }
+
+#define CHECK_V8_CONTEXT() \
+  if (!v8i::Isolate::Current()->context()) { \
+    throw CJavascriptException("Javascript object out of context", PyExc_UnboundLocalError); \
   }
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
@@ -924,6 +935,8 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
 
 py::object CJavascriptObject::GetAttr(const std::string& name)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -942,6 +955,8 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -959,6 +974,8 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -972,6 +989,8 @@ void CJavascriptObject::DelAttr(const std::string& name)
 }
 py::list CJavascriptObject::GetAttrList(void)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
   CPythonGIL python_gil;
 
@@ -993,8 +1012,17 @@ py::list CJavascriptObject::GetAttrList(void)
   return attrs;
 }
 
+int CJavascriptObject::GetIdentityHash(void) 
+{ 
+  CHECK_V8_CONTEXT(); 
+  
+  return m_obj->GetIdentityHash(); 
+}
+
 CJavascriptObjectPtr CJavascriptObject::Clone(void)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   return CJavascriptObjectPtr(new CJavascriptObject(m_obj->Clone()));
@@ -1002,6 +1030,8 @@ CJavascriptObjectPtr CJavascriptObject::Clone(void)
 
 bool CJavascriptObject::Contains(const std::string& name)
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1015,6 +1045,8 @@ bool CJavascriptObject::Contains(const std::string& name)
 
 bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
   
   return other.get() && m_obj->Equals(other->m_obj);
@@ -1022,6 +1054,8 @@ bool CJavascriptObject::Equals(CJavascriptObjectPtr other) const
 
 void CJavascriptObject::Dump(std::ostream& os) const
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty())
@@ -1052,6 +1086,8 @@ void CJavascriptObject::Dump(std::ostream& os) const
 
 CJavascriptObject::operator long() const 
 { 
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty())
@@ -1061,6 +1097,8 @@ CJavascriptObject::operator long() const
 }
 CJavascriptObject::operator double() const 
 { 
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty())
@@ -1071,6 +1109,8 @@ CJavascriptObject::operator double() const
 
 CJavascriptObject::operator bool() const
 {
+  CHECK_V8_CONTEXT();
+
   v8::HandleScope handle_scope;
 
   if (m_obj.IsEmpty()) return false;
@@ -1231,12 +1271,16 @@ void CJavascriptArray::LazyConstructor(void)
 }
 size_t CJavascriptArray::Length(void) 
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   return v8::Handle<v8::Array>::Cast(m_obj)->Length();
 }
 py::object CJavascriptArray::GetItem(size_t idx)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1251,6 +1295,8 @@ py::object CJavascriptArray::GetItem(size_t idx)
 }
 py::object CJavascriptArray::SetItem(size_t idx, py::object value)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1262,6 +1308,8 @@ py::object CJavascriptArray::SetItem(size_t idx, py::object value)
 }
 py::object CJavascriptArray::DelItem(size_t idx)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1279,6 +1327,8 @@ py::object CJavascriptArray::DelItem(size_t idx)
 
 bool CJavascriptArray::Contains(py::object item)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1298,6 +1348,8 @@ bool CJavascriptArray::Contains(py::object item)
 
 py::object CJavascriptFunction::CallWithArgs(py::tuple args, py::dict kwds)
 {
+  CHECK_V8_CONTEXT(); 
+
   size_t argc = ::PyTuple_Size(args.ptr());
 
   if (argc == 0) throw CJavascriptException("missed self argument", ::PyExc_TypeError);
@@ -1319,6 +1371,8 @@ py::object CJavascriptFunction::CallWithArgs(py::tuple args, py::dict kwds)
 
 py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
@@ -1358,6 +1412,8 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
 
 py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   return Call(self->Object(), args, kwds);
@@ -1365,6 +1421,8 @@ py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, 
 
 py::object CJavascriptFunction::Invoke(py::list args, py::dict kwds) 
 { 
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   return Call(m_self, args, kwds); 
@@ -1372,6 +1430,8 @@ py::object CJavascriptFunction::Invoke(py::list args, py::dict kwds)
 
 const std::string CJavascriptFunction::GetName(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1383,6 +1443,8 @@ const std::string CJavascriptFunction::GetName(void) const
 
 void CJavascriptFunction::SetName(const std::string& name)
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
   
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1392,6 +1454,8 @@ void CJavascriptFunction::SetName(const std::string& name)
 
 int CJavascriptFunction::GetLineNumber(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1400,6 +1464,8 @@ int CJavascriptFunction::GetLineNumber(void) const
 }
 int CJavascriptFunction::GetColumnNumber(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1408,6 +1474,8 @@ int CJavascriptFunction::GetColumnNumber(void) const
 }
 const std::string CJavascriptFunction::GetResourceName(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1418,6 +1486,8 @@ const std::string CJavascriptFunction::GetResourceName(void) const
 }
 const std::string CJavascriptFunction::GetInferredName(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1428,6 +1498,8 @@ const std::string CJavascriptFunction::GetInferredName(void) const
 }
 int CJavascriptFunction::GetLineOffset(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
@@ -1436,11 +1508,19 @@ int CJavascriptFunction::GetLineOffset(void) const
 }
 int CJavascriptFunction::GetColumnOffset(void) const
 {
+  CHECK_V8_CONTEXT(); 
+
   v8::HandleScope handle_scope;
 
   v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(m_obj);  
 
   return func->GetScriptOrigin().ResourceColumnOffset()->Value();
+}
+py::object CJavascriptFunction::GetOwner(void) const 
+{ 
+  CHECK_V8_CONTEXT();  
+  
+  return CJavascriptObject::Wrap(m_self); 
 }
 
 #ifdef SUPPORT_TRACE_LIFECYCLE

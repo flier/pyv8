@@ -953,6 +953,8 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(hash(o1), hash(o))
             self.assert_(o != o1)
 
+        self.assertRaises(UnboundLocalError, o.clone)
+
     def testAutoConverter(self):
         with JSContext() as ctxt:
             ctxt.eval("""

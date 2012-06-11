@@ -94,7 +94,7 @@ public:
 
   py::list GetAttrList(void);
 
-  int GetIdentityHash(void) { return m_obj->GetIdentityHash(); }
+  int GetIdentityHash(void);
   CJavascriptObjectPtr Clone(void);
 
   bool Contains(const std::string& name);
@@ -194,7 +194,7 @@ public:
   int GetLineOffset(void) const;
   int GetColumnOffset(void) const;
 
-  py::object GetOwner(void) const { return CJavascriptObject::Wrap(m_self); }
+  py::object GetOwner(void) const;
 };
 
 #ifdef SUPPORT_TRACE_LIFECYCLE
