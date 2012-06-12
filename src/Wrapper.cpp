@@ -818,6 +818,12 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
     {
       throw CJavascriptException("Refer to a null object", ::PyExc_AttributeError);    
     }
+    
+  #ifdef SUPPORT_TRACE_LIFECYCLE
+    py::object *object = new py::object(obj);
+
+    ObjectTracer::Trace(jsobj.Object(), object);
+  #endif
 
     return handle_scope.Close(jsobj.Object());
   }
