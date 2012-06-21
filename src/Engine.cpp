@@ -518,12 +518,12 @@ void CScript::visit(py::object handler, LanguageMode mode) const
     v8i::Handle<v8i::SharedFunctionInfo>(v8i::JSFunction::cast(*obj)->shared());
   v8i::Handle<v8i::Script> script(v8i::Script::cast(func->script()));
 
-  v8i::CompilationInfo info(script);
+  v8i::CompilationInfoWithZone info(script);
 
   info.MarkAsGlobal();
 
   v8i::Isolate *isolate = info.isolate();
-  v8i::ZoneScope zone_scope(isolate, v8i::DELETE_ON_EXIT);
+  v8i::ZoneScope zone_scope(info.zone(), v8i::DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone(isolate);  
 
   script->set_context_data((*isolate->global_context())->data());

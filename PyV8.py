@@ -1186,7 +1186,7 @@ class TestWrapper(unittest.TestCase):
                     self.assertEqual(35, e.endCol)
                     self.assertEqual('throw Error("hello world");', e.sourceLine.strip())
                     self.assertEqual('Error: hello world\n' +
-                                     '    at Error (unknown source)\n' +
+                                     '    at Error (<anonymous>)\n' +
                                      '    at hello (test:14:35)\n' +
                                      '    at test:17:25', e.stackTrace)
 
