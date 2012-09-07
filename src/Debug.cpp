@@ -26,7 +26,7 @@ void CDebug::Init(void)
   
   debug->Load();
 
-  v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global());
+  v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global_object());
   m_debug_context->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
   
   // Set the security token of the debug context to allow access.

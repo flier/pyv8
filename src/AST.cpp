@@ -32,15 +32,24 @@ void CAstNode::Expose(void)
     .value("temporary", v8i::TEMPORARY)
     ;
 
+  py::enum_<v8i::Variable::Location>("AstVariableLocation")
+    .value("UNALLOCATED", v8i::Variable::UNALLOCATED)
+    .value("PARAMETER", v8i::Variable::PARAMETER)
+    .value("LOCAL", v8i::Variable::LOCAL)
+    .value("CONTEXT", v8i::Variable::CONTEXT)
+    .value("LOOKUP", v8i::Variable::LOOKUP)
+    ;
+
   py::class_<CAstVariable>("AstVariable", py::no_init)
     .add_property("scope", &CAstVariable::scope)
     .add_property("name", &CAstVariable::name)
     .add_property("mode", &CAstVariable::mode)
     .add_property("isValidLeftHandSide", &CAstVariable::IsValidLeftHandSide)
-    .add_property("isGlobal", &CAstVariable::is_global)
     .add_property("isThis", &CAstVariable::is_this)
     .add_property("isArguments", &CAstVariable::is_arguments)
     .add_property("isPossiblyEval", &CAstVariable::is_possibly_eval)
+    .add_property("location", &CAstVariable::location)
+    .add_property("index", &CAstVariable::index)
     ;
 
   py::class_<CAstLabel>("AstLabel", py::no_init)

@@ -128,10 +128,11 @@ public:
   py::object name(void) const { return to_python(m_var->name()); }
   v8i::VariableMode mode(void) const { return m_var->mode(); }
 
-  bool is_global(void) const { return m_var->is_global(); }
   bool is_this(void) const { return m_var->is_this(); }
   bool is_arguments(void) const { return m_var->is_arguments(); }
   bool is_possibly_eval(void) const { return m_var->is_possibly_eval(); }
+  v8i::Variable::Location location(void) const { return m_var->location(); }
+  int index(void) const { return m_var->index(); }
 };
 
 class CAstLabel
