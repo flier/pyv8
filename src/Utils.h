@@ -18,8 +18,10 @@
 #pragma warning( disable : 4800 ) // 'type' : forcing value to bool 'true' or 'false' (performance warning)
 #pragma warning( disable : 4996 ) // 'function': was declared deprecated
 
-#ifndef _USE_32BIT_TIME_T
-# define _USE_32BIT_TIME_T
+#ifndef _WIN64
+# ifndef _USE_32BIT_TIME_T
+#  define _USE_32BIT_TIME_T
+# endif
 #endif
 
 #else

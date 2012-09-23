@@ -166,6 +166,9 @@ is_mac = os.name == "mac"
 is_osx = os.name == "posix" and sys.platform == "darwin"
 
 if is_winnt:
+    import platform
+    is_64bit = platform.architecture()[0] == "64bit"
+
     include_dirs += [
         BOOST_HOME,
         os.path.join(PYTHON_HOME, 'include'),
@@ -177,14 +180,16 @@ if is_winnt:
     ]
 
     macros += [
-        ("V8_TARGET_ARCH_IA32", None),
+        ("V8_TARGET_ARCH_X64" if is_64bit else "V8_TARGET_ARCH_IA32", None),
         ("WIN32", None),
-        ("_USE_32BIT_TIME_T", None),
     ]
+
+    if not is_64bit:
+        macros.append(("_USE_32BIT_TIME_T", None),)
 
     libraries += ["winmm", "ws2_32"]
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
-    extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X86"]
+    extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
 
 elif is_linux or is_freebsd:
     library_dirs += [
