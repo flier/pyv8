@@ -5,6 +5,18 @@ from __future__ import with_statement
 import sys, os, os.path, math, platform
 import subprocess
 
+is_winnt = os.name == "nt"
+is_linux = os.name == "posix" and sys.platform.startswith("linux")
+is_freebsd = os.name == "posix" and sys.platform.startswith("freebsd")
+is_mac = os.name == "mac"
+is_osx = os.name == "posix" and sys.platform == "darwin"
+is_cygwin = os.name == "posix" and sys.platform == "cygwin"
+is_mingw = is_winnt and os.environ.get('MSYSTEM').startswith('MINGW')
+
+if is_cygwin or is_mingw:
+    print "ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later."
+    sys.exit(-1)
+
 import ez_setup
 ez_setup.use_setuptools()
 
@@ -159,12 +171,6 @@ between the Python and JavaScript objects, and support to hosting
 Google's v8 engine in a python script.
 """
 
-is_winnt = os.name == "nt"
-is_linux = os.name == "posix" and sys.platform.startswith("linux")
-is_freebsd = os.name == "posix" and sys.platform.startswith("freebsd")
-is_mac = os.name == "mac"
-is_osx = os.name == "posix" and sys.platform == "darwin"
-
 if is_winnt:
     import platform
     is_64bit = platform.architecture()[0] == "64bit"
@@ -188,9 +194,9 @@ if is_winnt:
         macros.append(("_USE_32BIT_TIME_T", None),)
 
     libraries += ["winmm", "ws2_32"]
+
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
-
 elif is_linux or is_freebsd:
     library_dirs += [
         V8_HOME,
