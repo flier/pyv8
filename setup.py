@@ -11,7 +11,7 @@ is_freebsd = os.name == "posix" and sys.platform.startswith("freebsd")
 is_mac = os.name == "mac"
 is_osx = os.name == "posix" and sys.platform == "darwin"
 is_cygwin = os.name == "posix" and sys.platform == "cygwin"
-is_mingw = is_winnt and os.environ.get('MSYSTEM').startswith('MINGW')
+is_mingw = is_winnt and os.environ.get('MSYSTEM', '').startswith('MINGW')
 
 if is_cygwin or is_mingw:
     print "ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later."
@@ -182,6 +182,7 @@ if is_winnt:
     library_dirs += [
         V8_HOME,
         os.path.join(BOOST_HOME, 'stage/lib'),
+        os.path.join(BOOST_HOME, 'lib'),
         os.path.join(PYTHON_HOME, 'libs'),
     ]
 
@@ -379,6 +380,7 @@ class build(_build):
             'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
             'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
             'fasttls': 'on' if V8_FAST_TLS else 'off',
+            'env': '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"',
         }
 
         print "INFO: building Google v8 with SCons for %s platform" % options['arch']
