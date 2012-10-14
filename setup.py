@@ -380,8 +380,10 @@ class build(_build):
             'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
             'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
             'fasttls': 'on' if V8_FAST_TLS else 'off',
-            'env': '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"',
         }
+
+        if is_winnt:
+            options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
 
         print "INFO: building Google v8 with SCons for %s platform" % options['arch']
 
