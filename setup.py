@@ -278,6 +278,11 @@ elif is_osx: # contribute by progrium and alec
 else:
     print "ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform)
 
+arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
+mode = 'debug' if DEBUG else 'release'
+
+library_dirs += ["%s/out/%s.%s/" % (V8_HOME, arch, mode), "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)]
+
 class build(_build):
     def checkout_v8(self):
         update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
@@ -379,11 +384,6 @@ class build(_build):
             with open(gypi, 'w') as f:
                 f.write(fixed_build_script)
 
-        arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
-        mode = 'debug' if DEBUG else 'release'
-
-        library_dirs.append("%s/out/%s.%s/" % (V8_HOME, arch, mode))
-
         options = {
             'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
             'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
@@ -395,6 +395,8 @@ class build(_build):
             'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
             'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
             'werror': 'on',
+            'visibility': 'on',
+            'component': 'shared_library',
         }
 
         if is_winnt:
