@@ -1,0 +1,412 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5727C734162B0EF500D1F488 /* AST.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C718162B0EF500D1F488 /* AST.cpp */; };
+		5727C735162B0EF500D1F488 /* AST.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C719162B0EF500D1F488 /* AST.h */; };
+		5727C736162B0EF500D1F488 /* Config.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71A162B0EF500D1F488 /* Config.h */; };
+		5727C737162B0EF500D1F488 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71B162B0EF500D1F488 /* Context.cpp */; };
+		5727C738162B0EF500D1F488 /* Context.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71C162B0EF500D1F488 /* Context.h */; };
+		5727C739162B0EF500D1F488 /* Debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71D162B0EF500D1F488 /* Debug.cpp */; };
+		5727C73A162B0EF500D1F488 /* Debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71E162B0EF500D1F488 /* Debug.h */; };
+		5727C73B162B0EF500D1F488 /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71F162B0EF500D1F488 /* Engine.cpp */; };
+		5727C73C162B0EF500D1F488 /* Engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C720162B0EF500D1F488 /* Engine.h */; };
+		5727C73D162B0EF500D1F488 /* Exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C721162B0EF500D1F488 /* Exception.cpp */; };
+		5727C73E162B0EF500D1F488 /* Exception.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C722162B0EF500D1F488 /* Exception.h */; };
+		5727C73F162B0EF500D1F488 /* Locker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C723162B0EF500D1F488 /* Locker.cpp */; };
+		5727C740162B0EF500D1F488 /* Locker.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C724162B0EF500D1F488 /* Locker.h */; };
+		5727C741162B0EF500D1F488 /* PrettyPrinter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */; };
+		5727C742162B0EF500D1F488 /* PrettyPrinter.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C726162B0EF500D1F488 /* PrettyPrinter.h */; };
+		5727C743162B0EF500D1F488 /* PyV8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C727162B0EF500D1F488 /* PyV8.cpp */; };
+		5727C744162B0EF500D1F488 /* checked.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72B162B0EF500D1F488 /* checked.h */; };
+		5727C745162B0EF500D1F488 /* core.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72C162B0EF500D1F488 /* core.h */; };
+		5727C746162B0EF500D1F488 /* unchecked.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72D162B0EF500D1F488 /* unchecked.h */; };
+		5727C747162B0EF500D1F488 /* utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72E162B0EF500D1F488 /* utf8.h */; };
+		5727C748162B0EF500D1F488 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C72F162B0EF500D1F488 /* Utils.cpp */; };
+		5727C749162B0EF500D1F488 /* Utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C730162B0EF500D1F488 /* Utils.h */; };
+		5727C74A162B0EF500D1F488 /* V8Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C731162B0EF500D1F488 /* V8Internal.h */; };
+		5727C74B162B0EF500D1F488 /* Wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C732162B0EF500D1F488 /* Wrapper.cpp */; };
+		5727C74C162B0EF500D1F488 /* Wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C733162B0EF500D1F488 /* Wrapper.h */; };
+		5727C750162B179000D1F488 /* libboost_python-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5727C74F162B179000D1F488 /* libboost_python-mt.a */; };
+		5727C752162B17CB00D1F488 /* Python in Frameworks */ = {isa = PBXBuildFile; fileRef = 5727C751162B17CB00D1F488 /* Python */; };
+		57DAC0681664650500E6DDE9 /* libv8_base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DAC0651664650500E6DDE9 /* libv8_base.a */; };
+		57DAC0691664650500E6DDE9 /* libv8_snapshot.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DAC0661664650500E6DDE9 /* libv8_snapshot.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5727C703162B0E8200D1F488 /* pyv8.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = pyv8.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		5727C718162B0EF500D1F488 /* AST.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AST.cpp; sourceTree = "<group>"; };
+		5727C719162B0EF500D1F488 /* AST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AST.h; sourceTree = "<group>"; };
+		5727C71A162B0EF500D1F488 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
+		5727C71B162B0EF500D1F488 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Context.cpp; sourceTree = "<group>"; };
+		5727C71C162B0EF500D1F488 /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
+		5727C71D162B0EF500D1F488 /* Debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Debug.cpp; sourceTree = "<group>"; };
+		5727C71E162B0EF500D1F488 /* Debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Debug.h; sourceTree = "<group>"; };
+		5727C71F162B0EF500D1F488 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Engine.cpp; sourceTree = "<group>"; };
+		5727C720162B0EF500D1F488 /* Engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
+		5727C721162B0EF500D1F488 /* Exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Exception.cpp; sourceTree = "<group>"; };
+		5727C722162B0EF500D1F488 /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Exception.h; sourceTree = "<group>"; };
+		5727C723162B0EF500D1F488 /* Locker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Locker.cpp; sourceTree = "<group>"; };
+		5727C724162B0EF500D1F488 /* Locker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Locker.h; sourceTree = "<group>"; };
+		5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrettyPrinter.cpp; sourceTree = "<group>"; };
+		5727C726162B0EF500D1F488 /* PrettyPrinter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PrettyPrinter.h; sourceTree = "<group>"; };
+		5727C727162B0EF500D1F488 /* PyV8.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PyV8.cpp; sourceTree = "<group>"; };
+		5727C728162B0EF500D1F488 /* PyV8.vcproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PyV8.vcproj; sourceTree = "<group>"; };
+		5727C729162B0EF500D1F488 /* PyV8.vs2010.vcxproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PyV8.vs2010.vcxproj; sourceTree = "<group>"; };
+		5727C72B162B0EF500D1F488 /* checked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = checked.h; sourceTree = "<group>"; };
+		5727C72C162B0EF500D1F488 /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
+		5727C72D162B0EF500D1F488 /* unchecked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unchecked.h; sourceTree = "<group>"; };
+		5727C72E162B0EF500D1F488 /* utf8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf8.h; sourceTree = "<group>"; };
+		5727C72F162B0EF500D1F488 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
+		5727C730162B0EF500D1F488 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
+		5727C731162B0EF500D1F488 /* V8Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = V8Internal.h; sourceTree = "<group>"; };
+		5727C732162B0EF500D1F488 /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Wrapper.cpp; sourceTree = "<group>"; };
+		5727C733162B0EF500D1F488 /* Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Wrapper.h; sourceTree = "<group>"; };
+		5727C74D162B175800D1F488 /* Python.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python.framework; path = System/Library/Frameworks/Python.framework; sourceTree = SDKROOT; };
+		5727C74F162B179000D1F488 /* libboost_python-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_python-mt.a"; path = "/opt/local/lib/libboost_python-mt.a"; sourceTree = "<absolute>"; };
+		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python; sourceTree = "<absolute>"; };
+		5766CB84162BB31E00037C7C /* libv8.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8.a; path = ../../Development/v8/libv8.a; sourceTree = "<group>"; };
+		5766CB86162BB32D00037C7C /* libv8preparser.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8preparser.a; path = ../../Development/v8/libv8preparser.a; sourceTree = "<group>"; };
+		57DAC0651664650500E6DDE9 /* libv8_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.a; path = ../../Development/v8/out/x64.release/libv8_base.a; sourceTree = "<group>"; };
+		57DAC0661664650500E6DDE9 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5727C700162B0E8200D1F488 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57DAC0681664650500E6DDE9 /* libv8_base.a in Frameworks */,
+				57DAC0691664650500E6DDE9 /* libv8_snapshot.a in Frameworks */,
+				5727C752162B17CB00D1F488 /* Python in Frameworks */,
+				5727C750162B179000D1F488 /* libboost_python-mt.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5727C6F8162B0E8200D1F488 = {
+			isa = PBXGroup;
+			children = (
+				5766CB88162BB45100037C7C /* Libraries */,
+				5766CB89162BB45C00037C7C /* Frameworks */,
+				5727C717162B0EF500D1F488 /* src */,
+				5727C704162B0E8200D1F488 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5727C704162B0E8200D1F488 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5727C703162B0E8200D1F488 /* pyv8.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5727C717162B0EF500D1F488 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				5727C718162B0EF500D1F488 /* AST.cpp */,
+				5727C719162B0EF500D1F488 /* AST.h */,
+				5727C71A162B0EF500D1F488 /* Config.h */,
+				5727C71B162B0EF500D1F488 /* Context.cpp */,
+				5727C71C162B0EF500D1F488 /* Context.h */,
+				5727C71D162B0EF500D1F488 /* Debug.cpp */,
+				5727C71E162B0EF500D1F488 /* Debug.h */,
+				5727C71F162B0EF500D1F488 /* Engine.cpp */,
+				5727C720162B0EF500D1F488 /* Engine.h */,
+				5727C721162B0EF500D1F488 /* Exception.cpp */,
+				5727C722162B0EF500D1F488 /* Exception.h */,
+				5727C723162B0EF500D1F488 /* Locker.cpp */,
+				5727C724162B0EF500D1F488 /* Locker.h */,
+				5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */,
+				5727C726162B0EF500D1F488 /* PrettyPrinter.h */,
+				5727C727162B0EF500D1F488 /* PyV8.cpp */,
+				5727C728162B0EF500D1F488 /* PyV8.vcproj */,
+				5727C729162B0EF500D1F488 /* PyV8.vs2010.vcxproj */,
+				5727C72A162B0EF500D1F488 /* utf8 */,
+				5727C72E162B0EF500D1F488 /* utf8.h */,
+				5727C72F162B0EF500D1F488 /* Utils.cpp */,
+				5727C730162B0EF500D1F488 /* Utils.h */,
+				5727C731162B0EF500D1F488 /* V8Internal.h */,
+				5727C732162B0EF500D1F488 /* Wrapper.cpp */,
+				5727C733162B0EF500D1F488 /* Wrapper.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		5727C72A162B0EF500D1F488 /* utf8 */ = {
+			isa = PBXGroup;
+			children = (
+				5727C72B162B0EF500D1F488 /* checked.h */,
+				5727C72C162B0EF500D1F488 /* core.h */,
+				5727C72D162B0EF500D1F488 /* unchecked.h */,
+			);
+			path = utf8;
+			sourceTree = "<group>";
+		};
+		5766CB88162BB45100037C7C /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				5766CB86162BB32D00037C7C /* libv8preparser.a */,
+				5766CB84162BB31E00037C7C /* libv8.a */,
+				5727C751162B17CB00D1F488 /* Python */,
+				5727C74F162B179000D1F488 /* libboost_python-mt.a */,
+			);
+			name = Libraries;
+			sourceTree = "<group>";
+		};
+		5766CB89162BB45C00037C7C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				57DAC0651664650500E6DDE9 /* libv8_base.a */,
+				57DAC0661664650500E6DDE9 /* libv8_snapshot.a */,
+				5727C74D162B175800D1F488 /* Python.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		5727C701162B0E8200D1F488 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5727C735162B0EF500D1F488 /* AST.h in Headers */,
+				5727C736162B0EF500D1F488 /* Config.h in Headers */,
+				5727C738162B0EF500D1F488 /* Context.h in Headers */,
+				5727C73A162B0EF500D1F488 /* Debug.h in Headers */,
+				5727C73C162B0EF500D1F488 /* Engine.h in Headers */,
+				5727C73E162B0EF500D1F488 /* Exception.h in Headers */,
+				5727C740162B0EF500D1F488 /* Locker.h in Headers */,
+				5727C742162B0EF500D1F488 /* PrettyPrinter.h in Headers */,
+				5727C744162B0EF500D1F488 /* checked.h in Headers */,
+				5727C745162B0EF500D1F488 /* core.h in Headers */,
+				5727C746162B0EF500D1F488 /* unchecked.h in Headers */,
+				5727C747162B0EF500D1F488 /* utf8.h in Headers */,
+				5727C749162B0EF500D1F488 /* Utils.h in Headers */,
+				5727C74A162B0EF500D1F488 /* V8Internal.h in Headers */,
+				5727C74C162B0EF500D1F488 /* Wrapper.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		5727C702162B0E8200D1F488 /* pyv8 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5727C710162B0E8200D1F488 /* Build configuration list for PBXNativeTarget "pyv8" */;
+			buildPhases = (
+				5727C6FF162B0E8200D1F488 /* Sources */,
+				5727C700162B0E8200D1F488 /* Frameworks */,
+				5727C701162B0E8200D1F488 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = pyv8;
+			productName = pyv8;
+			productReference = 5727C703162B0E8200D1F488 /* pyv8.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5727C6FA162B0E8200D1F488 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0450;
+				ORGANIZATIONNAME = "Flier Lu";
+			};
+			buildConfigurationList = 5727C6FD162B0E8200D1F488 /* Build configuration list for PBXProject "pyv8" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 5727C6F8162B0E8200D1F488;
+			productRefGroup = 5727C704162B0E8200D1F488 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5727C702162B0E8200D1F488 /* pyv8 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5727C6FF162B0E8200D1F488 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5727C734162B0EF500D1F488 /* AST.cpp in Sources */,
+				5727C737162B0EF500D1F488 /* Context.cpp in Sources */,
+				5727C739162B0EF500D1F488 /* Debug.cpp in Sources */,
+				5727C73B162B0EF500D1F488 /* Engine.cpp in Sources */,
+				5727C73D162B0EF500D1F488 /* Exception.cpp in Sources */,
+				5727C73F162B0EF500D1F488 /* Locker.cpp in Sources */,
+				5727C741162B0EF500D1F488 /* PrettyPrinter.cpp in Sources */,
+				5727C743162B0EF500D1F488 /* PyV8.cpp in Sources */,
+				5727C748162B0EF500D1F488 /* Utils.cpp in Sources */,
+				5727C74B162B0EF500D1F488 /* Wrapper.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5727C70E162B0E8200D1F488 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_LINK_OBJC_RUNTIME = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					V8_TARGET_ARCH_X64,
+					V8_FAST_TLS,
+					V8_NATIVE_REGEXP,
+					ENABLE_VMSTATE_TRACKING,
+					ENABLE_LOGGING_AND_PROFILING,
+					ENABLE_DEBUGGER_SUPPORT,
+					BOOST_PYTHON_STATIC_LIB,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = "";
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Development/v8/**",
+					/opt/local/include,
+					/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "";
+				SDKROOT = macosx;
+				VALID_ARCHS = x86_64;
+			};
+			name = Debug;
+		};
+		5727C70F162B0E8200D1F488 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_LINK_OBJC_RUNTIME = NO;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					V8_TARGET_ARCH_X64,
+					V8_FAST_TLS,
+					V8_NATIVE_REGEXP,
+					ENABLE_VMSTATE_TRACKING,
+					ENABLE_LOGGING_AND_PROFILING,
+					ENABLE_DEBUGGER_SUPPORT,
+					BOOST_PYTHON_STATIC_LIB,
+				);
+				GCC_VERSION = "";
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Development/v8/**",
+					/opt/local/include,
+					/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.4;
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "";
+				SDKROOT = macosx;
+				VALID_ARCHS = x86_64;
+			};
+			name = Release;
+		};
+		5727C711162B0E8200D1F488 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+					/opt/local/Library/Frameworks/Python.framework/Versions/2.7,
+					"\"$(SRCROOT)/../../Development/v8\"",
+					"\"$(SRCROOT)/../../Development/v8/out/x64.release\"",
+					"\"$(SRCROOT)/../../Development/v8/out/x64.debug\"",
+				);
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		5727C712162B0E8200D1F488 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/local/lib,
+					/opt/local/Library/Frameworks/Python.framework/Versions/2.7,
+					"\"$(SRCROOT)/../../Development/v8\"",
+					"\"$(SRCROOT)/../../Development/v8/out/x64.release\"",
+					"\"$(SRCROOT)/../../Development/v8/out/x64.debug\"",
+				);
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5727C6FD162B0E8200D1F488 /* Build configuration list for PBXProject "pyv8" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5727C70E162B0E8200D1F488 /* Debug */,
+				5727C70F162B0E8200D1F488 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5727C710162B0E8200D1F488 /* Build configuration list for PBXNativeTarget "pyv8" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5727C711162B0E8200D1F488 /* Debug */,
+				5727C712162B0E8200D1F488 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5727C6FA162B0E8200D1F488 /* Project object */;
+}
