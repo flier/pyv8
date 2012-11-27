@@ -12,6 +12,8 @@ is_mac = os.name == "mac"
 is_osx = os.name == "posix" and sys.platform == "darwin"
 is_cygwin = os.name == "posix" and sys.platform == "cygwin"
 is_mingw = is_winnt and os.environ.get('MSYSTEM', '').startswith('MINGW')
+is_64bit = False
+is_arm = False
 
 if is_cygwin or is_mingw:
     print "ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later."
@@ -42,6 +44,9 @@ V8_SNAPSHOT_ENABLED = True      # build using snapshots for faster start-up
 V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
 V8_VMSTATE_TRACKING = DEBUG     # enable VM state tracking
 V8_OBJECT_PRINT = DEBUG         # enable object printing
+V8_EXTRA_CHECKS = DEBUG         # enable extra checks
+V8_VERIFY_HEAP = DEBUG          # enable verify heap
+V8_GDB_JIT = DEBUG              # enable GDB jit
 V8_PROTECT_HEAP = DEBUG         # enable heap protection
 V8_DISASSEMBLEER = DEBUG        # enable the disassembler to inspect generated code
 V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
@@ -144,7 +149,7 @@ if INCLUDE:
 if LIB:
     library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
 
-v8_lib = 'v8_g' if DEBUG else 'v8' # contribute by gaussgss
+v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
 boost_lib = 'boost_python-mt' if BOOST_PYTHON_MT else 'boost_python'
 
 classifiers = [
@@ -216,7 +221,7 @@ elif is_linux or is_freebsd:
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-    libraries += [v8_lib, "rt"]
+    libraries += v8_libs + ["rt"]
     extra_compile_args += ["-Wno-write-strings"]
 
     if BOOST_STATIC_LINK:
@@ -229,9 +234,11 @@ elif is_linux or is_freebsd:
 
     if hasattr(os, 'uname'):
         if os.uname()[-1] in ('x86_64', 'amd64'):
+            is_64bit = True
             extra_link_args += ["-fPIC"]
             macros += [("V8_TARGET_ARCH_X64", None)]
         elif os.uname()[-1].startswith('arm'):
+            is_arm = True
             macros += [("V8_TARGET_ARCH_ARM", None)]
     else:
         macros += [("V8_TARGET_ARCH_IA32", None)]
@@ -241,7 +248,7 @@ elif is_mac: # contribute by Artur Ventura
         BOOST_HOME,
     ]
     library_dirs += [os.path.join('/lib')]
-    libraries += [boost_lib, v8_lib, "c"]
+    libraries += v8_libs + [boost_lib, "c"]
 
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
@@ -256,7 +263,7 @@ elif is_osx: # contribute by progrium and alec
         V8_HOME,
     ]
 
-    libraries += ["boost_python-mt", v8_lib]
+    libraries += v8_libs + ["boost_python-mt"]
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
 
@@ -316,82 +323,93 @@ class build(_build):
             print "ERROR: fail to invoke 'svn' command, please install it first: %s" % e
             sys.exit(-1)
 
-    def check_scons(self):
-        # We'll have to compile using `scons': do we have scons installed?
+    def prepare_gyp(self):
+        print "INFO: Installing or updating GYP..."
+
         try:
-            p = subprocess.Popen('scons --version', shell=True,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if is_winnt:
+                p = subprocess.Popen('svn co http://gyp.googlecode.com/svn/trunk build/gyp', shell=True, cwd=V8_HOME,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            else:
+                p = subprocess.Popen('make dependencies', shell=True, cwd=V8_HOME,
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
             out, err = p.communicate()
 
-            if out and 'Knight' in out:
-                print "INFO: scons is installed; we can at least attempt to build v8"
-            else:
-                print "ERROR: scons doesn't appear to be installed or work correctly: %s" % err
+            if p.returncode != 0:
+                print "ERROR: fail to install GYP: ", p.returncode
+                print "DEBUG:", err
                 sys.exit(-1)
+            else:
+                print "DEBUG:", out
         except Exception, e:
-            print "ERROR: scons doesn't appear to be installed: %s" % e
-            print "       You must have the 'scons' package installed to build v8"
-            print "       (called 'scons' on debian/ubuntu/fedora/RHEL)"
+            print "ERROR: fail to install GYP:", e
+            print "       http://code.google.com/p/v8/wiki/BuildingWithGYP"
+            print
             sys.exit(-1)
 
     def build_v8(self):
+        print "INFO: Patching the GYP scripts"
+
         # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
-        scons = os.path.join(V8_HOME, "SConstruct")
+        gypi = os.path.join(V8_HOME, "build/standalone.gypi")
 
         # Check if we need to patch by searching for rtti flag in the data 
-        with open(scons, 'r') as f:
+        with open(gypi, 'r') as f:
             build_script = f.read()
 
-        is_x64 = [k for k, v in macros if k == 'V8_TARGET_ARCH_X64']
-        is_arm = [k for k, v in macros if k == 'V8_TARGET_ARCH_ARM']
-        
         fixed_build_script = build_script.replace('-fno-rtti', '') \
                                          .replace('-fno-exceptions', '') \
                                          .replace('-Werror', '') \
-                                         .replace('/WX', '').replace('/GR-', '')
-
-        if is_x64 and os.name != 'nt':
-            fixed_build_script = fixed_build_script.replace("['$DIALECTFLAGS', '$WARNINGFLAGS']", "['$DIALECTFLAGS', '$WARNINGFLAGS', '-fPIC']")
+                                         .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
+                                         .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
+                                         .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
+                                         .replace("'GCC_ENABLE_CPP_RTTI': 'NO'", "'GCC_ENABLE_CPP_RTTI': 'YES'")
 
         if build_script == fixed_build_script:
-            print "INFO: skip to patch the Google v8 SConstruct file "
+            print "INFO: skip to patch the Google v8 build/standalone.gypi file "
         else:
-            print "INFO: patch the Google v8 SConstruct file to enable RTTI and C++ Exceptions"
+            print "INFO: patch the Google v8 build/standalone.gypi file to enable RTTI and C++ Exceptions"
 
-            if os.path.exists(scons + '.bak'):
-                os.remove(scons + '.bak')
+            if os.path.exists(gypi + '.bak'):
+                os.remove(gypi + '.bak')
 
-            os.rename(scons, scons + '.bak')
+            os.rename(gypi, gypi + '.bak')
 
-            with open(scons, 'w') as f:
+            with open(gypi, 'w') as f:
                 f.write(fixed_build_script)
 
+        arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
+        mode = 'debug' if DEBUG else 'release'
+
+        library_dirs.append("%s/out/%s.%s/" % (V8_HOME, arch, mode))
+
         options = {
-            'mode': 'debug' if DEBUG else 'release',
-            'arch': 'x64' if is_x64 else 'arm' if is_arm else 'ia32',
-            'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
-            'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
-            'vmstate': 'on' if V8_VMSTATE_TRACKING else 'off',
-            'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
-            'protectheap': 'on' if V8_PROTECT_HEAP else 'off',
-            'profilingsupport': 'on' if V8_PROFILING_SUPPORT else 'off',
-            'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
-            'inspector': 'on' if V8_INSPECTOR_SUPPORT else 'off',
-            'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
             'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
-            'fasttls': 'on' if V8_FAST_TLS else 'off',
+            'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
+            'verifyheap': 'on' if V8_VERIFY_HEAP else 'off',
+            'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
+            'extrachecks': 'on' if V8_EXTRA_CHECKS else 'off',
+            'gdbjit': 'on' if V8_GDB_JIT else 'off',
+            'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
+            'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
+            'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
+            'werror': 'on',
         }
 
         if is_winnt:
             options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
 
-        print "INFO: building Google v8 with SCons for %s platform" % options['arch']
+        print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
 
-        cmdline = "scons %s" % ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+        options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+
+        cmdline = "make %s %s.%s" % (options, arch, mode)
 
         print "DEBUG: building", cmdline
 
-        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True, env={ 'GYP_DEFINES': options },
+                                stdout=sys.stdout, stderr=sys.stderr)
 
         proc.communicate()
 
@@ -401,7 +419,7 @@ class build(_build):
     def run(self):
         try:
             self.checkout_v8()
-            self.check_scons()
+            self.prepare_gyp()
             self.build_v8()
         except Exception, e:
             print "ERROR: fail to checkout and build v8, %s" % e
