@@ -57,12 +57,6 @@ namespace py = boost::python;
 #ifdef _WIN32
 
 #ifdef DEBUG
-  #pragma comment( lib, "v8_g.lib" )
-#else
-  #pragma comment( lib, "v8.lib" )
-#endif
-
-#ifdef DEBUG
 # pragma warning( pop )
 #endif
 
