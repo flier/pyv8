@@ -524,9 +524,10 @@ void CScript::visit(py::object handler, LanguageMode mode) const
 
   v8i::Isolate *isolate = info.isolate();
   v8i::ZoneScope zone_scope(info.zone(), v8i::DELETE_ON_EXIT);
-  v8i::PostponeInterruptsScope postpone(isolate);  
+  v8i::PostponeInterruptsScope postpone(isolate);
+  v8i::FixedArray* array = isolate->native_context()->embedder_data();
 
-  script->set_context_data((*isolate->global_context())->data());
+  script->set_context_data(array->get(0));
   
   if (v8i::ParserApi::Parse(&info, mode))
   {

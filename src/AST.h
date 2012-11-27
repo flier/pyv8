@@ -130,7 +130,7 @@ public:
 
   bool is_this(void) const { return m_var->is_this(); }
   bool is_arguments(void) const { return m_var->is_arguments(); }
-  bool is_possibly_eval(void) const { return m_var->is_possibly_eval(); }
+  bool is_possibly_eval(void) const;
   v8i::Variable::Location location(void) const { return m_var->location(); }
   int index(void) const { return m_var->index(); }
 };
@@ -294,6 +294,16 @@ class CAstExportDeclaration : public CAstDeclaration
 {
 public:
 	CAstExportDeclaration(v8i::ExportDeclaration *decl) : CAstDeclaration(decl) {}
+};
+
+class CAstModuleStatement : public CAstStatement
+{
+public:
+    CAstModuleStatement(v8i::ModuleStatement *stat) : CAstStatement(stat) {}
+
+    py::object GetProxy(void) const { return to_python(as<v8i::ModuleStatement>()->proxy()); }
+    
+    py::object GetBody(void) const { return to_python(as<v8i::ModuleStatement>()->body()); }
 };
 
 class CAstIterationStatement : public CAstBreakableStatement

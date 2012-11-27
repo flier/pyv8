@@ -1,5 +1,12 @@
 #include "AST.h"
 
+#include "V8Internal.h"
+
+bool CAstVariable::is_possibly_eval(void) const
+{
+    return m_var->is_possibly_eval(v8i::Isolate::Current());
+}
+
 void CAstNode::Expose(void)
 {
   py::class_<CAstScope>("AstScope", py::no_init)

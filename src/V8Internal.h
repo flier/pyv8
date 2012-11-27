@@ -9,6 +9,8 @@
 #include "src/platform.h"
 #include "src/scopes.h"
 
+#include "src/debug.h"
+
 #include "src/serialize.h"
 #include "src/stub-cache.h"
 #include "src/heap.h"
@@ -18,6 +20,5 @@
 #include "src/scanner.h"
 
 #include "src/api.h"
-#include "src/debug.h"
 
 namespace v8i = v8::internal;

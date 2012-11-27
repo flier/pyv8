@@ -116,6 +116,12 @@ void PrettyPrinter::VisitModuleUrl(ModuleUrl* node) {
   PrintLiteral(node->url(), true);
 }
 
+void PrettyPrinter::VisitModuleStatement(ModuleStatement* node) {
+  Print("module ");
+  PrintLiteral(node->proxy()->name(), false);
+  Print(" ");
+  Visit(node->body());
+}
 
 void PrettyPrinter::VisitExpressionStatement(ExpressionStatement* node) {
   Visit(node->expression());
@@ -815,7 +821,12 @@ void AstPrinter::VisitModulePath(ModulePath* node) {
 void AstPrinter::VisitModuleUrl(ModuleUrl* node) {
   PrintLiteralIndented("URL", node->url(), true);
 }
-
+      
+void AstPrinter::VisitModuleStatement(ModuleStatement* node) {
+  IndentedScope indent(this, "MODULE");
+  PrintLiteralIndented("NAME", node->proxy()->name(), true);
+  PrintStatements(node->body()->statements());
+}
 
 void AstPrinter::VisitExpressionStatement(ExpressionStatement* node) {
   Visit(node->expression());
@@ -1206,6 +1217,13 @@ void JsonAstBuilder::AddAttribute(const char* name, bool value) {
 void JsonAstBuilder::VisitBlock(Block* stmt) {
   TagScope tag(this, "Block");
   VisitStatements(stmt->statements());
+}
+      
+void JsonAstBuilder::VisitModuleStatement(ModuleStatement* node) {
+  TagScope tag(this, "ModuleStatement");
+  SmartArrayPointer<char> name = node->proxy()->name()->ToCString();
+  AddAttributePrefix(*name);
+  Visit(node->body());
 }
 
 
