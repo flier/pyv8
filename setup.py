@@ -408,7 +408,7 @@ class build(_build):
 
         print "DEBUG: building", cmdline
 
-        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True, env={ 'GYP_DEFINES': options },
+        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True,
                                 stdout=sys.stdout, stderr=sys.stderr)
 
         proc.communicate()
