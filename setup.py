@@ -185,7 +185,6 @@ if is_winnt:
         os.path.join(PYTHON_HOME, 'include'),
     ]
     library_dirs += [
-        V8_HOME,
         os.path.join(BOOST_HOME, 'stage/lib'),
         os.path.join(BOOST_HOME, 'lib'),
         os.path.join(PYTHON_HOME, 'libs'),
@@ -204,9 +203,6 @@ if is_winnt:
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
 elif is_linux or is_freebsd:
-    library_dirs += [
-        V8_HOME,
-    ]
     if BOOST_HOME:
         boost_lib_dir = os.path.join(BOOST_HOME, 'stage/lib')
         include_dirs += [BOOST_HOME]
@@ -259,10 +255,6 @@ elif is_osx: # contribute by progrium and alec
         "/usr/local/include", # HomeBrew$ brew install boost
     ]
 
-    library_dirs += [
-        V8_HOME,
-    ]
-
     libraries += ["boost_python-mt"]
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
@@ -289,7 +281,7 @@ library_dirs += [
     "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
 
     # Win
-    "%s/build/%s" % (V8_HOME, mode),
+    "%s/build/%s/lib" % (V8_HOME, mode),
 ]
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
