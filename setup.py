@@ -134,13 +134,16 @@ if V8_INSPECTOR_SUPPORT:
 if V8_FAST_TLS:
     macros += [("V8_FAST_TLS", None)]
 
+v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
+boost_lib = 'boost_python-mt' if BOOST_PYTHON_MT else 'boost_python'
+
 include_dirs = [
     os.path.join(V8_HOME, 'include'),
     V8_HOME,
     os.path.join(V8_HOME, 'src'),
 ]
 library_dirs = []
-libraries = []
+libraries = v8_libs
 extra_compile_args = []
 extra_link_args = []
 
@@ -148,9 +151,6 @@ if INCLUDE:
     include_dirs += [p for p in INCLUDE.split(os.path.pathsep) if p]
 if LIB:
     library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
-
-v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
-boost_lib = 'boost_python-mt' if BOOST_PYTHON_MT else 'boost_python'
 
 classifiers = [
     'Development Status :: 4 - Beta',
@@ -221,7 +221,7 @@ elif is_linux or is_freebsd:
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-    libraries += v8_libs + ["rt"]
+    libraries += ["rt"]
     extra_compile_args += ["-Wno-write-strings"]
 
     if BOOST_STATIC_LINK:
@@ -248,7 +248,7 @@ elif is_mac: # contribute by Artur Ventura
         BOOST_HOME,
     ]
     library_dirs += [os.path.join('/lib')]
-    libraries += v8_libs + [boost_lib, "c"]
+    libraries += [boost_lib, "c"]
 
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
@@ -263,7 +263,7 @@ elif is_osx: # contribute by progrium and alec
         V8_HOME,
     ]
 
-    libraries += v8_libs + ["boost_python-mt"]
+    libraries += ["boost_python-mt"]
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
 
@@ -281,10 +281,40 @@ else:
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if DEBUG else 'release'
 
-library_dirs += ["%s/out/%s.%s/" % (V8_HOME, arch, mode), "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)]
+library_dirs += [
+    # OSX
+    "%s/out/%s.%s/" % (V8_HOME, arch, mode),
+
+    # Linux
+    "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
+
+    # Win
+    "%s/build/%s" % (V8_HOME, mode),
+]
+
+def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
+    print "-" * 20
+    print "INFO: %s ..." % msg
+    print "DEBUG: >", cmdline_or_args
+
+    proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, stderr=subprocess.PIPE)
+
+    out, err = proc.communicate()
+
+    succeeded = proc.returncode == 0
+
+    if not succeeded:
+        print "ERROR: %s failed: code=%d" % (msg or "Execute command", proc.returncode)
+        print "DEBUG:", err
+
+    return succeeded;
 
 class build(_build):
     def checkout_v8(self):
+        print "=" * 20
+        print "INFO: Checking out or Updating Google V8 code from SVN"
+        print
+
         update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
 
         try:
@@ -317,36 +347,24 @@ class build(_build):
         if V8_SVN_REVISION:
             args += ['-r', str(V8_SVN_REVISION)]
 
-        try:
-            proc = subprocess.Popen(args, stdout=sys.stdout, stderr=sys.stderr)
+        cmdline = ' '.join(args)
 
-            proc.communicate()
-
-            if proc.returncode != 0:
-                print "WARN: fail to checkout or update Google v8 code from SVN, error code: ", proc.returncode
-        except Exception, e:
-            print "ERROR: fail to invoke 'svn' command, please install it first: %s" % e
-            sys.exit(-1)
+        exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
 
     def prepare_gyp(self):
+        print "=" * 20
         print "INFO: Installing or updating GYP..."
 
         try:
             if is_winnt:
-                p = subprocess.Popen('svn co http://gyp.googlecode.com/svn/trunk build/gyp', shell=True, cwd=V8_HOME,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if os.path.isdir(os.path.join(V8_HOME, 'build', 'gyp')):
+                    cmdline = 'svn up build/gyp'
+                else:
+                    cmdline = 'svn co http://gyp.googlecode.com/svn/trunk build/gyp'
             else:
-                p = subprocess.Popen('make dependencies', shell=True, cwd=V8_HOME,
-                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                cmdline = 'make dependencies'
 
-            out, err = p.communicate()
-
-            if p.returncode != 0:
-                print "ERROR: fail to install GYP: ", p.returncode
-                print "DEBUG:", err
-                sys.exit(-1)
-            else:
-                print "DEBUG:", out
+            exec_cmd(cmdline, "Check out GYP from SVN")
         except Exception, e:
             print "ERROR: fail to install GYP:", e
             print "       http://code.google.com/p/v8/wiki/BuildingWithGYP"
@@ -354,6 +372,7 @@ class build(_build):
             sys.exit(-1)
 
     def build_v8(self):
+        print "=" * 20
         print "INFO: Patching the GYP scripts"
 
         # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
@@ -399,24 +418,38 @@ class build(_build):
             'component': 'shared_library',
         }
 
+        print "=" * 20
+
         if is_winnt:
             options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
 
-        print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
+            if not os.path.isdir(os.path.join(V8_HOME, 'third_party', 'cygwin')):
+                cmdline = 'svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_party/cygwin'
+            else:
+                cmdline = 'svn up third_party/cygwin'
 
-        options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+            exec_cmd(cmdline, "Update Cygwin from SVN")
 
-        cmdline = "make %s %s.%s" % (options, arch, mode)
+            print "INFO: Generating the Visual Studio project files"
 
-        print "DEBUG: building", cmdline
+            exec_cmd('python build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
 
-        proc = subprocess.Popen(cmdline, cwd=V8_HOME, shell=True,
-                                stdout=sys.stdout, stderr=sys.stderr)
+            VSINSTALLDIR = os.getenv('VSINSTALLDIR')
 
-        proc.communicate()
+            if VSINSTALLDIR:
+                cmdline = '"%sCommon7\\IDE\\devenv.com" /build "%s|%s" build\All.sln' % (VSINSTALLDIR, mode.capitalize(), 'x64' if is_64bit else 'Win32')
+            else:
+                cmdline = 'devenv.com" /build %s build\All.sln' % mode
 
-        if proc.returncode != 0:
-            print "WARN: fail to build Google v8 code from SVN, error code: ", proc.returncode
+            exec_cmd(cmdline, "build v8 from SVN")
+        else:
+            print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
+
+            options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+
+            cmdline = "make %s %s.%s" % (options, arch, mode)
+
+            exec_cmd(cmdline, "build v8 from SVN")
 
     def run(self):
         try:
