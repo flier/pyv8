@@ -23,6 +23,8 @@
 
 namespace v8i = v8::internal;
 
+using namespace v8::internal;
+
 template <typename T>
 inline py::object to_python(T& obj)
 {
@@ -707,7 +709,7 @@ class CAstVisitor : public v8i::AstVisitor
 public:
   CAstVisitor(py::object handler) : m_handler(handler)
   {
-
+    InitializeAstVisitor();
   }
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { \
   if (::PyObject_HasAttrString(m_handler.ptr(), "on"#type)) { \
@@ -718,15 +720,23 @@ public:
   AST_NODE_LIST(DECLARE_VISIT) 
 
 #undef DECLARE_VISIT
+
+  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
 struct CAstObjectCollector : public v8i::AstVisitor
 {
   py::object m_obj;
+    
+  CAstObjectCollector() {
+    InitializeAstVisitor();
+  }
 
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_obj = py::object(CAst##type(node)); }
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
+    
+  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
 template <typename T>
@@ -745,9 +755,15 @@ struct CAstListCollector : public v8i::AstVisitor
 {
   py::list m_nodes;
 
+  CAstListCollector() {
+    InitializeAstVisitor();
+  }
+    
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
+    
+  DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
 template <typename T>

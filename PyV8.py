@@ -2173,14 +2173,22 @@ class TestAST(unittest.TestCase):
     class Checker(object):
         def __init__(self, testcase):
             self.testcase = testcase
-            self.called = 0
+            self.called = []
+
+        def __enter__(self):
+            self.ctxt = JSContext()
+            self.ctxt.enter()
+
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.ctxt.leave()
 
         def __getattr__(self, name):
             return getattr(self.testcase, name)
 
         def test(self, script):
-            with JSContext() as ctxt:
-                JSEngine().compile(script).visit(self)
+            JSEngine().compile(script).visit(self)
 
             return self.called
 
@@ -2206,7 +2214,7 @@ class TestAST(unittest.TestCase):
     def testBlock(self):
         class BlockChecker(TestAST.Checker):
             def onBlock(self, stmt):
-                self.called += 1
+                self.called.append('block')
 
                 self.assertEquals(AST.NodeType.Block, stmt.type)
 
@@ -2223,9 +2231,9 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
 
-        checker = BlockChecker(self)
-        self.assertEquals(1, checker.test("var i, j;"))
-        self.assertEquals("""FUNC
+        with BlockChecker(self) as checker:
+            self.assertEquals(['block'], checker.test("var i, j;"))
+            self.assertEquals("""FUNC
 . NAME ""
 . INFERRED NAME ""
 . DECLS
@@ -2239,25 +2247,25 @@ class TestAST(unittest.TestCase):
 . . . LITERAL "j"
 . . . LITERAL 0
 """, checker.ast)
-        self.assertEquals([u'FunctionLiteral', {u'name': u''},
-            [u'Declaration', {u'mode': u'VAR'},
-                [u'Variable', {u'name': u'i'}]
-            ], [u'Declaration', {u'mode':u'VAR'},
-                [u'Variable', {u'name': u'j'}]
-            ], [u'Block',
-                [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                    [u'Literal', {u'handle':u'i'}],
-                    [u'Literal', {u'handle': 0}]]],
-                [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                    [u'Literal', {u'handle': u'j'}],
-                    [u'Literal', {u'handle': 0}]]]
-            ]
-        ], checker.json)
+            self.assertEquals([u'FunctionLiteral', {u'name': u''},
+                [u'Declaration', {u'mode': u'VAR'},
+                    [u'Variable', {u'name': u'i'}]
+                ], [u'Declaration', {u'mode':u'VAR'},
+                    [u'Variable', {u'name': u'j'}]
+                ], [u'Block',
+                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                        [u'Literal', {u'handle':u'i'}],
+                        [u'Literal', {u'handle': 0}]]],
+                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                        [u'Literal', {u'handle': u'j'}],
+                        [u'Literal', {u'handle': 0}]]]
+                ]
+            ], checker.json)
 
     def testIfStatement(self):
         class IfStatementChecker(TestAST.Checker):
             def onIfStatement(self, stmt):
-                self.called += 1
+                self.called.append('if')
 
                 self.assert_(stmt)
                 self.assertEquals(AST.NodeType.IfStatement, stmt.type)
@@ -2275,12 +2283,13 @@ class TestAST(unittest.TestCase):
 
                 self.assertFalse(stmt.condition.isPropertyName)
 
-        self.assertEquals(1, IfStatementChecker(self).test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
+        with IfStatementChecker(self) as checker:
+            self.assertEquals(['if'], checker.test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
 
     def testForStatement(self):
         class ForStatementChecker(TestAST.Checker):
             def onForStatement(self, stmt):
-                self.called += 1
+                self.called.append('for')
 
                 self.assertEquals("{ j += i; }", str(stmt.body))
 
@@ -2297,7 +2306,7 @@ class TestAST(unittest.TestCase):
                 self.assertFalse(stmt.fastLoop)
 
             def onForInStatement(self, stmt):
-                self.called += 1
+                self.called.append('forIn')
 
                 self.assertEquals("{ out += name; }", str(stmt.body))
 
@@ -2305,39 +2314,40 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("names", str(stmt.enumerable))
 
             def onWhileStatement(self, stmt):
-                self.called += 1
+                self.called.append('while')
 
                 self.assertEquals("{ i += 1; }", str(stmt.body))
 
                 self.assertEquals("(i < 10)", str(stmt.condition))
 
             def onDoWhileStatement(self, stmt):
-                self.called += 1
+                self.called.append('doWhile')
 
                 self.assertEquals("{ i += 1; }", str(stmt.body))
 
                 self.assertEquals("(i < 10)", str(stmt.condition))
-                self.assertEquals(253, stmt.conditionPos)
+                self.assertEquals(281, stmt.conditionPos)
 
-        self.assertEquals(4, ForStatementChecker(self).test("""
-            var i, j;
+        with ForStatementChecker(self) as checker:
+            self.assertEquals(['for', 'forIn', 'while', 'doWhile'], checker.test("""
+                var i, j;
 
-            for (i=0; i<10; i++) { j+=i; }
+                for (i=0; i<10; i++) { j+=i; }
 
-            var names = new Array();
-            var out = '';
+                var names = new Array();
+                var out = '';
 
-            for (name in names) { out += name; }
+                for (name in names) { out += name; }
 
-            while (i<10) { i += 1; }
+                while (i<10) { i += 1; }
 
-            do { i += 1; } while (i<10);
-        """))
+                do { i += 1; } while (i<10);
+            """))
 
     def testCallStatements(self):
         class CallStatementChecker(TestAST.Checker):
             def onVariableDeclaration(self, decl):
-                self.called += 1
+                self.called.append('var')
 
                 var = decl.proxy
 
@@ -2349,7 +2359,7 @@ class TestAST(unittest.TestCase):
                     self.assertFalse(var.isThis)
 
             def onFunctionDeclaration(self, decl):
-                self.called += 1
+                self.called.append('func')
 
                 var = decl.proxy
 
@@ -2363,44 +2373,45 @@ class TestAST(unittest.TestCase):
                     self.assertEquals('(function dog(name) { (this).name = name; })', str(decl.function))
 
             def onCall(self, expr):
-                self.called += 1
+                self.called.append('call')
 
                 self.assertEquals("hello", str(expr.expression))
                 self.assertEquals(['"flier"'], [str(arg) for arg in expr.args])
-                self.assertEquals(143, expr.pos)
+                self.assertEquals(159, expr.pos)
 
             def onCallNew(self, expr):
-                self.called += 1
+                self.called.append('callNew')
 
                 self.assertEquals("dog", str(expr.expression))
                 self.assertEquals(['"cat"'], [str(arg) for arg in expr.args])
-                self.assertEquals(171, expr.pos)
+                self.assertEquals(191, expr.pos)
 
             def onCallRuntime(self, expr):
-                self.called += 1
+                self.called.append('callRuntime')
 
                 self.assertEquals("InitializeVarGlobal", expr.name)
                 self.assertEquals(['"s"', '0'], [str(arg) for arg in expr.args])
                 self.assertFalse(expr.isJsRuntime)
 
-        self.assertEquals(6,  CallStatementChecker(self).test("""
-            var s;
-            function hello(name) { s = "Hello " + name; }
-            function dog(name) { this.name = name; }
-            hello("flier");
-            new dog("cat");
-        """))
+        with CallStatementChecker(self) as checker:
+            self.assertEquals(['var', 'func', 'func', 'callRuntime', 'call', 'callNew'], checker.test("""
+                var s;
+                function hello(name) { s = "Hello " + name; }
+                function dog(name) { this.name = name; }
+                hello("flier");
+                new dog("cat");
+            """))
 
     def testTryStatements(self):
         class TryStatementsChecker(TestAST.Checker):
             def onThrow(self, expr):
-                self.called += 1
+                self.called.append('try')
 
                 self.assertEquals('"abc"', str(expr.exception))
-                self.assertEquals(54, expr.pos)
+                self.assertEquals(66, expr.pos)
 
             def onTryCatchStatement(self, stmt):
-                self.called += 1
+                self.called.append('catch')
 
                 self.assertEquals("{ throw \"abc\"; }", str(stmt.tryBlock))
                 #FIXME self.assertEquals([], stmt.targets)
@@ -2411,29 +2422,30 @@ class TestAST(unittest.TestCase):
                 self.assertEquals("{ s = err; }", str(stmt.catchBlock))
 
             def onTryFinallyStatement(self, stmt):
-                self.called += 1
+                self.called.append('finally')
 
                 self.assertEquals("{ throw \"abc\"; }", str(stmt.tryBlock))
                 #FIXME self.assertEquals([], stmt.targets)
 
                 self.assertEquals("{ s += \".\"; }", str(stmt.finallyBlock))
 
-        self.assertEquals(3, TryStatementsChecker(self).test("""
-            var s;
-            try {
-                throw "abc";
-            }
-            catch (err) {
-                s = err;
-            };
+        with TryStatementsChecker(self) as checker:
+            self.assertEquals(['catch', 'try', 'finally'], checker.test("""
+                var s;
+                try {
+                    throw "abc";
+                }
+                catch (err) {
+                    s = err;
+                };
 
-            try {
-                throw "abc";
-            }
-            finally {
-                s += ".";
-            }
-        """))
+                try {
+                    throw "abc";
+                }
+                finally {
+                    s += ".";
+                }
+            """))
 
     def testLiterals(self):
         class LiteralChecker(TestAST.Checker):
@@ -2441,41 +2453,41 @@ class TestAST(unittest.TestCase):
                 expr.args[1].visit(self)
 
             def onLiteral(self, litr):
-                self.called += 1
+                self.called.append('literal')
 
                 self.assertFalse(litr.isPropertyName)
                 self.assertFalse(litr.isNull)
                 self.assertFalse(litr.isTrue)
 
             def onRegExpLiteral(self, litr):
-                self.called += 1
+                self.called.append('regex')
 
                 self.assertEquals("test", litr.pattern)
                 self.assertEquals("g", litr.flags)
 
             def onObjectLiteral(self, litr):
-                self.called += 1
+                self.called.append('object')
 
                 self.assertEquals('constant:"name"="flier",constant:"sex"=true',
                                   ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
 
             def onArrayLiteral(self, litr):
-                self.called += 1
+                self.called.append('array')
 
                 self.assertEquals('"hello","world",42',
                                   ",".join([str(value) for value in litr.values]))
-
-        self.assertEquals(4, LiteralChecker(self).test("""
-            false;
-            /test/g;
-            var o = { name: 'flier', sex: true };
-            var a = ['hello', 'world', 42];
-        """))
+        with LiteralChecker(self) as checker:
+            self.assertEquals(['literal', 'regex', 'literal', 'literal'], checker.test("""
+                false;
+                /test/g;
+                var o = { name: 'flier', sex: true };
+                var a = ['hello', 'world', 42];
+            """))
 
     def testOperations(self):
         class OperationChecker(TestAST.Checker):
             def onUnaryOperation(self, expr):
-                self.called += 1
+                self.called.append('unaryOp')
 
                 self.assertEquals(AST.Op.BIT_NOT, expr.op)
                 self.assertEquals("i", expr.expression.name)
@@ -2486,51 +2498,51 @@ class TestAST(unittest.TestCase):
                 self.fail()
 
             def onBinaryOperation(self, expr):
-                self.called += 1
+                self.called.append('binOp')
 
                 self.assertEquals(AST.Op.ADD, expr.op)
                 self.assertEquals("i", str(expr.left))
                 self.assertEquals("j", str(expr.right))
-                self.assertEquals(28, expr.pos)
+                self.assertEquals(36, expr.pos)
 
                 #print "bin", expr
 
             def onAssignment(self, expr):
-                self.called += 1
+                self.called.append('assign')
 
                 self.assertEquals(AST.Op.ASSIGN_ADD, expr.op)
                 self.assertEquals(AST.Op.ADD, expr.binop)
 
                 self.assertEquals("i", str(expr.target))
                 self.assertEquals("1", str(expr.value))
-                self.assertEquals(41, expr.pos)
+                self.assertEquals(53, expr.pos)
 
                 self.assertEquals("(i + 1)", str(expr.binOperation))
 
                 self.assert_(expr.compound)
 
             def onCountOperation(self, expr):
-                self.called += 1
+                self.called.append('countOp')
 
                 self.assertFalse(expr.prefix)
                 self.assert_(expr.postfix)
 
                 self.assertEquals(AST.Op.INC, expr.op)
                 self.assertEquals(AST.Op.ADD, expr.binop)
-                self.assertEquals(55, expr.pos)
+                self.assertEquals(71, expr.pos)
                 self.assertEquals("i", expr.expression.name)
 
                 #print "count", expr
 
             def onCompareOperation(self, expr):
-                self.called += 1
+                self.called.append('compOp')
 
-                if self.called == 4:
+                if len(self.called) == 4:
                     self.assertEquals(AST.Op.EQ, expr.op)
-                    self.assertEquals(68, expr.pos) # i==j
+                    self.assertEquals(88, expr.pos) # i==j
                 else:
                     self.assertEquals(AST.Op.EQ_STRICT, expr.op)
-                    self.assertEquals(82, expr.pos) # i===j
+                    self.assertEquals(106, expr.pos) # i===j
 
                 self.assertEquals("i", str(expr.left))
                 self.assertEquals("j", str(expr.right))
@@ -2538,25 +2550,26 @@ class TestAST(unittest.TestCase):
                 #print "comp", expr
 
             def onConditional(self, expr):
-                self.called += 1
+                self.called.append('conditional')
 
                 self.assertEquals("(i > j)", str(expr.condition))
                 self.assertEquals("i", str(expr.thenExpr))
                 self.assertEquals("j", str(expr.elseExpr))
 
-                self.assertEquals(112, expr.thenExprPos)
-                self.assertEquals(114, expr.elseExprPos)
+                self.assertEquals(144, expr.thenExprPos)
+                self.assertEquals(146, expr.elseExprPos)
 
-        self.assertEquals(7, OperationChecker(self).test("""
-        var i, j;
-        i+j;
-        i+=1;
-        i++;
-        i==j;
-        i===j;
-        ~i;
-        i>j?i:j;
-        """))
+        with OperationChecker(self) as checker:
+            self.assertEquals(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'unaryOp', 'conditional'], checker.test("""
+            var i, j;
+            i+j;
+            i+=1;
+            i++;
+            i==j;
+            i===j;
+            ~i;
+            i>j?i:j;
+            """))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:
@@ -2566,7 +2579,7 @@ if __name__ == '__main__':
 
     if "-p" in sys.argv:
         sys.argv.remove("-p")
-        print "Press any key to continue..."
+        print "Press any key to continue or attach process #%d..." % os.getpid()
         raw_input()
 
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')

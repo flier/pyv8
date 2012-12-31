@@ -37,6 +37,8 @@ PrettyPrinter::PrettyPrinter() {
   output_ = NULL;
   size_ = 0;
   pos_ = 0;
+    
+  InitializeAstVisitor();
 }
 
 
