@@ -1380,6 +1380,8 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('[object Array]', ctxt.eval("(function (arr) { return Object.prototype.toString.call(arr); })")(JSArray((1, 2, 3))))
             self.assertEquals('[object Array]', ctxt.eval("(function (arr) { return Object.prototype.toString.call(arr); })")(JSArray(range(3))))
 
+            [x for x in JSArray([1,2,3])]
+
     def testMultiDimArray(self):
         with JSContext() as ctxt:
             ret = ctxt.eval("""

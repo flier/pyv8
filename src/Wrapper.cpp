@@ -1277,7 +1277,9 @@ void CJavascriptArray::LazyConstructor(void)
 }
 size_t CJavascriptArray::Length(void) 
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
+    
+  LazyConstructor();
 
   v8::HandleScope handle_scope;
 
@@ -1285,7 +1287,9 @@ size_t CJavascriptArray::Length(void)
 }
 py::object CJavascriptArray::GetItem(size_t idx)
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
+    
+  LazyConstructor();
 
   v8::HandleScope handle_scope;
 
@@ -1301,7 +1305,9 @@ py::object CJavascriptArray::GetItem(size_t idx)
 }
 py::object CJavascriptArray::SetItem(size_t idx, py::object value)
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
+    
+  LazyConstructor();
 
   v8::HandleScope handle_scope;
 
@@ -1314,7 +1320,9 @@ py::object CJavascriptArray::SetItem(size_t idx, py::object value)
 }
 py::object CJavascriptArray::DelItem(size_t idx)
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
+    
+  LazyConstructor();
 
   v8::HandleScope handle_scope;
 
@@ -1333,7 +1341,9 @@ py::object CJavascriptArray::DelItem(size_t idx)
 
 bool CJavascriptArray::Contains(py::object item)
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
+    
+  LazyConstructor();
 
   v8::HandleScope handle_scope;
 
@@ -1354,7 +1364,7 @@ bool CJavascriptArray::Contains(py::object item)
 
 py::object CJavascriptFunction::CallWithArgs(py::tuple args, py::dict kwds)
 {
-  CHECK_V8_CONTEXT(); 
+  CHECK_V8_CONTEXT();
 
   size_t argc = ::PyTuple_Size(args.ptr());
 
