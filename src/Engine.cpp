@@ -564,8 +564,7 @@ class CPythonExtension : public v8::Extension
   {
     v8::HandleScope handle_scope;
     CPythonGIL python_gil;
-
-    py::object func = *static_cast<py::object *>(v8::External::Unwrap(args.Data()));
+    py::object func = *static_cast<py::object *>(v8::External::Cast(*args.Data())->Value());
 
     py::object result;
 

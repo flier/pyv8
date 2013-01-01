@@ -1598,14 +1598,14 @@ ObjectTracer::LivingMap * ObjectTracer::GetLivingMapping(void)
 
   if (!value.IsEmpty())
   {
-    LivingMap *living = (LivingMap *) v8::External::Unwrap(value);
+    LivingMap *living = (LivingMap *) v8::External::Cast(*value)->Value();
 
     if (living) return living;
   }
 
   std::auto_ptr<LivingMap> living(new LivingMap());
 
-  v8::Context::GetCurrent()->Global()->SetHiddenValue(v8::String::NewSymbol("__living__"), v8::External::Wrap(living.get()));
+  v8::Context::GetCurrent()->Global()->SetHiddenValue(v8::String::NewSymbol("__living__"), v8::External::New(living.get()));
 
   return living.release();
 }
