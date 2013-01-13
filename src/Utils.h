@@ -67,7 +67,7 @@ namespace py = boost::python;
 #elif defined(__APPLE__)
   #define UNUSED_VAR(x) x __unused
 #else
-  #define x
+  #define UNUSED_VAR(x) x
 #endif
 
 v8::Handle<v8::String> ToString(const std::string& str);
