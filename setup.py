@@ -54,6 +54,7 @@ V8_PROFILING_SUPPORT = True     # enable profiling of JavaScript code
 V8_INSPECTOR_SUPPORT = DEBUG    # enable inspector features
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
 V8_FAST_TLS = True              # enable fast thread local storage support
+V8_WERROR = False               # ignore compile warnings
 V8_STRICTALIASING = True        # enable strict aliasing
 
 # load defaults from config file
@@ -378,7 +379,6 @@ class build(_build):
 
         fixed_build_script = build_script.replace('-fno-rtti', '') \
                                          .replace('-fno-exceptions', '') \
-                                         .replace('-Werror', '') \
                                          .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
                                          .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
                                          .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
@@ -408,7 +408,7 @@ class build(_build):
             'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
             'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
             'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
-            'werror': 'on',
+            'werror': 'yes' if V8_WERROR else 'no',
             'visibility': 'on',
             'component': 'shared_library',
         }
