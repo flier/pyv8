@@ -51,9 +51,9 @@ T _to_string(v8i::Handle<v8i::String> str)
   {
     if (content.IsAscii())
     {
-      v8i::Vector<const char> buf = content.ToAsciiVector();
+        v8i::Vector<const uint8_t> buf = content.ToOneByteVector();
 
-      return T(buf.start(), buf.length());
+      return T((const char *) buf.start(), buf.length());
     }
     else
     {
