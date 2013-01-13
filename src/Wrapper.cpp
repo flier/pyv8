@@ -972,7 +972,7 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 
   if (m_obj->Has(attr_name))
   {
-    v8::Handle<v8::Value> attr_value = m_obj->Get(attr_name);
+    v8::Handle<v8::Value> UNUSED_VAR(attr_value) = m_obj->Get(attr_name);
   }
 
   if (!m_obj->Set(attr_name, attr_obj)) 

@@ -62,6 +62,14 @@ namespace py = boost::python;
 
 #endif 
 
+#if defined(__GNUC__)
+  #define UNUSED_VAR(x) x __attribute__((unused))
+#elif defined(__APPLE__)
+  #define UNUSED_VAR(x) x __unused
+#else
+  #define x
+#endif
+
 v8::Handle<v8::String> ToString(const std::string& str);
 v8::Handle<v8::String> ToString(const std::wstring& str);
 v8::Handle<v8::String> ToString(py::object str);

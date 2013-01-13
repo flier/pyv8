@@ -416,9 +416,9 @@ void ExceptionTranslator::Construct(PyObject* obj,
 
   storage_t* the_storage = reinterpret_cast<storage_t*>(data);
   void* memory_chunk = the_storage->storage.bytes;
-  CJavascriptException* cpp_err = 
+  CJavascriptException* UNUSED_VAR(cpp_err) =
     new (memory_chunk) CJavascriptException(py::extract<CJavascriptException>(impl));
-
+    
   data->convertible = memory_chunk;
 }
 
@@ -426,7 +426,7 @@ void CJavascriptException::PrintCallStack(py::object file)
 {  
   CPythonGIL python_gil;
 
-  PyObject *out = file.ptr() == Py_None ? ::PySys_GetObject("stdout") : file.ptr();
+  PyObject *out = file.ptr() == Py_None ? ::PySys_GetObject((char *) "stdout") : file.ptr();
 
   m_msg->PrintCurrentStackTrace(::PyFile_AsFile(out));
 }
