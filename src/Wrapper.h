@@ -9,8 +9,10 @@
 #include "Exception.h"
 
 class CJavascriptObject;
+class CJavascriptFunction;
 
 typedef boost::shared_ptr<CJavascriptObject> CJavascriptObjectPtr;
+typedef boost::shared_ptr<CJavascriptFunction> CJavascriptFunctionPtr;
 
 struct CWrapper
 {  
@@ -180,6 +182,7 @@ public:
   }
 
   static py::object CallWithArgs(py::tuple args, py::dict kwds);
+  static py::object CreateWithArgs(CJavascriptFunctionPtr proto, py::tuple args, py::dict kwds);
 
   py::object Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds);
   py::object Invoke(py::list args, py::dict kwds);

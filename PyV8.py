@@ -1154,6 +1154,36 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals("hello flier from tester", hello.invoke(tester, ['flier']))
             self.assertEquals("hello flier from json", hello.apply({ 'name': 'json' }, ['flier']))
 
+    def testConstructor(self):
+        with JSContext() as ctx:
+            ctx.eval("""
+                var Test = function() {
+                    this.trySomething();
+                };
+                Test.prototype.trySomething = function() {
+                    this.name = 'flier';
+                };
+
+                var Test2 = function(first_name, last_name) {
+                    this.name = first_name + ' ' + last_name;
+                };
+                """)
+
+            self.assert_(isinstance(ctx.locals.Test, _PyV8.JSFunction))
+
+            test = JSObject.create(ctx.locals.Test)
+
+            self.assert_(isinstance(ctx.locals.Test, _PyV8.JSObject))
+            self.assertEquals("flier", test.name);
+
+            test2 = JSObject.create(ctx.locals.Test2, ('Flier', 'Lu'))
+
+            self.assertEquals("Flier Lu", test2.name);
+
+            test3 = JSObject.create(ctx.locals.Test2, ('Flier', 'Lu'), { 'email': 'flier.lu@gmail.com' })
+
+            self.assertEquals("flier.lu@gmail.com", test3.email);
+
     def testJSError(self):
         with JSContext() as ctxt:
             try:

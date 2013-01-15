@@ -70,6 +70,13 @@ void CWrapper::Expose(void)
     .def("__nonzero__", &CJavascriptObject::operator bool)
     .def("__eq__", &CJavascriptObject::Equals)
     .def("__ne__", &CJavascriptObject::Unequals)
+
+	  .def("create", &CJavascriptFunction::CreateWithArgs, 
+         (py::arg("constructor"), 
+          py::arg("arguments") = py::tuple(),
+          py::arg("propertiesObject") = py::dict()),
+         "Creates a new object with the specified prototype object and properties.")
+	  .staticmethod("create")
     ;
 
   py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)    
@@ -1422,6 +1429,54 @@ py::object CJavascriptFunction::Call(v8::Handle<v8::Object> self, py::list args,
   Py_END_ALLOW_THREADS
 
   if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+
+  return CJavascriptObject::Wrap(result);
+}
+
+py::object CJavascriptFunction::CreateWithArgs(CJavascriptFunctionPtr proto, py::tuple args, py::dict kwds)
+{
+  CHECK_V8_CONTEXT();
+
+  v8::HandleScope handle_scope;
+
+  if (proto->Object().IsEmpty())
+    throw CJavascriptException("Object prototype may only be an Object", ::PyExc_TypeError);
+
+  v8::TryCatch try_catch;
+
+  v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(proto->Object());
+
+  size_t args_count = ::PyTuple_Size(args.ptr());
+  
+  std::vector< v8::Handle<v8::Value> > params(args_count);
+
+  for (size_t i=0; i<args_count; i++)
+  {
+    params[i] = CPythonObject::Wrap(args[i]);
+  }
+
+  v8::Handle<v8::Object> result;
+
+  Py_BEGIN_ALLOW_THREADS
+
+  result = func->NewInstance(params.size(), params.empty() ? NULL : &params[0]);
+
+  Py_END_ALLOW_THREADS
+
+  if (result.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+
+  size_t kwds_count = ::PyMapping_Size(kwds.ptr());
+  py::list items = kwds.items();
+
+  for (size_t i=0; i<kwds_count; i++)
+  {
+    py::tuple item(items[i]);
+
+    py::str key(item[0]);
+    py::object value = item[1];
+
+    result->Set(ToString(key), CPythonObject::Wrap(value));
+  }
 
   return CJavascriptObject::Wrap(result);
 }
