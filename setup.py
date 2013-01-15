@@ -54,6 +54,8 @@ V8_PROFILING_SUPPORT = True     # enable profiling of JavaScript code
 V8_INSPECTOR_SUPPORT = DEBUG    # enable inspector features
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
 V8_FAST_TLS = True              # enable fast thread local storage support
+V8_WERROR = False               # ignore compile warnings
+V8_STRICTALIASING = True        # enable strict aliasing
 
 # load defaults from config file
 try:
@@ -228,6 +230,7 @@ elif is_linux or is_freebsd:
 
     if is_freebsd:
         libraries += ["execinfo"]
+        V8_STRICTALIASING = False
 
     if hasattr(os, 'uname'):
         if os.uname()[-1] in ('x86_64', 'amd64'):
@@ -411,7 +414,8 @@ class build(_build):
             'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
             'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
             'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
-            'werror': 'on',
+            'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
+            'werror': 'yes' if V8_WERROR else 'no',
             'visibility': 'on',
             'component': 'shared_library',
         }
