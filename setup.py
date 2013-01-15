@@ -54,8 +54,6 @@ V8_PROFILING_SUPPORT = True     # enable profiling of JavaScript code
 V8_INSPECTOR_SUPPORT = DEBUG    # enable inspector features
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
 V8_FAST_TLS = True              # enable fast thread local storage support
-V8_WERROR = False               # ignore compile warnings
-V8_STRICTALIASING = True        # enable strict aliasing
 
 # load defaults from config file
 try:
@@ -79,13 +77,14 @@ if type(DEBUG) == str:
 
 if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
     print "WARN: V8_HOME doesn't exists or point to a wrong folder, ",
-    print "we will try to checkout and build a private build from <%s>." % V8_SVN_URL
 
     V8_HOME = os.path.join(PYV8_HOME, 'build', ('v8_r%d' % V8_SVN_REVISION) if V8_SVN_REVISION else 'v8')
+
+    svn_name = None
 else:
     svn_name = ('SVN r%d' % V8_SVN_REVISION) if V8_SVN_REVISION else 'the latest SVN trunk'
 
-    print "Found Google v8 base on V8_HOME <%s>, update it to %s at <%s>" % (V8_HOME, svn_name, V8_SVN_URL)
+    print "INFO: Found Google v8 base on V8_HOME <%s>" % V8_HOME
 
 source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
                 "Debug.cpp", "Locker.cpp", "AST.cpp", "PrettyPrinter.cpp", "PyV8.cpp"]
@@ -229,7 +228,6 @@ elif is_linux or is_freebsd:
 
     if is_freebsd:
         libraries += ["execinfo"]
-        V8_STRICTALIASING = False
 
     if hasattr(os, 'uname'):
         if os.uname()[-1] in ('x86_64', 'amd64'):
@@ -306,8 +304,13 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
 
 class build(_build):
     def checkout_v8(self):
+        if svn_name:
+            print "INFO: we will try to update v8 to %s at <%s>" % (svn_name, V8_SVN_URL)
+        else:
+            print "INFO: we will try to checkout and build a private v8 build from <%s>." % V8_SVN_URL
+
         print "=" * 20
-        print "INFO: Checking out or Updating Google V8 code from SVN"
+        print "INFO: Checking out or Updating Google V8 code from SVN..."
         print
 
         update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
@@ -325,7 +328,7 @@ class build(_build):
 
             if r: return
 
-            print "ERROR: Failed to export from V8 svn repository"            
+            print "ERROR: Failed to export from V8 svn repository"
         except ImportError:
             #print "WARN: could not import pysvn. Ensure you have the pysvn package installed."
             #print "      on debian/ubuntu, this is called 'python-svn'; on Fedora/RHEL, this is called 'pysvn'."
@@ -373,12 +376,13 @@ class build(_build):
         # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
         gypi = os.path.join(V8_HOME, "build/standalone.gypi")
 
-        # Check if we need to patch by searching for rtti flag in the data 
+        # Check if we need to patch by searching for rtti flag in the data
         with open(gypi, 'r') as f:
             build_script = f.read()
 
         fixed_build_script = build_script.replace('-fno-rtti', '') \
                                          .replace('-fno-exceptions', '') \
+                                         .replace('-Werror', '') \
                                          .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
                                          .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
                                          .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
@@ -407,8 +411,7 @@ class build(_build):
             'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
             'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
             'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
-            'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
-            'werror': 'yes' if V8_WERROR else 'no',
+            'werror': 'on',
             'visibility': 'on',
             'component': 'shared_library',
         }
@@ -467,7 +470,7 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      cmdclass = { 'build': build },
+      cmdclass = { 'build': build, 'v8build': _build },
       version='1.0',
       description='Python Wrapper for Google V8 Engine',
       long_description=description,
