@@ -212,6 +212,11 @@ void CEngine::Expose(void)
                                                                                        py::arg("callback") = py::object(),
                                                                                        py::arg("dependencies") = py::list(),
                                                                                        py::arg("register") = true)))
+    .def(py::init<const std::wstring&, const std::wstring&, py::object, py::list, bool>((py::arg("name"), 
+                                                                                         py::arg("source"),
+                                                                                         py::arg("callback") = py::object(),
+                                                                                         py::arg("dependencies") = py::list(),
+                                                                                         py::arg("register") = true)))
     .add_static_property("extensions", &CExtension::GetExtensions)
 
     .add_property("name", &CExtension::GetName, "The name of extension")
@@ -651,6 +656,29 @@ CExtension::CExtension(const std::string& name, const std::string& source,
   m_extension.reset(new CPythonExtension(name.c_str(), source.c_str(), 
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
   
+  if (autoRegister) this->Register();
+}
+
+CExtension::CExtension(const std::wstring& name, const std::wstring& source, 
+                       py::object callback, py::list deps, bool autoRegister)
+  : m_deps(deps), m_registered(false)
+{
+  for (Py_ssize_t i=0; i<PyList_Size(deps.ptr()); i++)
+  {
+    py::extract<const std::string> extractor(::PyList_GetItem(deps.ptr(), i));
+
+    if (extractor.check()) 
+    {
+      m_depNames.push_back(extractor());
+      m_depPtrs.push_back(m_depNames.rbegin()->c_str());
+    }
+  }
+
+  std::string utf8_name = EncodeUtf8(name), utf8_source = EncodeUtf8(source);
+
+  m_extension.reset(new CPythonExtension(utf8_name.c_str(), utf8_source.c_str(), 
+    callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
+
   if (autoRegister) this->Register();
 }
 

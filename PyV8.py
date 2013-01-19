@@ -2010,6 +2010,20 @@ class TestEngine(unittest.TestCase):
         with JSContext() as ctxt:
             self.assertRaises(ReferenceError, ctxt.eval, "hello('flier')")
 
+        extUnicodeSrc = u"""function helloW(name) { return "hello " + name + " from javascript"; }"""
+        extUnicodeJs = JSExtension(u"helloW/javascript", extUnicodeSrc)
+
+        self.assert_(extUnicodeJs)
+        self.assertEqual("helloW/javascript", extUnicodeJs.name)
+        self.assertEqual(extUnicodeSrc.encode('utf-8'), extUnicodeJs.source)
+        self.assertFalse(extUnicodeJs.autoEnable)
+        self.assertTrue(extUnicodeJs.registered)
+
+        TestEngine.extUnicodeJs = extUnicodeJs
+
+        with JSContext(extensions=['helloW/javascript']) as ctxt:
+            self.assertEqual("hello flier from javascript", ctxt.eval("helloW('flier')"))
+
     def testNativeExtension(self):
         extSrc = "native function hello();"
         extPy = JSExtension("hello/python", extSrc, lambda func: lambda name: "hello " + name + " from python", register=False)

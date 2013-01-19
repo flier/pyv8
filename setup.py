@@ -303,7 +303,7 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
         print "ERROR: %s failed: code=%d" % (msg or "Execute command", proc.returncode)
         print "DEBUG:", err
 
-    return succeeded;
+    return succeeded
 
 class build(_build):
     def checkout_v8(self):

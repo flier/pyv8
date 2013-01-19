@@ -89,6 +89,22 @@ v8::Handle<v8::String> DecodeUtf8(const std::string& str)
   }
 }
 
+const std::string EncodeUtf8(const std::wstring& str)
+{
+  std::vector<uint8_t> data;
+
+  if (sizeof(wchar_t) == sizeof(uint16_t))
+  {
+    utf8::utf16to8(str.begin(), str.end(), std::back_inserter(data));
+  }
+  else
+  {
+    utf8::utf32to8(str.begin(), str.end(), std::back_inserter(data));
+  }
+
+  return std::string((const char *) &data[0], data.size());
+}
+
 CPythonGIL::CPythonGIL() 
 {
   while (CLocker::IsPreemption() && _PyThreadState_Current && ::PyGILState_GetThisThreadState() != ::_PyThreadState_Current)
