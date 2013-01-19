@@ -676,6 +676,12 @@ CExtension::CExtension(const std::wstring& name, const std::wstring& source,
 
   std::string utf8_name = EncodeUtf8(name), utf8_source = EncodeUtf8(source);
 
+  if (!v8i::String::IsAscii(utf8_name.c_str(), utf8_name.size()) ||
+      !v8i::String::IsAscii(utf8_source.c_str(), utf8_source.size())) 
+  {
+    throw CJavascriptException("v8 is not support NON-ASCII name or source in the JS extension");
+  }
+
   m_extension.reset(new CPythonExtension(utf8_name.c_str(), utf8_source.c_str(), 
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
 

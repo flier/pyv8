@@ -2024,6 +2024,8 @@ class TestEngine(unittest.TestCase):
         with JSContext(extensions=['helloW/javascript']) as ctxt:
             self.assertEqual("hello flier from javascript", ctxt.eval("helloW('flier')"))
 
+        self.assertRaises(JSError, JSExtension, u"helloW/javascript", u"中文")
+
     def testNativeExtension(self):
         extSrc = "native function hello();"
         extPy = JSExtension("hello/python", extSrc, lambda func: lambda name: "hello " + name + " from python", register=False)
