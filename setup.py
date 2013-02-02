@@ -263,6 +263,11 @@ elif is_osx: # contribute by progrium and alec
         "/usr/local/include", # HomeBrew$ brew install boost
     ]
 
+    library_dirs += [
+        "/opt/local/lib", # MacPorts$ sudo port install boost
+        "/usr/local/lib", # HomeBrew$ brew install boost
+    ]
+
     libraries += ["boost_python-mt"]
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
