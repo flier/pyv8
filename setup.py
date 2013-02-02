@@ -24,6 +24,7 @@ ez_setup.use_setuptools()
 
 from distutils.command.build import build as _build
 from setuptools import setup, Extension
+from setuptools.command.develop import develop as _develop
 
 # default settings, you can modify it in buildconf.py.
 # please look in buildconf.py.example for more information
@@ -308,163 +309,172 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
 
     return succeeded
 
-class build(_build):
-    def checkout_v8(self):
-        if svn_name:
-            print "INFO: we will try to update v8 to %s at <%s>" % (svn_name, V8_SVN_URL)
-        else:
-            print "INFO: we will try to checkout and build a private v8 build from <%s>." % V8_SVN_URL
+def checkout_v8():
+    if svn_name:
+        print "INFO: we will try to update v8 to %s at <%s>" % (svn_name, V8_SVN_URL)
+    else:
+        print "INFO: we will try to checkout and build a private v8 build from <%s>." % V8_SVN_URL
 
-        print "=" * 20
-        print "INFO: Checking out or Updating Google V8 code from SVN..."
-        print
+    print "=" * 20
+    print "INFO: Checking out or Updating Google V8 code from SVN..."
+    print
 
-        update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
+    update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
 
-        try:
-            from pysvn import Client, Revision, opt_revision_kind
+    try:
+        from pysvn import Client, Revision, opt_revision_kind
 
-            svnClient = Client()
-            rev = Revision(opt_revision_kind.number, V8_SVN_REVISION) if V8_SVN_REVISION else Revision(opt_revision_kind.head)
-
-            if update_code:
-                r = svnClient.update(V8_HOME, revision=rev)
-            else:
-                r = svnClient.checkout(V8_SVN_URL, V8_HOME, revision=rev)
-
-            if r: return
-
-            print "ERROR: Failed to export from V8 svn repository"
-        except ImportError:
-            #print "WARN: could not import pysvn. Ensure you have the pysvn package installed."
-            #print "      on debian/ubuntu, this is called 'python-svn'; on Fedora/RHEL, this is called 'pysvn'."
-
-            print "INFO: we will try to use the system 'svn' command to checkout/update V8 code"
+        svnClient = Client()
+        rev = Revision(opt_revision_kind.number, V8_SVN_REVISION) if V8_SVN_REVISION else Revision(opt_revision_kind.head)
 
         if update_code:
-            args = ["svn", "up", V8_HOME]
+            r = svnClient.update(V8_HOME, revision=rev)
         else:
-            os.makedirs(V8_HOME)
+            r = svnClient.checkout(V8_SVN_URL, V8_HOME, revision=rev)
 
-            args = ["svn", "co", V8_SVN_URL, V8_HOME]
+        if r: return
 
-        if V8_SVN_REVISION:
-            args += ['-r', str(V8_SVN_REVISION)]
+        print "ERROR: Failed to export from V8 svn repository"
+    except ImportError:
+        #print "WARN: could not import pysvn. Ensure you have the pysvn package installed."
+        #print "      on debian/ubuntu, this is called 'python-svn'; on Fedora/RHEL, this is called 'pysvn'."
 
-        cmdline = ' '.join(args)
+        print "INFO: we will try to use the system 'svn' command to checkout/update V8 code"
 
-        exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
+    if update_code:
+        args = ["svn", "up", V8_HOME]
+    else:
+        os.makedirs(V8_HOME)
 
-    def prepare_gyp(self):
-        print "=" * 20
-        print "INFO: Installing or updating GYP..."
+        args = ["svn", "co", V8_SVN_URL, V8_HOME]
 
-        try:
-            if is_winnt:
-                if os.path.isdir(os.path.join(V8_HOME, 'build', 'gyp')):
-                    cmdline = 'svn up build/gyp'
-                else:
-                    cmdline = 'svn co http://gyp.googlecode.com/svn/trunk build/gyp'
-            else:
-                cmdline = MAKE + ' dependencies'
+    if V8_SVN_REVISION:
+        args += ['-r', str(V8_SVN_REVISION)]
 
-            exec_cmd(cmdline, "Check out GYP from SVN")
-        except Exception, e:
-            print "ERROR: fail to install GYP:", e
-            print "       http://code.google.com/p/v8/wiki/BuildingWithGYP"
-            print
-            sys.exit(-1)
+    cmdline = ' '.join(args)
 
-    def build_v8(self):
-        print "=" * 20
-        print "INFO: Patching the GYP scripts"
+    exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
 
-        # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
-        gypi = os.path.join(V8_HOME, "build/standalone.gypi")
+def prepare_gyp():
+    print "=" * 20
+    print "INFO: Installing or updating GYP..."
 
-        # Check if we need to patch by searching for rtti flag in the data
-        with open(gypi, 'r') as f:
-            build_script = f.read()
-
-        fixed_build_script = build_script.replace('-fno-rtti', '') \
-                                         .replace('-fno-exceptions', '') \
-                                         .replace('-Werror', '') \
-                                         .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
-                                         .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
-                                         .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
-                                         .replace("'GCC_ENABLE_CPP_RTTI': 'NO'", "'GCC_ENABLE_CPP_RTTI': 'YES'")
-
-        if build_script == fixed_build_script:
-            print "INFO: skip to patch the Google v8 build/standalone.gypi file "
-        else:
-            print "INFO: patch the Google v8 build/standalone.gypi file to enable RTTI and C++ Exceptions"
-
-            if os.path.exists(gypi + '.bak'):
-                os.remove(gypi + '.bak')
-
-            os.rename(gypi, gypi + '.bak')
-
-            with open(gypi, 'w') as f:
-                f.write(fixed_build_script)
-
-        options = {
-            'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
-            'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
-            'verifyheap': 'on' if V8_VERIFY_HEAP else 'off',
-            'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
-            'extrachecks': 'on' if V8_EXTRA_CHECKS else 'off',
-            'gdbjit': 'on' if V8_GDB_JIT else 'off',
-            'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
-            'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
-            'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
-            'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
-            'werror': 'yes' if V8_WERROR else 'no',
-            'visibility': 'on',
-            'component': 'shared_library',
-        }
-
-        print "=" * 20
-
+    try:
         if is_winnt:
-            options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
-
-            if not os.path.isdir(os.path.join(V8_HOME, 'third_party', 'cygwin')):
-                cmdline = 'svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_party/cygwin'
+            if os.path.isdir(os.path.join(V8_HOME, 'build', 'gyp')):
+                cmdline = 'svn up build/gyp'
             else:
-                cmdline = 'svn up third_party/cygwin'
-
-            exec_cmd(cmdline, "Update Cygwin from SVN")
-
-            print "INFO: Generating the Visual Studio project files"
-
-            exec_cmd('python build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
-
-            VSINSTALLDIR = os.getenv('VSINSTALLDIR')
-
-            if VSINSTALLDIR:
-                cmdline = '"%sCommon7\\IDE\\devenv.com" /build "%s|%s" build\All.sln' % (VSINSTALLDIR, mode.capitalize(), 'x64' if is_64bit else 'Win32')
-            else:
-                cmdline = 'devenv.com" /build %s build\All.sln' % mode
-
-            exec_cmd(cmdline, "build v8 from SVN")
+                cmdline = 'svn co http://gyp.googlecode.com/svn/trunk build/gyp'
         else:
-            print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
+            cmdline = MAKE + ' dependencies'
 
-            options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+        exec_cmd(cmdline, "Check out GYP from SVN")
+    except Exception, e:
+        print "ERROR: fail to install GYP:", e
+        print "       http://code.google.com/p/v8/wiki/BuildingWithGYP"
+        print
+        sys.exit(-1)
 
-            cmdline = "%s %s %s.%s" % (MAKE, options, arch, mode)
+def build_v8():
+    print "=" * 20
+    print "INFO: Patching the GYP scripts"
 
-            exec_cmd(cmdline, "build v8 from SVN")
+    # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
+    gypi = os.path.join(V8_HOME, "build/standalone.gypi")
 
+    # Check if we need to patch by searching for rtti flag in the data
+    with open(gypi, 'r') as f:
+        build_script = f.read()
+
+    fixed_build_script = build_script.replace('-fno-rtti', '') \
+                                     .replace('-fno-exceptions', '') \
+                                     .replace('-Werror', '') \
+                                     .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
+                                     .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
+                                     .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
+                                     .replace("'GCC_ENABLE_CPP_RTTI': 'NO'", "'GCC_ENABLE_CPP_RTTI': 'YES'")
+
+    if build_script == fixed_build_script:
+        print "INFO: skip to patch the Google v8 build/standalone.gypi file "
+    else:
+        print "INFO: patch the Google v8 build/standalone.gypi file to enable RTTI and C++ Exceptions"
+
+        if os.path.exists(gypi + '.bak'):
+            os.remove(gypi + '.bak')
+
+        os.rename(gypi, gypi + '.bak')
+
+        with open(gypi, 'w') as f:
+            f.write(fixed_build_script)
+
+    options = {
+        'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
+        'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
+        'verifyheap': 'on' if V8_VERIFY_HEAP else 'off',
+        'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
+        'extrachecks': 'on' if V8_EXTRA_CHECKS else 'off',
+        'gdbjit': 'on' if V8_GDB_JIT else 'off',
+        'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
+        'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
+        'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
+        'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
+        'werror': 'yes' if V8_WERROR else 'no',
+        'visibility': 'on',
+        'component': 'shared_library',
+    }
+
+    print "=" * 20
+
+    if is_winnt:
+        options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
+
+        if not os.path.isdir(os.path.join(V8_HOME, 'third_party', 'cygwin')):
+            cmdline = 'svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_party/cygwin'
+        else:
+            cmdline = 'svn up third_party/cygwin'
+
+        exec_cmd(cmdline, "Update Cygwin from SVN")
+
+        print "INFO: Generating the Visual Studio project files"
+
+        exec_cmd('python build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
+
+        VSINSTALLDIR = os.getenv('VSINSTALLDIR')
+
+        if VSINSTALLDIR:
+            cmdline = '"%sCommon7\\IDE\\devenv.com" /build "%s|%s" build\All.sln' % (VSINSTALLDIR, mode.capitalize(), 'x64' if is_64bit else 'Win32')
+        else:
+            cmdline = 'devenv.com" /build %s build\All.sln' % mode
+
+        exec_cmd(cmdline, "build v8 from SVN")
+    else:
+        print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
+
+        options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
+
+        cmdline = "%s %s %s.%s" % (MAKE, options, arch, mode)
+
+        exec_cmd(cmdline, "build v8 from SVN")
+
+def prepare_v8():
+    try:
+        checkout_v8()
+        prepare_gyp()
+        build_v8()
+    except Exception, e:
+        print "ERROR: fail to checkout and build v8, %s" % e
+
+class build(_build):
     def run(self):
-        try:
-            self.checkout_v8()
-            self.prepare_gyp()
-            self.build_v8()
-        except Exception, e:
-            print "ERROR: fail to checkout and build v8, %s" % e
+        prepare_v8()
 
         _build.run(self)
+
+class develop(_develop):
+    def run(self):
+        prepare_v8()
+
+        _develop.run(self)
 
 pyv8 = Extension(name = "_PyV8",
                  sources = [os.path.join("src", file) for file in source_files],
@@ -477,14 +487,14 @@ pyv8 = Extension(name = "_PyV8",
                  )
 
 setup(name='PyV8',
-      cmdclass = { 'build': build, 'v8build': _build },
-      version='1.0',
+      cmdclass = { 'build': build, 'v8build': _build, 'develop': develop },
+      version='1.0-dev',
       description='Python Wrapper for Google V8 Engine',
       long_description=description,
       platforms="x86",
       author='Flier Lu',
       author_email='flier.lu@gmail.com',
-      url='http://code.google.com/p/pyv8/',
+      url='svn+http://pyv8.googlecode.com/svn/trunk/#egg=pyv8-1.0-dev',
       download_url='http://code.google.com/p/pyv8/downloads/list',
       license="Apache Software License",
       py_modules=['PyV8'],
