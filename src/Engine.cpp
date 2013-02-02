@@ -24,11 +24,13 @@ struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
 
   static void onMemoryAllocation(v8::ObjectSpace space, v8::AllocationAction action, int size)
   {
+    CPythonGIL python_gil;
+      
     if (s_callback.ptr() != Py_None) s_callback(space, action, size);
   }
 
   virtual void Set(py::object callback)
-  {
+  {      
     if (s_callback.ptr() == Py_None && callback.ptr() != Py_None)
     {
       v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, SPACE, ACTION);  
@@ -68,6 +70,8 @@ public:
 
   static void SetCallback(py::object callback, v8::ObjectSpace space, v8::AllocationAction action)
   {
+    CPythonGIL python_gil;
+      
     s_callbacks[std::make_pair(space, action)]->Set(callback);
   }
 };
@@ -212,11 +216,6 @@ void CEngine::Expose(void)
                                                                                        py::arg("callback") = py::object(),
                                                                                        py::arg("dependencies") = py::list(),
                                                                                        py::arg("register") = true)))
-    .def(py::init<const std::wstring&, const std::wstring&, py::object, py::list, bool>((py::arg("name"), 
-                                                                                         py::arg("source"),
-                                                                                         py::arg("callback") = py::object(),
-                                                                                         py::arg("dependencies") = py::list(),
-                                                                                         py::arg("register") = true)))
     .add_static_property("extensions", &CExtension::GetExtensions)
 
     .add_property("name", &CExtension::GetName, "The name of extension")
@@ -656,35 +655,6 @@ CExtension::CExtension(const std::string& name, const std::string& source,
   m_extension.reset(new CPythonExtension(name.c_str(), source.c_str(), 
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
   
-  if (autoRegister) this->Register();
-}
-
-CExtension::CExtension(const std::wstring& name, const std::wstring& source, 
-                       py::object callback, py::list deps, bool autoRegister)
-  : m_deps(deps), m_registered(false)
-{
-  for (Py_ssize_t i=0; i<PyList_Size(deps.ptr()); i++)
-  {
-    py::extract<const std::string> extractor(::PyList_GetItem(deps.ptr(), i));
-
-    if (extractor.check()) 
-    {
-      m_depNames.push_back(extractor());
-      m_depPtrs.push_back(m_depNames.rbegin()->c_str());
-    }
-  }
-
-  std::string utf8_name = EncodeUtf8(name), utf8_source = EncodeUtf8(source);
-
-  if (!v8i::String::IsAscii(utf8_name.c_str(), utf8_name.size()) ||
-      !v8i::String::IsAscii(utf8_source.c_str(), utf8_source.size())) 
-  {
-    throw CJavascriptException("v8 is not support NON-ASCII name or source in the JS extension");
-  }
-
-  m_extension.reset(new CPythonExtension(utf8_name.c_str(), utf8_source.c_str(), 
-    callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
-
   if (autoRegister) this->Register();
 }
 

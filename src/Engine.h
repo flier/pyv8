@@ -128,7 +128,6 @@ class CExtension
   static std::vector< boost::shared_ptr<v8::Extension> > s_extensions;
 public:
   CExtension(const std::string& name, const std::string& source, py::object callback, py::list dependencies, bool autoRegister);
-  CExtension(const std::wstring& name, const std::wstring& source, py::object callback, py::list dependencies, bool autoRegister);
 
   const std::string GetName(void) { return m_extension->name(); }
   const std::string GetSource(void) { return std::string(m_extension->source()->data(), m_extension->source()->length()); }

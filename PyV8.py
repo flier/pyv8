@@ -105,7 +105,36 @@ _PyV8._JSError._jsclass = JSError
 JSObject = _PyV8.JSObject
 JSArray = _PyV8.JSArray
 JSFunction = _PyV8.JSFunction
-JSExtension = _PyV8.JSExtension
+
+# contribute by e.generalov
+
+JS_ESCAPABLE = re.compile(r'([^\x00-\x7f])')
+HAS_UTF8 = re.compile(r'[\x80-\xff]')
+
+def _js_escape_unicode_re_callack(match):
+    n = ord(match.group(0))
+    if n < 0x10000:
+        return r'\u%04x' % (n,)
+    else:
+        # surrogate pair
+        n -= 0x10000
+        s1 = 0xd800 | ((n >> 10) & 0x3ff)
+        s2 = 0xdc00 | (n & 0x3ff)
+        return r'\u%04x\u%04x' % (s1, s2)
+
+def js_escape_unicode(text):
+    """Return an ASCII-only representation of a JavaScript string"""
+    if isinstance(text, str):
+        if HAS_UTF8.search(text) is None:
+            return text
+
+        text = text.decode('UTF-8')
+
+    return str(JS_ESCAPABLE.sub(_js_escape_unicode_re_callack, text))
+
+class JSExtension(_PyV8.JSExtension):
+    def __init__(self, name, source, callback=None, dependencies=[], register=True):
+        _PyV8.JSExtension.__init__(self, js_escape_unicode(name), js_escape_unicode(source), callback, dependencies, register)
 
 def func_apply(self, thisArg, argArray=[]):
     if isinstance(thisArg, JSObject):
@@ -2024,7 +2053,7 @@ class TestEngine(unittest.TestCase):
         with JSContext(extensions=['helloW/javascript']) as ctxt:
             self.assertEqual("hello flier from javascript", ctxt.eval("helloW('flier')"))
 
-        self.assertRaises(JSError, JSExtension, u"helloW/javascript", u"中文")
+            self.assertEqual(u"hello 世界 from javascript", ctxt.eval(u"helloW('世界')").decode('UTF-8'))
 
     def testNativeExtension(self):
         extSrc = "native function hello();"
@@ -2141,7 +2170,7 @@ class TestEngine(unittest.TestCase):
         JSEngine.setMemoryAllocationCallback(callback)
 
         with JSContext() as ctxt:
-            self.assertEquals({}, alloc)
+            self.assertFalse(alloc.has_key((JSObjectSpace.Code, JSAllocationAction.alloc)))
 
             ctxt.eval("var o = new Array(1000);")
 
