@@ -55,7 +55,7 @@ void CWrapper::Expose(void)
     .add_property("__members__", &CJavascriptObject::GetAttrList)
 
     // Emulating dict object
-    .def("keys", &CJavascriptObject::GetAttrList, "Get a list of an object¡¯s attributes.")
+    .def("keys", &CJavascriptObject::GetAttrList, "Get a list of an object's attributes.")
 
     .def("__getitem__", &CJavascriptObject::GetAttr)
     .def("__setitem__", &CJavascriptObject::SetAttr)

@@ -18,24 +18,10 @@ public:
   }
   bool entered(void) { return NULL != m_locker.get(); }
 
-  void enter(void) 
-  { 
-    Py_BEGIN_ALLOW_THREADS
+  void enter(void);
+  void leave(void);
 
-    m_locker.reset(new v8::Locker(m_isolate.get() ? m_isolate->GetIsolate() : NULL)); 
-
-    Py_END_ALLOW_THREADS
-  }
-  void leave(void) 
-  { 
-    Py_BEGIN_ALLOW_THREADS
-
-    m_locker.reset(); 
-
-    Py_END_ALLOW_THREADS
-  }  
-
-  static bool IsLocked() { return v8::Locker::IsLocked(NULL); }
+  static bool IsLocked();
   static bool IsPreemption(void) { return s_preemption; }
   static void StartPreemption(int every_n_ms);
   static void StopPreemption(void);

@@ -1,6 +1,30 @@
 #include "Locker.h"
 
+#include "V8Internal.h"
+
 bool CLocker::s_preemption = false;
+
+void CLocker::enter(void)
+{
+    Py_BEGIN_ALLOW_THREADS
+    
+    m_locker.reset(new v8::Locker(m_isolate.get() ? m_isolate->GetIsolate() : v8i::Isolate::GetDefaultIsolateForLocking()));
+    
+    Py_END_ALLOW_THREADS
+}
+void CLocker::leave(void)
+{
+    Py_BEGIN_ALLOW_THREADS
+    
+    m_locker.reset();
+    
+    Py_END_ALLOW_THREADS
+}
+
+bool CLocker::IsLocked()
+{
+  return v8::Locker::IsLocked(v8i::Isolate::GetDefaultIsolateForLocking());
+}
 
 void CLocker::StartPreemption(int every_n_ms)
 {
