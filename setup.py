@@ -40,6 +40,8 @@ INCLUDE = None
 LIB = None
 DEBUG = False
 
+MAKE = 'gmake' if is_freebsd else 'make'
+
 V8_SNAPSHOT_ENABLED = True      # build using snapshots for faster start-up
 V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
 V8_VMSTATE_TRACKING = DEBUG     # enable VM state tracking
@@ -73,6 +75,7 @@ V8_SVN_URL = os.environ.get('V8_SVN_URL', V8_SVN_URL)
 INCLUDE = os.environ.get('INCLUDE', INCLUDE)
 LIB = os.environ.get('LIB', LIB)
 DEBUG = os.environ.get('DEBUG', DEBUG)
+MAKE = os.environ.get('MAKE', MAKE)
 
 if type(DEBUG) == str:
     DEBUG = DEBUG.lower() in ['true', 'on', 't']
@@ -363,7 +366,7 @@ class build(_build):
                 else:
                     cmdline = 'svn co http://gyp.googlecode.com/svn/trunk build/gyp'
             else:
-                cmdline = 'make dependencies'
+                cmdline = MAKE + ' dependencies'
 
             exec_cmd(cmdline, "Check out GYP from SVN")
         except Exception, e:
@@ -449,7 +452,7 @@ class build(_build):
 
             options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
 
-            cmdline = "make %s %s.%s" % (options, arch, mode)
+            cmdline = "%s %s %s.%s" % (MAKE, options, arch, mode)
 
             exec_cmd(cmdline, "build v8 from SVN")
 
