@@ -404,7 +404,7 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
 
         @property
         def arguments(self):
-            return FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
+            return JSDebugEvent.FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
 
         def localCount(self, idx):
             return int(self.frame.localCount())
@@ -417,7 +417,7 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
 
         @property
         def locals(self):
-            return FrameData(self, self.localCount, self.localName, self.localValue)
+            return JSDebugEvent.FrameData(self, self.localCount, self.localName, self.localValue)
 
         @property
         def sourcePosition(self):
@@ -907,8 +907,6 @@ class TestContext(unittest.TestCase):
 
                     with ctxt1:
                         self.assertEquals(1234, int(global1.custom))
-                        
-                    self.assertEquals(1234, int(global2.custom))
 
     def _testSecurityChecks(self):
         with JSContext() as env1:
@@ -965,7 +963,7 @@ class TestContext(unittest.TestCase):
 
             with env2:
                 self.assertEquals(3, int(env2.eval("this.env1.prop")))
-                self.assertEquals("false", str(e.eval("delete env1.prop")))
+                self.assertEquals("false", str(env2.eval("delete env1.prop")))
 
             # Check that env1.prop still exists.
             self.assertEquals(3, int(env1.locals.prop))
