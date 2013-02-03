@@ -1665,6 +1665,32 @@ ObjectTracer::LivingMap * ObjectTracer::GetLivingMapping(void)
   return living.release();
 }
 
+void ObjectTracer::FreeLivingMapping(v8::Handle<v8::Context> ctxt)
+{
+  v8::HandleScope handle_scope;
+    
+  v8::Handle<v8::Value> value = ctxt->Global()->GetHiddenValue(v8::String::NewSymbol("__living__"));
+    
+  if (value.IsEmpty()) return;
+  
+  std::auto_ptr<LivingMap> living((LivingMap *) v8::External::Cast(*value)->Value());
+  
+  if (!living.get()) return;
+    
+  ctxt->Global()->DeleteHiddenValue(v8::String::NewSymbol("__living__"));
+    
+  for (LivingMap::const_iterator it = living->begin(); it != living->end(); it++)
+  {
+    v8::Persistent<v8::Value> *handle = (v8::Persistent<v8::Value> *) it->second;
+    
+    handle->ClearWeak();
+    handle->Dispose();
+    handle->Clear();
+    
+    Py_XDECREF(it->first);
+  }
+}
+
 v8::Persistent<v8::Value> ObjectTracer::FindCache(py::object obj)
 {
   LivingMap *living = GetLivingMapping();

@@ -225,6 +225,7 @@ public:
   static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
 
   static v8::Persistent<v8::Value> FindCache(py::object obj);
+  static void FreeLivingMapping(v8::Handle<v8::Context> ctxt);
 };
 
 #endif
