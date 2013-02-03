@@ -36,6 +36,8 @@
 		5727C752162B17CB00D1F488 /* Python in Frameworks */ = {isa = PBXBuildFile; fileRef = 5727C751162B17CB00D1F488 /* Python */; };
 		57DAC0681664650500E6DDE9 /* libv8_base.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DAC0651664650500E6DDE9 /* libv8_base.a */; };
 		57DAC0691664650500E6DDE9 /* libv8_snapshot.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DAC0661664650500E6DDE9 /* libv8_snapshot.a */; };
+		57EA044C16BE67FC003754B8 /* libboost_thread-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */; };
+		57EA044E16BE6818003754B8 /* libboost_system-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57EA044D16BE6818003754B8 /* libboost_system-mt.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,7 +49,7 @@
 		5727C71C162B0EF500D1F488 /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
 		5727C71D162B0EF500D1F488 /* Debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Debug.cpp; sourceTree = "<group>"; };
 		5727C71E162B0EF500D1F488 /* Debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Debug.h; sourceTree = "<group>"; };
-		5727C71F162B0EF500D1F488 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Engine.cpp; sourceTree = "<group>"; };
+		5727C71F162B0EF500D1F488 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Engine.cpp; sourceTree = "<group>"; tabWidth = 2; };
 		5727C720162B0EF500D1F488 /* Engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
 		5727C721162B0EF500D1F488 /* Exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Exception.cpp; sourceTree = "<group>"; };
 		5727C722162B0EF500D1F488 /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Exception.h; sourceTree = "<group>"; };
@@ -72,6 +74,8 @@
 		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python; sourceTree = "<absolute>"; };
 		57DAC0651664650500E6DDE9 /* libv8_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.a; path = ../../Development/v8/out/x64.release/libv8_base.a; sourceTree = "<group>"; };
 		57DAC0661664650500E6DDE9 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
+		57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_thread-mt.a"; path = "/opt/local/lib/libboost_thread-mt.a"; sourceTree = "<absolute>"; };
+		57EA044D16BE6818003754B8 /* libboost_system-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_system-mt.a"; path = "/opt/local/lib/libboost_system-mt.a"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +87,8 @@
 				57DAC0691664650500E6DDE9 /* libv8_snapshot.a in Frameworks */,
 				5727C752162B17CB00D1F488 /* Python in Frameworks */,
 				5727C750162B179000D1F488 /* libboost_python-mt.a in Frameworks */,
+				57EA044C16BE67FC003754B8 /* libboost_thread-mt.a in Frameworks */,
+				57EA044E16BE6818003754B8 /* libboost_system-mt.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,6 +162,8 @@
 				57DAC0651664650500E6DDE9 /* libv8_base.a */,
 				57DAC0661664650500E6DDE9 /* libv8_snapshot.a */,
 				5727C74F162B179000D1F488 /* libboost_python-mt.a */,
+				57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */,
+				57EA044D16BE6818003754B8 /* libboost_system-mt.a */,
 			);
 			name = Libraries;
 			sourceTree = "<group>";

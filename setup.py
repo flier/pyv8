@@ -30,7 +30,7 @@ from setuptools.command.develop import develop as _develop
 # please look in buildconf.py.example for more information
 PYV8_HOME = os.path.abspath(os.path.dirname(__file__))
 BOOST_HOME = None
-BOOST_PYTHON_MT = False
+BOOST_MT = True
 BOOST_STATIC_LINK = False
 PYTHON_HOME = None
 V8_HOME = None
@@ -69,7 +69,7 @@ except ImportError:
 # override defaults from environment
 PYV8_HOME = os.environ.get('PYV8_HOME', PYV8_HOME)
 BOOST_HOME = os.environ.get('BOOST_HOME', BOOST_HOME)
-BOOST_PYTHON_MT = os.environ.get('BOOST_PYTHON_MT', BOOST_PYTHON_MT)
+BOOST_MT = os.environ.get('BOOST_MT', BOOST_MT)
 PYTHON_HOME = os.environ.get('PYTHON_HOME', PYTHON_HOME)
 V8_HOME = os.environ.get('V8_HOME', V8_HOME)
 V8_SVN_URL = os.environ.get('V8_SVN_URL', V8_SVN_URL)
@@ -142,7 +142,10 @@ if V8_FAST_TLS:
     macros += [("V8_FAST_TLS", None)]
 
 v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
-boost_lib = 'boost_python-mt' if BOOST_PYTHON_MT else 'boost_python'
+boost_libs = ['boost_python', 'boost_thread', 'boost_system']
+
+if BOOST_MT:
+    boost_libs = [lib + '-mt' for lib in boost_libs]
 
 include_dirs = [
     os.path.join(V8_HOME, 'include'),
@@ -228,9 +231,9 @@ elif is_linux or is_freebsd:
     extra_compile_args += ["-Wno-write-strings"]
 
     if BOOST_STATIC_LINK:
-        extra_link_args.append(os.path.join(boost_lib_dir, "lib%s.a" % boost_lib))
+        extra_link_args += [os.path.join(boost_lib_dir, "lib%s.a") % lib for lib in boost_libs]
     else:
-        libraries.append(boost_lib)
+        libraries += boost_libs
 
     if is_freebsd:
         libraries += ["execinfo"]
@@ -252,7 +255,9 @@ elif is_mac: # contribute by Artur Ventura
         BOOST_HOME,
     ]
     library_dirs += [os.path.join('/lib')]
-    libraries += [boost_lib, "c"]
+    libraries += boost_libs + ["c"]
+
+    print libraries
 
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
@@ -268,7 +273,7 @@ elif is_osx: # contribute by progrium and alec
         "/usr/local/lib", # HomeBrew$ brew install boost
     ]
 
-    libraries += ["boost_python-mt"]
+    libraries += boost_libs
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
 

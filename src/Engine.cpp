@@ -1,6 +1,8 @@
 #include "Engine.h"
 
 #include <boost/preprocessor.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
 
 #include "V8Internal.h"
 
@@ -21,16 +23,23 @@ template <v8::ObjectSpace SPACE, v8::AllocationAction ACTION>
 struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
 {  
   static py::object s_callback;
+  
+  typedef boost::mutex lock_t;
+  typedef boost::lock_guard<lock_t> lock_guard_t;
+  
+  static lock_t s_callbackLock;
 
   static void onMemoryAllocation(v8::ObjectSpace space, v8::AllocationAction action, int size)
   {
-    CPythonGIL python_gil;
-      
+    lock_guard_t hold(s_callbackLock);
+    
     if (s_callback.ptr() != Py_None) s_callback(space, action, size);
   }
 
   virtual void Set(py::object callback)
-  {      
+  {
+    lock_guard_t hold(s_callbackLock);
+    
     if (s_callback.ptr() == Py_None && callback.ptr() != Py_None)
     {
       v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, SPACE, ACTION);  
@@ -46,6 +55,9 @@ struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
 
 template<v8::ObjectSpace space, v8::AllocationAction action> 
 py::object MemoryAllocationCallbackStub<space, action>::s_callback;
+
+template<v8::ObjectSpace space, v8::AllocationAction action>
+typename MemoryAllocationCallbackStub<space, action>::lock_t MemoryAllocationCallbackStub<space, action>::s_callbackLock;
 
 class MemoryAllocationManager
 {
@@ -69,9 +81,7 @@ public:
   }
 
   static void SetCallback(py::object callback, v8::ObjectSpace space, v8::AllocationAction action)
-  {
-    CPythonGIL python_gil;
-      
+  {      
     s_callbacks[std::make_pair(space, action)]->Set(callback);
   }
 };
