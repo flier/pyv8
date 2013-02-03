@@ -1608,14 +1608,19 @@ ObjectTracer::~ObjectTracer()
   {
     assert(m_handle.IsNearDeath());
 
-    m_handle.ClearWeak();
-    m_handle.Dispose();
-    m_handle.Clear();
-
+    dispose();
+    
     m_living->erase(m_object->ptr());
-
-    m_object.reset();
   }
+}
+
+void ObjectTracer::dispose(void)
+{
+  m_handle.ClearWeak();
+  m_handle.Dispose();
+  m_handle.Clear();
+  
+  m_object.reset();
 }
 
 ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *object)
@@ -1631,7 +1636,7 @@ void ObjectTracer::MakeWeak(void)
 {
   m_handle.MakeWeak(this, WeakCallback);
 
-  m_living->insert(std::make_pair(m_object->ptr(), &m_handle));
+  m_living->insert(std::make_pair(m_object->ptr(), this));
 }
 
 void ObjectTracer::WeakCallback(v8::Persistent<v8::Value> value, void* parameter)
@@ -1681,13 +1686,9 @@ void ObjectTracer::FreeLivingMapping(v8::Handle<v8::Context> ctxt)
     
   for (LivingMap::const_iterator it = living->begin(); it != living->end(); it++)
   {
-    v8::Persistent<v8::Value> *handle = (v8::Persistent<v8::Value> *) it->second;
+    std::auto_ptr<ObjectTracer> tracer(it->second);
     
-    handle->ClearWeak();
-    handle->Dispose();
-    handle->Clear();
-    
-    Py_XDECREF(it->first);
+    tracer->dispose();
   }
 }
 
@@ -1701,7 +1702,7 @@ v8::Persistent<v8::Value> ObjectTracer::FindCache(py::object obj)
 
     if (it != living->end())
     {
-      return *((v8::Persistent<v8::Value> *)it->second);    
+      return it->second->m_handle;
     }
   }
 

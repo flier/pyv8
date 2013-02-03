@@ -57,11 +57,11 @@ public:
   void Enter(void) { m_context->Enter(); }
   void Leave(void)
   {
-    m_context->Exit();
-      
   #ifdef SUPPORT_TRACE_LIFECYCLE
     ObjectTracer::FreeLivingMapping(m_context);
   #endif
+      
+    m_context->Exit();
   }
 
   py::object Evaluate(const std::string& src, const std::string name = std::string(),

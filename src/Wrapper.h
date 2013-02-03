@@ -207,9 +207,11 @@ class ObjectTracer
   v8::Persistent<v8::Value> m_handle;
   std::auto_ptr<py::object> m_object;
 
-  typedef std::map<PyObject *, void *> LivingMap;
+  typedef std::map<PyObject *, ObjectTracer *> LivingMap;
 
   LivingMap *m_living;
+    
+  void dispose(void);
 
   static LivingMap *GetLivingMapping(void);
 public:
