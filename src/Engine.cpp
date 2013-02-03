@@ -277,70 +277,48 @@ struct PyBufferByteSink : public v8i::SnapshotByteSink
   {
     m_data.push_back(byte);
   }
+  
+  virtual int Position()
+  {
+    return (int) m_data.size();
+  }
 };
 
 py::object CEngine::Serialize(void)
 {
   v8::V8::Initialize();
 
-  v8i::StatsTable::SetCounterFunction(&CEngine::CounterLookup);
-
   PyBufferByteSink sink;
 
-  v8i::Serializer serializer(&sink);
-
-  v8i::Heap::CollectAllGarbage(true);
+  v8i::StartupSerializer serializer(&sink);
 
   serializer.Serialize();
 
-  py::object obj(py::handle<>(::PyBuffer_New(sink.m_data.size())));
-
-  void *buf = NULL;
-  Py_ssize_t len = 0;
-
-  if (0 == ::PyObject_AsWriteBuffer(obj.ptr(), &buf, &len) && buf && len > 0)
-  {
-    memcpy(buf, &sink.m_data[0], len);    
-  }
-  else
-  {
-    obj = py::object();
-  }
+  py::object obj(py::handle<>(::PyByteArray_FromStringAndSize((const char *) &sink.m_data[0], sink.m_data.size())));
 
   return obj;
 }
 void CEngine::Deserialize(py::object snapshot)
 {
-  const void *buf = NULL;
-  Py_ssize_t len = 0;
-
-  if (PyBuffer_Check(snapshot.ptr()))
-  {
-    if (0 != ::PyObject_AsReadBuffer(snapshot.ptr(), &buf, &len))
+  Py_buffer buf;
+  
+  if (snapshot.ptr() != Py_None && PyObject_CheckBuffer(snapshot.ptr()))
+  {    
+    if (0 == ::PyObject_GetBuffer(snapshot.ptr(), &buf, PyBUF_WRITABLE))
     {
-      buf = NULL;
+      Py_BEGIN_ALLOW_THREADS
+      
+      v8i::SnapshotByteSource source((const v8i::byte *) buf.buf, (int) buf.len);
+      v8i::Deserializer deserializer(&source);
+      
+      deserializer.Deserialize();
+      
+      v8i::V8::Initialize(&deserializer);
+      
+      Py_END_ALLOW_THREADS
+      
+      ::PyBuffer_Release(&buf);
     }
-  }
-  else if(PyString_CheckExact(snapshot.ptr()) || PyUnicode_CheckExact(snapshot.ptr()))
-  {
-    if (0 != ::PyString_AsStringAndSize(snapshot.ptr(), (char **)&buf, &len))
-    {
-      buf = NULL;
-    }
-  }
-
-  if (buf && len > 0)
-  {
-    Py_BEGIN_ALLOW_THREADS
-
-    v8i::SnapshotByteSource source((const v8i::byte *) buf, len);
-    v8i::Deserializer deserializer(&source);
-
-    //deserializer.Deserialize();
-
-    v8i::V8::Initialize(&deserializer);
-
-    Py_END_ALLOW_THREADS 
   }
 }
 
@@ -404,19 +382,7 @@ py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
   if (!precompiled.get()) CJavascriptException::ThrowIf(try_catch);
   if (precompiled->HasError()) throw CJavascriptException("fail to compile", ::PyExc_SyntaxError);
 
-  py::object obj(py::handle<>(::PyBuffer_New(precompiled->Length())));
-
-  void *buf = NULL;
-  Py_ssize_t len = 0;
-
-  if (0 == ::PyObject_AsWriteBuffer(obj.ptr(), &buf, &len) && buf && len > 0)
-  {
-    memcpy(buf, precompiled->Data(), len);    
-  }
-  else
-  {
-    obj = py::object();
-  }
+  py::object obj(py::handle<>(::PyByteArray_FromStringAndSize(precompiled->Data(), precompiled->Length())));
 
   return obj;
 }
@@ -440,14 +406,24 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
   v8::Handle<v8::Script> script;
   std::auto_ptr<v8::ScriptData> script_data;
 
-  if (PyBuffer_Check(precompiled.ptr()))
+  if (precompiled.ptr() != Py_None)
   {
-    const void *buf = NULL;
-    Py_ssize_t len = 0;
-
-    if (0 == ::PyObject_AsReadBuffer(precompiled.ptr(), &buf, &len) && buf && len > 0)
+    if (PyObject_CheckBuffer(precompiled.ptr()))
     {
-      script_data.reset(v8::ScriptData::New((const char *)buf, len));
+      Py_buffer buf;
+      
+      if (-1 == ::PyObject_GetBuffer(precompiled.ptr(), &buf, PyBUF_WRITABLE))
+      {
+        throw CJavascriptException("fail to get data from the precompiled buffer");
+      }
+      
+      script_data.reset(v8::ScriptData::New((const char *)buf.buf, (int) buf.len));
+      
+      ::PyBuffer_Release(&buf);
+    }
+    else 
+    {
+      throw CJavascriptException("need a precompiled buffer object");
     }
   }
 
