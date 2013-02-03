@@ -90,6 +90,9 @@ void CAstNode::Expose(void)
     
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
     .add_property("isPropertyName", &CAstExpression::IsPropertyName)
+    .add_property("isSmi", &CAstExpression::IsSmiLiteral)
+    .add_property("isString", &CAstExpression::IsStringLiteral)
+    .add_property("isNull", &CAstExpression::IsNullLiteral)
     ;
 
   py::class_<CAstBreakableStatement, py::bases<CAstStatement> >("AstBreakableStatement", py::no_init)
@@ -192,9 +195,16 @@ void CAstNode::Expose(void)
     ;
   
   py::class_<CAstCaseClause>("AstCaseClause", py::no_init)
+    .add_property("isDefault", &CAstCaseClause::is_default)
+    .add_property("label", &CAstCaseClause::label)
+    .add_property("bodyTarget", &CAstCaseClause::body_target)
+    .add_property("position", &CAstCaseClause::position)
+    .add_property("statements", &CAstCaseClause::statements)
     ;
 
   py::class_<CAstSwitchStatement, py::bases<CAstBreakableStatement> >("AstSwitchStatement", py::no_init)
+    .add_property("tag", &CAstSwitchStatement::tag)
+    .add_property("cases", &CAstSwitchStatement::cases)
     ;
 
   py::class_<CAstIfStatement, py::bases<CAstStatement> >("AstIfStatement", py::no_init)

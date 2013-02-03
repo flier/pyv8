@@ -189,6 +189,15 @@ protected:
   CAstExpression(v8i::Expression *expr) : CAstNode(expr) {}
 public:
   bool IsPropertyName(void) { return as<v8i::Expression>()->IsPropertyName(); }
+  
+  // True iff the expression is a literal represented as a smi.
+  bool IsSmiLiteral(void) { return as<v8i::Expression>()->IsSmiLiteral(); }
+  
+  // True iff the expression is a string literal.
+  bool IsStringLiteral(void) { return as<v8i::Expression>()->IsStringLiteral(); }
+  
+  // True iff the expression is the null literal.
+  bool IsNullLiteral(void) { return as<v8i::Expression>()->IsNullLiteral(); }
 };
 
 class CAstBreakableStatement : public CAstStatement
@@ -407,6 +416,16 @@ class CAstCaseClause
   v8i::CaseClause *m_clause;
 public:
   CAstCaseClause(v8i::CaseClause *clause) : m_clause(clause) {}
+  
+  bool is_default(void) { return m_clause->is_default(); }
+    
+  py::object label(void) { return m_clause->is_default() ? py::object() : to_python(m_clause->label()); }
+  
+  CAstLabel body_target(void) { return CAstLabel(m_clause->body_target()); }
+  
+  py::object statements(void) { return to_python(m_clause->statements()); }
+  
+  int position(void) { return m_clause->position(); }
 };
 
 class CAstSwitchStatement : public CAstBreakableStatement

@@ -2646,6 +2646,40 @@ class TestAST(unittest.TestCase):
             i>j?i:j;
             """))
 
+    def testSwitchStatement(self):
+        class SwitchStatementChecker(TestAST.Checker):
+            def onSwitchStatement(self, stmt):
+                self.called.append('switch')
+
+                self.assertEquals('expr', stmt.tag.name)
+                self.assertEquals(2, len(stmt.cases))
+
+                case = stmt.cases[0]
+
+                self.assertFalse(case.isDefault)
+                self.assert_(case.label.isString)
+                self.assertEquals(0, case.bodyTarget.pos)
+                self.assertEquals(57, case.position)
+                self.assertEquals(1, len(case.statements))
+
+                case = stmt.cases[1]
+
+                self.assert_(case.isDefault)
+                self.assertEquals(None, case.label)
+                self.assertEquals(0, case.bodyTarget.pos)
+                self.assertEquals(109, case.position)
+                self.assertEquals(1, len(case.statements))
+
+        with SwitchStatementChecker(self) as checker:
+            self.assertEquals(['switch'], checker.test("""
+            switch (expr) {
+                case 'flier':
+                    break;
+                default:
+                    break;
+            }
+            """))
+
 if __name__ == '__main__':
     if "-v" in sys.argv:
         level = logging.DEBUG
