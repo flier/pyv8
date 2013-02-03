@@ -41,7 +41,7 @@
 /* Begin PBXFileReference section */
 		5727C703162B0E8200D1F488 /* pyv8.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = pyv8.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		5727C718162B0EF500D1F488 /* AST.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AST.cpp; sourceTree = "<group>"; };
-		5727C719162B0EF500D1F488 /* AST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AST.h; sourceTree = "<group>"; };
+		5727C719162B0EF500D1F488 /* AST.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.h; path = AST.h; sourceTree = "<group>"; tabWidth = 2; };
 		5727C71A162B0EF500D1F488 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		5727C71B162B0EF500D1F488 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Context.cpp; sourceTree = "<group>"; };
 		5727C71C162B0EF500D1F488 /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
@@ -65,13 +65,11 @@
 		5727C72F162B0EF500D1F488 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
 		5727C730162B0EF500D1F488 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
 		5727C731162B0EF500D1F488 /* V8Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = V8Internal.h; sourceTree = "<group>"; };
-		5727C732162B0EF500D1F488 /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Wrapper.cpp; sourceTree = "<group>"; };
+		5727C732162B0EF500D1F488 /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Wrapper.cpp; sourceTree = "<group>"; tabWidth = 2; };
 		5727C733162B0EF500D1F488 /* Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Wrapper.h; sourceTree = "<group>"; };
 		5727C74D162B175800D1F488 /* Python.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python.framework; path = System/Library/Frameworks/Python.framework; sourceTree = SDKROOT; };
 		5727C74F162B179000D1F488 /* libboost_python-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_python-mt.a"; path = "/opt/local/lib/libboost_python-mt.a"; sourceTree = "<absolute>"; };
 		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python; sourceTree = "<absolute>"; };
-		5766CB84162BB31E00037C7C /* libv8.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8.a; path = ../../Development/v8/libv8.a; sourceTree = "<group>"; };
-		5766CB86162BB32D00037C7C /* libv8preparser.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8preparser.a; path = ../../Development/v8/libv8preparser.a; sourceTree = "<group>"; };
 		57DAC0651664650500E6DDE9 /* libv8_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.a; path = ../../Development/v8/out/x64.release/libv8_base.a; sourceTree = "<group>"; };
 		57DAC0661664650500E6DDE9 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -154,9 +152,9 @@
 		5766CB88162BB45100037C7C /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				5766CB86162BB32D00037C7C /* libv8preparser.a */,
-				5766CB84162BB31E00037C7C /* libv8.a */,
 				5727C751162B17CB00D1F488 /* Python */,
+				57DAC0651664650500E6DDE9 /* libv8_base.a */,
+				57DAC0661664650500E6DDE9 /* libv8_snapshot.a */,
 				5727C74F162B179000D1F488 /* libboost_python-mt.a */,
 			);
 			name = Libraries;
@@ -165,8 +163,6 @@
 		5766CB89162BB45C00037C7C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				57DAC0651664650500E6DDE9 /* libv8_base.a */,
-				57DAC0661664650500E6DDE9 /* libv8_snapshot.a */,
 				5727C74D162B175800D1F488 /* Python.framework */,
 			);
 			name = Frameworks;
