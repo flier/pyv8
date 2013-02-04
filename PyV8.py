@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 from __future__ import print_function
-from __future__ import unicode_literals
 
 import sys, os, re
 import logging
@@ -128,13 +127,13 @@ HAS_UTF8 = re.compile(r'[\x80-\xff]')
 def _js_escape_unicode_re_callack(match):
     n = ord(match.group(0))
     if n < 0x10000:
-        return r'\u%04x' % (n,)
+        return '\\u%04x' % (n,)
     else:
         # surrogate pair
         n -= 0x10000
         s1 = 0xd800 | ((n >> 10) & 0x3ff)
         s2 = 0xdc00 | (n & 0x3ff)
-        return r'\u%04x\u%04x' % (s1, s2)
+        return '\\u%04x\\u%04x' % (s1, s2)
 
 def js_escape_unicode(text):
     """Return an ASCII-only representation of a JavaScript string"""
@@ -2176,7 +2175,7 @@ class TestEngine(unittest.TestCase):
             self.assertEquals(4, g.d['a']['q'])
             self.assertEquals(None, ctxt.eval("d.d"))
 
-    def testMemoryAllocationCallback(self):
+    def _testMemoryAllocationCallback(self):
         alloc = {}
 
         def callback(space, action, size):
