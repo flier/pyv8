@@ -37,7 +37,7 @@ from setuptools.command.develop import develop as _develop
 # please look in buildconf.py.example for more information
 PYV8_HOME = os.path.abspath(os.path.dirname(__file__))
 BOOST_HOME = None
-BOOST_MT = True
+BOOST_MT = is_osx
 BOOST_STATIC_LINK = False
 PYTHON_HOME = None
 V8_HOME = None
@@ -500,6 +500,13 @@ pyv8 = Extension(name = "_PyV8",
                  extra_link_args = extra_link_args,
                  )
 
+extra = {}
+
+if is_python3:
+    extra.update({
+        'use_2to3': True
+    })
+
 setup(name='PyV8',
       cmdclass = { 'build': build, 'v8build': _build, 'develop': develop },
       version='1.0-dev',
@@ -515,4 +522,5 @@ setup(name='PyV8',
       py_modules=['PyV8'],
       ext_modules=[pyv8],
       test_suite='PyV8',
-      classifiers=classifiers)
+      classifiers=classifiers,
+      **extra)
