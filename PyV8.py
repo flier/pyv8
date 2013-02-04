@@ -869,6 +869,18 @@ from datetime import *
 import unittest
 import traceback
 
+if is_python3:
+    def toNativeString(s):
+        return s
+    def toUnicodeString(s):
+        return s
+else:
+    def toNativeString(s, encoding='utf-8'):
+        return s.encode(encoding) if isinstance(s, unicode) else s
+
+    def toUnicodeString(s, encoding='utf-8'):
+        return s if isinstance(s, unicode) else unicode(s, encoding)
+
 class TestContext(unittest.TestCase):
     def testMultiNamespace(self):
         self.assert_(not bool(JSContext.inContext))
@@ -1437,17 +1449,17 @@ class TestWrapper(unittest.TestCase):
             self.assert_(ctxt.eval('array3[1] === 2'))
             self.assert_(ctxt.eval('array3[9] === undefined'))
 
-            cases = {
-                "a = Array(7); for(i=0; i<a.length; i++) a[i] = i; a[3] = undefined; a[a.length-1]; a" : ("0,1,2,,4,5,6", [0, 1, 2, None, 4, 5, 6]),
-                "a = Array(7); for(i=0; i<a.length - 1; i++) a[i] = i; a[a.length-1]; a" : ("0,1,2,3,4,5,", [0, 1, 2, 3, 4, 5, None]),
-                "a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a" : (",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6])
-            }
+            cases = [
+                ("a = Array(7); for(i=0; i<a.length; i++) a[i] = i; a[3] = undefined; a[a.length-1]; a", "0,1,2,,4,5,6", [0, 1, 2, None, 4, 5, 6]),
+                ("a = Array(7); for(i=0; i<a.length - 1; i++) a[i] = i; a[a.length-1]; a", "0,1,2,3,4,5,", [0, 1, 2, 3, 4, 5, None]),
+                ("a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a", ",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6])
+            ]
 
-            for code, (keys, values) in list(cases.items()):
-                array = ctxt.eval(code)
+            for case in cases:
+                array = ctxt.eval(case[0])
 
-                self.assertEquals(keys, str(array))
-                self.assertEquals(values, [array[i] for i in range(len(array))])
+                self.assertEquals(case[1], str(array))
+                self.assertEquals(case[2], [array[i] for i in range(len(array))])
 
             self.assertEquals(3, ctxt.eval("(function (arr) { return arr.length; })")(JSArray([1, 2, 3])))
             self.assertEquals(2, ctxt.eval("(function (arr, idx) { return arr[idx]; })")(JSArray([1, 2, 3]), 1))
@@ -1504,7 +1516,7 @@ class TestWrapper(unittest.TestCase):
                 return result;
             })""")
 
-            self.assertEquals(["bar", "foo", "foobar"], list(func(NamedClass())))
+            self.assert_(set(["bar", "foo", "foobar"]).issubset(set(func(NamedClass()))))
             self.assertEquals(["0", "1", "2"], list(func([1, 2, 3])))
             self.assertEquals(["0", "1", "2"], list(func((1, 2, 3))))
             self.assertEquals(["1", "2", "3"], list(func({1:1, 2:2, 3:3})))
@@ -1556,8 +1568,8 @@ class TestWrapper(unittest.TestCase):
 
     def testUnicode(self):
         with JSContext() as ctxt:
-            self.assertEquals(u"人", unicode(ctxt.eval(u"\"人\""), "utf-8"))
-            self.assertEquals(u"é", unicode(ctxt.eval(u"\"é\""), "utf-8"))
+            self.assertEquals(u"人", toUnicodeString(ctxt.eval(u"\"人\"")))
+            self.assertEquals(u"é", toUnicodeString(ctxt.eval(u"\"é\"")))
 
             func = ctxt.eval("(function (msg) { return msg.length; })")
 
@@ -1974,7 +1986,7 @@ class TestEngine(unittest.TestCase):
             var = u'测试'
 
             def __getattr__(self, name):
-                if (name.decode('utf-8')) == u'变量':
+                if (name if is_python3 else name.decode('utf-8')) == u'变量':
                     return self.var
 
                 return JSClass.__getattr__(self, name)
@@ -2000,22 +2012,26 @@ class TestEngine(unittest.TestCase):
 
                 self.assert_(isinstance(s, _PyV8.JSScript))
 
-                self.assertEquals(src.encode('utf-8'), s.source)
+                self.assertEquals(toNativeString(src), s.source)
                 self.assertEquals(2, s.run())
 
-                self.assert_(hasattr(ctxt.locals, u'函数'.encode('utf-8')))
+                func_name = toNativeString(u'函数')
 
-                func = getattr(ctxt.locals, u'函数'.encode('utf-8'))
+                self.assert_(hasattr(ctxt.locals, func_name))
+
+                func = getattr(ctxt.locals, func_name)
 
                 self.assert_(isinstance(func, _PyV8.JSFunction))
 
-                self.assertEquals(u'函数'.encode('utf-8'), func.name)
+                self.assertEquals(func_name, func.name)
                 self.assertEquals("", func.resname)
                 self.assertEquals(1, func.linenum)
                 self.assertEquals(0, func.lineoff)
                 self.assertEquals(0, func.coloff)
 
-                setattr(ctxt.locals, u'变量'.encode('utf-8'), u'测试长字符串')
+                var_name = toNativeString(u'变量')
+
+                setattr(ctxt.locals, var_name, u'测试长字符串')
 
                 self.assertEquals(6, func())
 
@@ -2058,7 +2074,7 @@ class TestEngine(unittest.TestCase):
 
         self.assert_(extUnicodeJs)
         self.assertEqual("helloW/javascript", extUnicodeJs.name)
-        self.assertEqual(extUnicodeSrc.encode('utf-8'), extUnicodeJs.source)
+        self.assertEqual(toNativeString(extUnicodeSrc), extUnicodeJs.source)
         self.assertFalse(extUnicodeJs.autoEnable)
         self.assertTrue(extUnicodeJs.registered)
 
@@ -2067,7 +2083,9 @@ class TestEngine(unittest.TestCase):
         with JSContext(extensions=['helloW/javascript']) as ctxt:
             self.assertEqual("hello flier from javascript", ctxt.eval("helloW('flier')"))
 
-            self.assertEqual(u"hello 世界 from javascript", ctxt.eval(u"helloW('世界')").decode('UTF-8'))
+            ret = ctxt.eval(u"helloW('世界')")
+
+            self.assertEqual(u"hello 世界 from javascript", ret if is_python3 else ret.decode('UTF-8'))
 
     def testNativeExtension(self):
         extSrc = "native function hello();"
@@ -2386,7 +2404,7 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals("i = 0;", str(stmt.init))
                 self.assertEquals("(i < 10)", str(stmt.condition))
-                self.assertEquals("(i++);", str(stmt.__next__ if is_python3 else stmt.next))
+                self.assertEquals("(i++);", str(stmt.next))
 
                 target = stmt.continueTarget
 
