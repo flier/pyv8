@@ -2404,7 +2404,7 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals("i = 0;", str(stmt.init))
                 self.assertEquals("(i < 10)", str(stmt.condition))
-                self.assertEquals("(i++);", str(stmt.next))
+                self.assertEquals("(i++);", str(stmt.nextStmt))
 
                 target = stmt.continueTarget
 

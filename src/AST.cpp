@@ -164,7 +164,7 @@ void CAstNode::Expose(void)
   py::class_<CAstForStatement, py::bases<CAstIterationStatement> >("AstForStatement", py::no_init)
     .add_property("init", &CAstForStatement::GetInit)
     .add_property("condition", &CAstForStatement::GetCondition)
-    .add_property("next", &CAstForStatement::GetNext)
+    .add_property("nextStmt", &CAstForStatement::GetNext)
     .add_property("fastLoop", &CAstForStatement::IsFastLoop)
     ;
 
