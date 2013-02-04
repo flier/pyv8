@@ -6,6 +6,8 @@ from __future__ import print_function
 import sys, os, os.path, math, platform
 import subprocess
 
+is_python3 = sys.version_info.major > 2
+
 is_winnt = os.name == "nt"
 is_linux = os.name == "posix" and sys.platform.startswith("linux")
 is_freebsd = os.name == "posix" and sys.platform.startswith("freebsd")
@@ -20,8 +22,12 @@ if is_cygwin or is_mingw:
     print("ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
     sys.exit(-1)
 
-import ez_setup
-ez_setup.use_setuptools()
+if is_python3:
+    import distribute_setup
+    distribute_setup.use_setuptools()
+else:
+    import ez_setup
+    ez_setup.use_setuptools()
 
 from distutils.command.build import build as _build
 from setuptools import setup, Extension
@@ -505,6 +511,7 @@ setup(name='PyV8',
       url='svn+http://pyv8.googlecode.com/svn/trunk/#egg=pyv8-1.0-dev',
       download_url='http://code.google.com/p/pyv8/downloads/list',
       license="Apache Software License",
+      install_requires=['setuptools'],
       py_modules=['PyV8'],
       ext_modules=[pyv8],
       test_suite='PyV8',
