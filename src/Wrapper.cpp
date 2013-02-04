@@ -166,9 +166,9 @@ void CPythonObject::ThrowIf(void)
   }
   else if (val)
   {
-    if (PyString_CheckExact(val))
+    if (PyBytes_CheckExact(val))
     {
-      msg = PyString_AS_STRING(val);
+      msg = PyBytes_AS_STRING(val);
     }
     else if (PyTuple_CheckExact(val))
     {
@@ -176,9 +176,9 @@ void CPythonObject::ThrowIf(void)
       {
         PyObject *item = PyTuple_GET_ITEM(val, i);
 
-        if (item && PyString_CheckExact(item))
+        if (item && PyBytes_CheckExact(item))
         {
-          msg = PyString_AS_STRING(item);
+          msg = PyBytes_AS_STRING(item);
           break;
         }
       }
@@ -468,7 +468,7 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
     {
       PyObject *item = PyList_GET_ITEM(keys.ptr(), i);
 
-      if (filter_name && PyString_CheckExact(item))
+      if (filter_name && PyBytes_CheckExact(item))
       {
         py::str name(py::handle<>(py::borrowed(item)));
 
@@ -524,7 +524,7 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
     if (!value) 
     {      
-      PyObject *key = ::PyInt_FromSsize_t(index);
+      PyObject *key = ::PyLong_FromSsize_t(index);
 
       value = ::PyObject_GetItem(obj.ptr(), key);
 
@@ -837,11 +837,14 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 
   v8::Handle<v8::Value> result;
 
+#if PY_MAJOR_VERSION < 3
   if (PyInt_CheckExact(obj.ptr()))
   {
     result = v8::Integer::New(::PyInt_AsLong(obj.ptr()));    
   }
-  else if (PyLong_CheckExact(obj.ptr()))
+  else
+#endif
+  if (PyLong_CheckExact(obj.ptr()))
   {
     result = v8::Integer::New(::PyLong_AsLong(obj.ptr()));
   }
@@ -849,7 +852,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   {
     result = v8::Boolean::New(py::extract<bool>(obj));
   }
-  else if (PyString_CheckExact(obj.ptr()) || 
+  else if (PyBytes_CheckExact(obj.ptr()) ||
            PyUnicode_CheckExact(obj.ptr()))
   {
     result = ToString(obj);
@@ -1235,11 +1238,13 @@ void CJavascriptArray::LazyConstructor(void)
   {
     array = v8::Array::New(m_size);
   }
+#if PY_MAJOR_VERSION < 3
   else if (PyInt_CheckExact(m_items.ptr()))
   {
     m_size = PyInt_AS_LONG(m_items.ptr());
     array = v8::Array::New(m_size);
   }
+#endif
   else if (PyLong_CheckExact(m_items.ptr()))
   {
     m_size = PyLong_AsLong(m_items.ptr());

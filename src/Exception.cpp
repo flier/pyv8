@@ -428,5 +428,7 @@ void CJavascriptException::PrintCallStack(py::object file)
 
   PyObject *out = file.ptr() == Py_None ? ::PySys_GetObject((char *) "stdout") : file.ptr();
 
-  m_msg->PrintCurrentStackTrace(::PyFile_AsFile(out));
+  int fd = ::PyObject_AsFileDescriptor(out);
+  
+  m_msg->PrintCurrentStackTrace(fdopen(fd, "w+"));
 }

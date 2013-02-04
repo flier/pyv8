@@ -41,9 +41,9 @@ v8::Handle<v8::String> ToString(py::object str)
 {
   v8::HandleScope scope;
 
-  if (PyString_CheckExact(str.ptr()))
+  if (PyBytes_CheckExact(str.ptr()))
   {
-    return scope.Close(v8::String::New(PyString_AS_STRING(str.ptr()), PyString_GET_SIZE(str.ptr())));  
+    return scope.Close(v8::String::New(PyBytes_AS_STRING(str.ptr()), PyBytes_GET_SIZE(str.ptr())));
   }
   
   if (PyUnicode_CheckExact(str.ptr()))
@@ -67,7 +67,7 @@ v8::Handle<v8::String> ToString(py::object str)
     return scope.Close(v8::String::New(&data[0], len));
   #endif
   }
-  
+    
   return ToString(py::object(py::handle<>(::PyObject_Str(str.ptr()))));
 }
 
