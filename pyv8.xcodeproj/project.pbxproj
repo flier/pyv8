@@ -64,7 +64,7 @@
 		5727C72C162B0EF500D1F488 /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
 		5727C72D162B0EF500D1F488 /* unchecked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unchecked.h; sourceTree = "<group>"; };
 		5727C72E162B0EF500D1F488 /* utf8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf8.h; sourceTree = "<group>"; };
-		5727C72F162B0EF500D1F488 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; };
+		5727C72F162B0EF500D1F488 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; tabWidth = 2; };
 		5727C730162B0EF500D1F488 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
 		5727C731162B0EF500D1F488 /* V8Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = V8Internal.h; sourceTree = "<group>"; };
 		5727C732162B0EF500D1F488 /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Wrapper.cpp; sourceTree = "<group>"; tabWidth = 2; };
@@ -103,7 +103,9 @@
 				5727C717162B0EF500D1F488 /* src */,
 				5727C704162B0E8200D1F488 /* Products */,
 			);
+			indentWidth = 2;
 			sourceTree = "<group>";
+			tabWidth = 2;
 		};
 		5727C704162B0E8200D1F488 /* Products */ = {
 			isa = PBXGroup;
