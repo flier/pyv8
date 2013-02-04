@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+from __future__ import print_function
 
 import sys, os, os.path, math, platform
 import subprocess
@@ -16,7 +17,7 @@ is_64bit = False
 is_arm = False
 
 if is_cygwin or is_mingw:
-    print "ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later."
+    print("ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
     sys.exit(-1)
 
 import ez_setup
@@ -82,7 +83,7 @@ if type(DEBUG) == str:
     DEBUG = DEBUG.lower() in ['true', 'on', 't']
 
 if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
-    print "WARN: V8_HOME doesn't exists or point to a wrong folder, ",
+    print("WARN: V8_HOME doesn't exists or point to a wrong folder, ")
 
     V8_HOME = os.path.join(PYV8_HOME, 'build', ('v8_r%d' % V8_SVN_REVISION) if V8_SVN_REVISION else 'v8')
 
@@ -90,7 +91,7 @@ if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'
 else:
     svn_name = ('SVN r%d' % V8_SVN_REVISION) if V8_SVN_REVISION else 'the latest SVN trunk'
 
-    print "INFO: Found Google v8 base on V8_HOME <%s>" % V8_HOME
+    print("INFO: Found Google v8 base on V8_HOME <%s>" % V8_HOME)
 
 source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
                 "Debug.cpp", "Locker.cpp", "AST.cpp", "PrettyPrinter.cpp", "PyV8.cpp"]
@@ -257,8 +258,6 @@ elif is_mac: # contribute by Artur Ventura
     library_dirs += [os.path.join('/lib')]
     libraries += boost_libs + ["c"]
 
-    print libraries
-
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
     # scons arch=x64 library=static
@@ -286,7 +285,7 @@ elif is_osx: # contribute by progrium and alec
         macros += [("V8_TARGET_ARCH_IA32", None)]
 
 else:
-    print "ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform)
+    print("ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform))
 
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if DEBUG else 'release'
@@ -303,9 +302,9 @@ library_dirs += [
 ]
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
-    print "-" * 20
-    print "INFO: %s ..." % msg
-    print "DEBUG: >", cmdline_or_args
+    print("-" * 20)
+    print("INFO: %s ..." % msg)
+    print("DEBUG: > %s" % cmdline_or_args)
 
     proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, stderr=subprocess.PIPE)
 
@@ -314,20 +313,19 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
     succeeded = proc.returncode == 0
 
     if not succeeded:
-        print "ERROR: %s failed: code=%d" % (msg or "Execute command", proc.returncode)
-        print "DEBUG:", err
+        print("ERROR: %s failed: code=%d" % (msg or "Execute command", proc.returncode))
+        print("DEBUG: %s" % err)
 
     return succeeded
 
 def checkout_v8():
     if svn_name:
-        print "INFO: we will try to update v8 to %s at <%s>" % (svn_name, V8_SVN_URL)
+        print("INFO: we will try to update v8 to %s at <%s>" % (svn_name, V8_SVN_URL))
     else:
-        print "INFO: we will try to checkout and build a private v8 build from <%s>." % V8_SVN_URL
+        print("INFO: we will try to checkout and build a private v8 build from <%s>." % V8_SVN_URL)
 
-    print "=" * 20
-    print "INFO: Checking out or Updating Google V8 code from SVN..."
-    print
+    print("=" * 20)
+    print("INFO: Checking out or Updating Google V8 code from SVN...\n")
 
     update_code = os.path.isdir(V8_HOME) and os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h'))
 
@@ -344,12 +342,12 @@ def checkout_v8():
 
         if r: return
 
-        print "ERROR: Failed to export from V8 svn repository"
+        print("ERROR: Failed to export from V8 svn repository")
     except ImportError:
         #print "WARN: could not import pysvn. Ensure you have the pysvn package installed."
         #print "      on debian/ubuntu, this is called 'python-svn'; on Fedora/RHEL, this is called 'pysvn'."
 
-        print "INFO: we will try to use the system 'svn' command to checkout/update V8 code"
+        print("INFO: we will try to use the system 'svn' command to checkout/update V8 code")
 
     if update_code:
         args = ["svn", "up", V8_HOME]
@@ -366,8 +364,8 @@ def checkout_v8():
     exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
 
 def prepare_gyp():
-    print "=" * 20
-    print "INFO: Installing or updating GYP..."
+    print("=" * 20)
+    print("INFO: Installing or updating GYP...")
 
     try:
         if is_winnt:
@@ -379,15 +377,15 @@ def prepare_gyp():
             cmdline = MAKE + ' dependencies'
 
         exec_cmd(cmdline, "Check out GYP from SVN")
-    except Exception, e:
-        print "ERROR: fail to install GYP:", e
-        print "       http://code.google.com/p/v8/wiki/BuildingWithGYP"
-        print
+    except Exception as e:
+        print("ERROR: fail to install GYP: %s" % e)
+        print("       http://code.google.com/p/v8/wiki/BuildingWithGYP")
+
         sys.exit(-1)
 
 def build_v8():
-    print "=" * 20
-    print "INFO: Patching the GYP scripts"
+    print("=" * 20)
+    print("INFO: Patching the GYP scripts")
 
     # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
     gypi = os.path.join(V8_HOME, "build/standalone.gypi")
@@ -405,9 +403,9 @@ def build_v8():
                                      .replace("'GCC_ENABLE_CPP_RTTI': 'NO'", "'GCC_ENABLE_CPP_RTTI': 'YES'")
 
     if build_script == fixed_build_script:
-        print "INFO: skip to patch the Google v8 build/standalone.gypi file "
+        print("INFO: skip to patch the Google v8 build/standalone.gypi file ")
     else:
-        print "INFO: patch the Google v8 build/standalone.gypi file to enable RTTI and C++ Exceptions"
+        print("INFO: patch the Google v8 build/standalone.gypi file to enable RTTI and C++ Exceptions")
 
         if os.path.exists(gypi + '.bak'):
             os.remove(gypi + '.bak')
@@ -433,7 +431,7 @@ def build_v8():
         'component': 'shared_library',
     }
 
-    print "=" * 20
+    print("=" * 20)
 
     if is_winnt:
         options['env'] = '"PATH:%PATH%,INCLUDE:%INCLUDE%,LIB:%LIB%"'
@@ -445,7 +443,7 @@ def build_v8():
 
         exec_cmd(cmdline, "Update Cygwin from SVN")
 
-        print "INFO: Generating the Visual Studio project files"
+        print("INFO: Generating the Visual Studio project files")
 
         exec_cmd('python build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
 
@@ -458,7 +456,7 @@ def build_v8():
 
         exec_cmd(cmdline, "build v8 from SVN")
     else:
-        print "INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode)
+        print("INFO: building Google v8 with GYP for %s platform with %s mode" % (arch, mode))
 
         options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
 
@@ -471,8 +469,8 @@ def prepare_v8():
         checkout_v8()
         prepare_gyp()
         build_v8()
-    except Exception, e:
-        print "ERROR: fail to checkout and build v8, %s" % e
+    except Exception as e:
+        print("ERROR: fail to checkout and build v8, %s" % e)
 
 class build(_build):
     def run(self):

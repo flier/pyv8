@@ -1,15 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import sys, os, re
-import thread
 import logging
+import collections
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+is_python3 = sys.version_info.major > 2
+
+if is_python3:
+    import _thread as thread
+
+    from io import StringIO
+
+    unicode = str
+    raw_input = input
+else:
+    import thread
+
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
 
 try:
     import json
@@ -163,8 +177,12 @@ class JSLocker(_PyV8.JSLocker):
 
         self.leave()
 
-    def __nonzero__(self):
-        return self.entered()
+    if is_python3:
+        def __bool__(self):
+            return self.entered()
+    else:
+        def __nonzero__(self):
+            return self.entered()
 
 class JSUnlocker(_PyV8.JSUnlocker):
     def __enter__(self):
@@ -175,8 +193,12 @@ class JSUnlocker(_PyV8.JSUnlocker):
     def __exit__(self, exc_type, exc_value, traceback):
         self.leave()
 
-    def __nonzero__(self):
-        return self.entered()
+    if is_python3:
+        def __bool__(self):
+            return self.entered()
+    else:
+        def __nonzero__(self):
+            return self.entered()
 
 class JSClass(object):
     __properties__ = {}
@@ -191,7 +213,7 @@ class JSClass(object):
 
         prop = self.__dict__.setdefault('__properties__', {}).get(name, None)
 
-        if prop and callable(prop[0]):
+        if prop and isinstance(prop[0], collections.Callable):
             return prop[0]()
 
         raise AttributeError(name)
@@ -199,7 +221,7 @@ class JSClass(object):
     def __setattr__(self, name, value):
         prop = self.__dict__.setdefault('__properties__', {}).get(name, None)
 
-        if prop and callable(prop[1]):
+        if prop and isinstance(prop[1], collections.Callable):
             return prop[1](value)
 
         return object.__setattr__(self, name, value)
@@ -365,7 +387,7 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
             return self.count(self.frame)
 
         def __iter__(self):
-            for i in xrange(self.count(self.frame)):
+            for i in range(self.count(self.frame)):
                 yield (self.name(self.frame, i), self.value(self.frame, i))
 
     class Frame(object):
@@ -461,7 +483,7 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
             return self.state.frameCount
 
         def __iter__(self):
-            for i in xrange(self.state.frameCount):
+            for i in range(self.state.frameCount):
                 yield self.state.frame(i)
 
     class State(object):
@@ -959,8 +981,6 @@ class TestContext(unittest.TestCase):
 
             self.assertEquals(3, int(env1.eval("prop")))
 
-            print env1.eval("env1")
-
             with env2:
                 self.assertEquals(3, int(env2.eval("this.env1.prop")))
                 self.assertEquals("false", str(env2.eval("delete env1.prop")))
@@ -1101,7 +1121,6 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals('[object Null]', protoof(None))
             self.assertEquals('boolean', typeof(True))
             self.assertEquals('number', typeof(123))
-            self.assertEquals('number', typeof(123l))
             self.assertEquals('number', typeof(3.14))
             self.assertEquals('string', typeof('test'))
             self.assertEquals('string', typeof(u'test'))
@@ -1217,7 +1236,7 @@ class TestWrapper(unittest.TestCase):
                 ctxt.eval('throw "test"')
                 self.fail()
             except:
-                self.assert_(JSError, sys.exc_type)
+                self.assert_(JSError, sys.exc_info()[0])
 
     def testErrorInfo(self):
         with JSContext() as ctxt:
@@ -1231,7 +1250,7 @@ class TestWrapper(unittest.TestCase):
 
                         hello();""", "test", 10, 10).run()
                     self.fail()
-                except JSError, e:
+                except JSError as e:
                     self.assert_(str(e).startswith('JSError: Error: hello world ( test @ 14 : 34 )  ->'))
                     self.assertEqual("Error", e.name)
                     self.assertEqual("hello world", e.message)
@@ -1385,7 +1404,7 @@ class TestWrapper(unittest.TestCase):
 
             self.assertEqual(10, len(l))
 
-            for i in xrange(10):
+            for i in range(10):
                 self.assertEqual(10-i, array[i])
                 self.assertEqual(10-i, l[i])
 
@@ -1400,7 +1419,7 @@ class TestWrapper(unittest.TestCase):
             ctxt.locals.array1 = JSArray(5)
             ctxt.locals.array2 = JSArray([1, 2, 3, 4, 5])
 
-            for i in xrange(len(ctxt.locals.array2)):
+            for i in range(len(ctxt.locals.array2)):
                 ctxt.locals.array1[i] = ctxt.locals.array2[i] * 10
 
             ctxt.eval("""
@@ -1425,7 +1444,7 @@ class TestWrapper(unittest.TestCase):
                 "a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a" : (",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6])
             }
 
-            for code, (keys, values) in cases.items():
+            for code, (keys, values) in list(cases.items()):
                 array = ctxt.eval(code)
 
                 self.assertEquals(keys, str(array))
@@ -1494,8 +1513,6 @@ class TestWrapper(unittest.TestCase):
             self.assertEquals(["0", "1", "2"], list(func(gen(3))))
 
     def testDict(self):
-        import UserDict
-
         with JSContext() as ctxt:
             obj = ctxt.eval("var r = { 'a' : 1, 'b' : 2 }; r")
 
@@ -2168,11 +2185,11 @@ class TestEngine(unittest.TestCase):
         JSEngine.setMemoryAllocationCallback(callback)
 
         with JSContext() as ctxt:
-            self.assertFalse(alloc.has_key((JSObjectSpace.Code, JSAllocationAction.alloc)))
+            self.assertFalse((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
             ctxt.eval("var o = new Array(1000);")
 
-            alloc.has_key((JSObjectSpace.Code, JSAllocationAction.alloc))
+            self.assert_((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
         JSEngine.setMemoryAllocationCallback(None)
 
@@ -2370,7 +2387,7 @@ class TestAST(unittest.TestCase):
 
                 self.assertEquals("i = 0;", str(stmt.init))
                 self.assertEquals("(i < 10)", str(stmt.condition))
-                self.assertEquals("(i++);", str(stmt.next))
+                self.assertEquals("(i++);", str(stmt.__next__ if is_python3 else stmt.next))
 
                 target = stmt.continueTarget
 
@@ -2688,7 +2705,7 @@ if __name__ == '__main__':
 
     if "-p" in sys.argv:
         sys.argv.remove("-p")
-        print "Press any key to continue or attach process #%d..." % os.getpid()
+        print("Press any key to continue or attach process #%d..." % os.getpid())
         raw_input()
 
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
