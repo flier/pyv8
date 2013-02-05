@@ -52,18 +52,13 @@ MAKE = 'gmake' if is_freebsd else 'make'
 
 V8_SNAPSHOT_ENABLED = True      # build using snapshots for faster start-up
 V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
-V8_VMSTATE_TRACKING = DEBUG     # enable VM state tracking
 V8_OBJECT_PRINT = DEBUG         # enable object printing
 V8_EXTRA_CHECKS = DEBUG         # enable extra checks
 V8_VERIFY_HEAP = DEBUG          # enable verify heap
 V8_GDB_JIT = DEBUG              # enable GDB jit
-V8_PROTECT_HEAP = DEBUG         # enable heap protection
 V8_DISASSEMBLEER = DEBUG        # enable the disassembler to inspect generated code
 V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
-V8_PROFILING_SUPPORT = True     # enable profiling of JavaScript code
-V8_INSPECTOR_SUPPORT = DEBUG    # enable inspector features
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
-V8_FAST_TLS = True              # enable fast thread local storage support
 V8_WERROR = False               # ignore compile warnings
 V8_STRICTALIASING = True        # enable strict aliasing
 
@@ -119,21 +114,9 @@ else:
 if V8_DISASSEMBLEER:
     macros += [("ENABLE_DISASSEMBLER", None)]
 
-if V8_PROFILING_SUPPORT:
-    V8_VMSTATE_TRACKING = True
-    macros += [("ENABLE_LOGGING_AND_PROFILING", None)]
-
-if V8_PROTECT_HEAP:
-    V8_VMSTATE_TRACKING = True
-    macros += [("ENABLE_HEAP_PROTECTION", None)]
-
-if V8_VMSTATE_TRACKING:
-    macros += [("ENABLE_VMSTATE_TRACKING", None)]
-
 if V8_LIVE_OBJECT_LIST:
     V8_OBJECT_PRINT = True
     V8_DEBUGGER_SUPPORT = True
-    V8_INSPECTOR_SUPPORT = True
     macros += [("LIVE_OBJECT_LIST", None)]
 
 if V8_OBJECT_PRINT:
@@ -141,12 +124,6 @@ if V8_OBJECT_PRINT:
 
 if V8_DEBUGGER_SUPPORT:
     macros += [("ENABLE_DEBUGGER_SUPPORT", None)]
-
-if V8_INSPECTOR_SUPPORT:
-    macros += [("INSPECTOR", None)]
-
-if V8_FAST_TLS:
-    macros += [("V8_FAST_TLS", None)]
 
 v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
 boost_libs = ['boost_python', 'boost_thread', 'boost_system']
