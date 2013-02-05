@@ -55,14 +55,7 @@ public:
 
   bool IsEntered(void) { return !m_context.IsEmpty(); }
   void Enter(void) { m_context->Enter(); }
-  void Leave(void)
-  {
-  #ifdef SUPPORT_TRACE_LIFECYCLE
-    ObjectTracer::FreeLivingMapping(m_context);
-  #endif
-      
-    m_context->Exit();
-  }
+  void Leave(void) { m_context->Exit(); }
 
   py::object Evaluate(const std::string& src, const std::string name = std::string(),
                       int line = -1, int col = -1, py::object precompiled = py::object());
