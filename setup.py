@@ -169,30 +169,6 @@ if INCLUDE:
 if LIB:
     library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
 
-classifiers = [
-    'Development Status :: 4 - Beta',
-    'Environment :: Plugins',
-    'Intended Audience :: Developers',
-    'Intended Audience :: System Administrators',
-    'License :: OSI Approved :: Apache Software License',
-    'Natural Language :: English',
-    'Operating System :: Microsoft :: Windows',
-    'Operating System :: POSIX',
-    'Programming Language :: C++',
-    'Programming Language :: Python',
-    'Topic :: Internet',
-    'Topic :: Internet :: WWW/HTTP',
-    'Topic :: Software Development',
-    'Topic :: Software Development :: Libraries :: Python Modules',
-    'Topic :: Utilities',
-]
-
-description = """
-PyV8 is a python wrapper for Google V8 engine, it act as a bridge
-between the Python and JavaScript objects, and support to hosting
-Google's v8 engine in a python script.
-"""
-
 if is_winnt:
     import platform
     is_64bit = platform.architecture()[0] == "64bit"
@@ -506,6 +482,31 @@ if is_python3:
     extra.update({
         'use_2to3': True
     })
+
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Plugins',
+    'Intended Audience :: Developers',
+    'Intended Audience :: System Administrators',
+    'License :: OSI Approved :: Apache Software License',
+    'Natural Language :: English',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Programming Language :: C++',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Topic :: Internet',
+    'Topic :: Internet :: WWW/HTTP',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Utilities',
+    ]
+
+description = """
+PyV8 is a python wrapper for Google V8 engine, it act as a bridge
+between the Python and JavaScript objects, and support to hosting
+Google's v8 engine in a python script.
+"""
 
 setup(name='PyV8',
       cmdclass = { 'build': build, 'v8build': _build, 'develop': develop },
