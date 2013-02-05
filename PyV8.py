@@ -1689,8 +1689,9 @@ class TestWrapper(unittest.TestCase):
 
         JSEngine.collect()
         gc.collect()
+        JSEngine.collect()
 
-        self.assert_(self.deleted)
+        self.assert_(owner.deleted)
 
     def testNullInString(self):
         with JSContext() as ctxt:

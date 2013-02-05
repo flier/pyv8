@@ -247,7 +247,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   if (!value)
   {
-    if (_PyErr_OCCURRED()) 
+    if (::PyErr_Occurred())
     {
       if (::PyErr_ExceptionMatches(::PyExc_AttributeError))
       {
@@ -1613,31 +1613,29 @@ ObjectTracer::~ObjectTracer()
   {
     assert(m_handle.IsNearDeath());
 
-    dispose();
+    Dispose();
     
     m_living->erase(m_object->ptr());
   }
 }
 
-void ObjectTracer::dispose(void)
+void ObjectTracer::Dispose(void)
 {
   m_handle.ClearWeak();
   m_handle.Dispose();
   m_handle.Clear();
-  
-  m_object.reset();
 }
 
 ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *object)
 {
-  ObjectTracer *tracer = new ObjectTracer(handle, object);
+  std::auto_ptr<ObjectTracer> tracer(new ObjectTracer(handle, object));
 
-  tracer->MakeWeak();
+  tracer->Trace();
 
-  return *tracer;
+  return *tracer.release();
 }
 
-void ObjectTracer::MakeWeak(void)
+void ObjectTracer::Trace(void)
 {
   m_handle.MakeWeak(this, WeakCallback);
 
@@ -1653,13 +1651,15 @@ void ObjectTracer::WeakCallback(v8::Persistent<v8::Value> value, void* parameter
   assert(value == tracer->m_handle);
 }
 
-ObjectTracer::LivingMap * ObjectTracer::GetLivingMapping(void)
+LivingMap * ObjectTracer::GetLivingMapping(void)
 {
   if (!v8::Context::InContext()) return NULL;
 
   v8::HandleScope handle_scope;
+  
+  v8::Handle<v8::Context> ctxt = v8::Context::GetCurrent();
 
-  v8::Handle<v8::Value> value = v8::Context::GetCurrent()->Global()->GetHiddenValue(v8::String::NewSymbol("__living__"));
+  v8::Handle<v8::Value> value = ctxt->Global()->GetHiddenValue(v8::String::NewSymbol("__living__"));
 
   if (!value.IsEmpty())
   {
@@ -1670,31 +1670,11 @@ ObjectTracer::LivingMap * ObjectTracer::GetLivingMapping(void)
 
   std::auto_ptr<LivingMap> living(new LivingMap());
 
-  v8::Context::GetCurrent()->Global()->SetHiddenValue(v8::String::NewSymbol("__living__"), v8::External::New(living.get()));
+  ctxt->Global()->SetHiddenValue(v8::String::NewSymbol("__living__"), v8::External::New(living.get()));
+  
+  ContextTracer::Trace(ctxt, living.get());
 
   return living.release();
-}
-
-void ObjectTracer::FreeLivingMapping(v8::Handle<v8::Context> ctxt)
-{
-  v8::HandleScope handle_scope;
-    
-  v8::Handle<v8::Value> value = ctxt->Global()->GetHiddenValue(v8::String::NewSymbol("__living__"));
-    
-  if (value.IsEmpty()) return;
-  
-  std::auto_ptr<LivingMap> living((LivingMap *) v8::External::Cast(*value)->Value());
-  
-  if (!living.get()) return;
-    
-  ctxt->Global()->DeleteHiddenValue(v8::String::NewSymbol("__living__"));
-    
-  for (LivingMap::const_iterator it = living->begin(); it != living->end(); it++)
-  {
-    std::auto_ptr<ObjectTracer> tracer(it->second);
-    
-    tracer->dispose();
-  }
 }
 
 v8::Persistent<v8::Value> ObjectTracer::FindCache(py::object obj)
@@ -1712,6 +1692,40 @@ v8::Persistent<v8::Value> ObjectTracer::FindCache(py::object obj)
   }
 
   return v8::Persistent<v8::Value>();
+}
+
+ContextTracer::ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living)
+  : m_ctxt(v8::Persistent<v8::Context>::New(ctxt)), m_living(living)
+{
+}
+
+ContextTracer::~ContextTracer(void)
+{
+  m_ctxt->Global()->DeleteHiddenValue(v8::String::NewSymbol("__living__"));
+  
+  for (LivingMap::const_iterator it = m_living->begin(); it != m_living->end(); it++)
+  {
+    std::auto_ptr<ObjectTracer> tracer(it->second);
+    
+    tracer->Dispose();
+  }
+}
+
+void ContextTracer::WeakCallback(v8::Persistent<v8::Value> value, void* parameter)
+{
+  delete (ContextTracer *) parameter;
+}
+
+void ContextTracer::Trace(v8::Handle<v8::Context> ctxt, LivingMap *living)
+{
+  ContextTracer *tracer = new ContextTracer(ctxt, living);
+  
+  tracer->Trace();
+}
+
+void ContextTracer::Trace(void)
+{
+  m_ctxt.MakeWeak(this, WeakCallback);
 }
 
 #endif // SUPPORT_TRACE_LIFECYCLE

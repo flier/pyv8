@@ -336,7 +336,13 @@ void CEngine::Deserialize(py::object snapshot)
 
 void CEngine::CollectAllGarbage(bool force_compaction)
 {
-  HEAP->CollectAllGarbage(force_compaction);
+  v8i::HandleScope handle_scope;
+  
+  if (force_compaction) {
+    HEAP->CollectAllAvailableGarbage();
+  } else {
+    HEAP->CollectAllGarbage(v8i::Heap::kMakeHeapIterableMask);
+  }
 }
 
 void CEngine::TerminateAllThreads(void)

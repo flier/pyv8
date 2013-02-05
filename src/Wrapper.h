@@ -202,32 +202,49 @@ public:
 
 #ifdef SUPPORT_TRACE_LIFECYCLE
 
+class ObjectTracer;
+
+typedef std::map<PyObject *, ObjectTracer *> LivingMap;
+
 class ObjectTracer
 {
   v8::Persistent<v8::Value> m_handle;
   std::auto_ptr<py::object> m_object;
 
-  typedef std::map<PyObject *, ObjectTracer *> LivingMap;
-
   LivingMap *m_living;
-    
-  void dispose(void);
+  
+  void Trace(void);
+  
+  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
 
   static LivingMap *GetLivingMapping(void);
 public:
   ObjectTracer(v8::Handle<v8::Value> handle, py::object *object);
-  ~ObjectTracer();
+  ~ObjectTracer(void);
 
   v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
   py::object *Object(void) const { return m_object.get(); }
-
-  void MakeWeak(void);
+  
+  void Dispose(void);
 
   static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object);
-  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
 
   static v8::Persistent<v8::Value> FindCache(py::object obj);
-  static void FreeLivingMapping(v8::Handle<v8::Context> ctxt);
+};
+
+class ContextTracer
+{
+  v8::Persistent<v8::Context> m_ctxt;
+  std::auto_ptr<LivingMap> m_living;
+  
+  void Trace(void);
+  
+  static void WeakCallback(v8::Persistent<v8::Value> value, void* parameter);
+public:
+  ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living);
+  ~ContextTracer(void);
+  
+  static void Trace(v8::Handle<v8::Context> ctxt, LivingMap *living);
 };
 
 #endif
