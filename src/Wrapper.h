@@ -137,7 +137,7 @@ public:
 
     bool equal(ArrayIterator const& other) const { return m_array == other.m_array && m_idx == other.m_idx; }
 
-    reference dereference() const { return m_array->GetItem(m_idx); }
+    reference dereference() const { return m_array->GetItem(py::long_(m_idx)); }
   };
 
   CJavascriptArray(v8::Handle<v8::Array> array)
@@ -153,9 +153,9 @@ public:
 
   size_t Length(void);
 
-  py::object GetItem(size_t idx);
-  py::object SetItem(size_t idx, py::object value);
-  py::object DelItem(size_t idx);
+  py::object GetItem(py::object key);
+  py::object SetItem(py::object key, py::object value);
+  py::object DelItem(py::object key);
   bool Contains(py::object item);
 
   ArrayIterator begin(void) { return ArrayIterator(this, 0);}

@@ -10,11 +10,7 @@
 #include <descrobject.h>
 #include <datetime.h>
 
-#undef COMPILER
-#include "src/v8.h"
-#include "src/isolate.h"
-
-namespace v8i = v8::internal;
+#include "V8Internal.h"
 
 #include "Context.h"
 #include "Utils.h"
@@ -30,6 +26,13 @@ namespace v8i = v8::internal;
   if (!v8i::Isolate::Current()->context()) { \
     throw CJavascriptException("Javascript object out of context", PyExc_UnboundLocalError); \
   }
+
+#if PY_MAJOR_VERSION >= 3
+
+#define PyInt_Check               PyLong_Check
+#define PyInt_AsUnsignedLongMask  PyLong_AsUnsignedLong
+
+#endif
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 { 
@@ -1297,7 +1300,7 @@ size_t CJavascriptArray::Length(void)
 
   return v8::Handle<v8::Array>::Cast(m_obj)->Length();
 }
-py::object CJavascriptArray::GetItem(size_t idx)
+py::object CJavascriptArray::GetItem(py::object key)
 {
   CHECK_V8_CONTEXT();
     
@@ -1306,16 +1309,45 @@ py::object CJavascriptArray::GetItem(size_t idx)
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
-
-  if (!m_obj->Has(idx)) return py::object();
   
-  v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New(idx));
-
-  if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
-
-  return CJavascriptObject::Wrap(value, m_obj);
+  if (PySlice_Check(key.ptr()))
+  {
+    Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
+    Py_ssize_t start, stop, step, sliceLen;
+    
+    if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+    {
+      py::list slice;
+      
+      for (Py_ssize_t idx=start; idx<stop; idx+=step)
+      {
+        v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New((uint32_t) idx));
+        
+        if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+        
+        slice.append(CJavascriptObject::Wrap(value, m_obj));
+      }
+      
+      return slice;
+    }
+  }
+  else if (PyInt_Check(key.ptr()) || PyLong_Check(key.ptr()))
+  {
+    uint32_t idx = PyInt_Check(key.ptr()) ? (uint32_t) ::PyInt_AsUnsignedLongMask(key.ptr()) : (uint32_t) ::PyLong_AsUnsignedLong(key.ptr());
+    
+    if (!m_obj->Has(idx)) return py::object();
+    
+    v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New(idx));
+    
+    if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+    
+    return CJavascriptObject::Wrap(value, m_obj);
+  }
+  
+  throw CJavascriptException("list indices must be integers", ::PyExc_TypeError);
 }
-py::object CJavascriptArray::SetItem(size_t idx, py::object value)
+
+py::object CJavascriptArray::SetItem(py::object key, py::object value)
 {
   CHECK_V8_CONTEXT();
     
@@ -1324,13 +1356,69 @@ py::object CJavascriptArray::SetItem(size_t idx, py::object value)
   v8::HandleScope handle_scope;
 
   v8::TryCatch try_catch;
-
-  if (!m_obj->Set(v8::Integer::New(idx), CPythonObject::Wrap(value)))
-    CJavascriptException::ThrowIf(try_catch);
+  
+  if (PySlice_Check(key.ptr()))
+  {
+    PyObject *values = ::PySequence_Fast(value.ptr(), "can only assign an iterable");
+    
+    if (values)
+    {
+      Py_ssize_t itemSize = PySequence_Fast_GET_SIZE(value.ptr());
+      PyObject **items = PySequence_Fast_ITEMS(value.ptr());
+      
+      Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
+      Py_ssize_t start, stop, step, sliceLen;
+      
+      if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+      {
+        if (itemSize != sliceLen)
+        {
+          v8i::Handle<v8i::JSArray> array = v8::Utils::OpenHandle(*m_obj);
+          
+          array->set_length(v8i::Smi::FromInt(arrayLen - sliceLen + itemSize));
+          
+          if (itemSize < sliceLen)
+          {          
+            Py_ssize_t diff = sliceLen - itemSize;
+            
+            for (Py_ssize_t idx=start+itemSize; idx<arrayLen-diff; idx++)
+            {
+              m_obj->Set(idx, m_obj->Get((uint32_t) (idx + diff)));
+            }
+            for (Py_ssize_t idx=arrayLen-1; idx >arrayLen-diff-1; idx--)
+            {
+              m_obj->Delete((uint32_t) idx);
+            }
+          }
+          else if (itemSize > sliceLen)
+          {
+            Py_ssize_t diff = itemSize - sliceLen;
+            
+            for (Py_ssize_t idx=arrayLen+diff-1; idx>stop-1; idx--)
+            {
+              m_obj->Set(idx, m_obj->Get((uint32_t) (idx - diff)));
+            }
+          }
+        }
+        
+        for (Py_ssize_t idx=0; idx<itemSize; idx++)
+        {
+          m_obj->Set((uint32_t) (start + idx), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(items[idx])))));
+        }
+      }
+    }
+  }
+  else if (PyInt_Check(key.ptr()) || PyLong_Check(key.ptr()))
+  {
+    uint32_t idx = PyInt_Check(key.ptr()) ? (uint32_t) ::PyInt_AsUnsignedLongMask(key.ptr()) : (uint32_t) ::PyLong_AsUnsignedLong(key.ptr());
+        
+    if (!m_obj->Set(v8::Integer::New(idx), CPythonObject::Wrap(value)))
+      CJavascriptException::ThrowIf(try_catch);
+  }
 
   return value;
 }
-py::object CJavascriptArray::DelItem(size_t idx)
+py::object CJavascriptArray::DelItem(py::object key)
 {
   CHECK_V8_CONTEXT();
     
@@ -1340,15 +1428,46 @@ py::object CJavascriptArray::DelItem(size_t idx)
 
   v8::TryCatch try_catch;
 
-  py::object value;
-
-  if (m_obj->Has(idx))
-    value = CJavascriptObject::Wrap(m_obj->Get(v8::Integer::New(idx)), m_obj);
+  if (PySlice_Check(key.ptr()))
+  {
+    Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
+    Py_ssize_t start, stop, step, sliceLen;
+    
+    if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+    {
+      for (Py_ssize_t idx=stop; idx<arrayLen; idx++)
+      {
+        m_obj->Set((uint32_t) (idx - sliceLen), m_obj->Get((uint32_t) idx));
+      }
+      
+      for (Py_ssize_t idx=arrayLen-1; idx>arrayLen-sliceLen-1; idx--)
+      {
+        m_obj->Delete((uint32_t)idx);
+      }
+      
+      v8i::Handle<v8i::JSArray> array = v8::Utils::OpenHandle(*m_obj);
+      
+      array->set_length(v8i::Smi::FromInt(arrayLen - sliceLen));
+    }
+    
+    return py::object();
+  }
+  else if (PyInt_Check(key.ptr()) || PyLong_Check(key.ptr()))
+  {
+    uint32_t idx = PyInt_Check(key.ptr()) ? (uint32_t) ::PyInt_AsUnsignedLongMask(key.ptr()) : (uint32_t) ::PyLong_AsUnsignedLong(key.ptr());
+    
+    py::object value;
+    
+    if (m_obj->Has(idx))
+      value = CJavascriptObject::Wrap(m_obj->Get(v8::Integer::New(idx)), m_obj);
+    
+    if (!m_obj->Delete(idx))
+      CJavascriptException::ThrowIf(try_catch);
+    
+    return value;
+  }
   
-  if (!m_obj->Delete(idx))
-    CJavascriptException::ThrowIf(try_catch);
-
-  return value;
+  throw CJavascriptException("list indices must be integers", ::PyExc_TypeError);
 }
 
 bool CJavascriptArray::Contains(py::object item)
@@ -1362,10 +1481,17 @@ bool CJavascriptArray::Contains(py::object item)
   v8::TryCatch try_catch;
 
   for (size_t i=0; i<Length(); i++)
-  {
-    if (m_obj->Has(i) && item == GetItem(i))
+  {   
+    if (m_obj->Has(i))
     {
-      return true;
+      v8::Handle<v8::Value> value = m_obj->Get(v8::Integer::New(i));
+      
+      if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
+      
+      if (item == CJavascriptObject::Wrap(value, m_obj))
+      {
+        return true;
+      }
     }
   }
 

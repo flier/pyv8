@@ -7,9 +7,9 @@ import sys, os, re
 import logging
 import collections
 
-is_python3 = sys.version_info.major > 2
+is_py3k = sys.version_info[0] > 2
 
-if is_python3:
+if is_py3k:
     import _thread as thread
 
     from io import StringIO
@@ -176,7 +176,7 @@ class JSLocker(_PyV8.JSLocker):
 
         self.leave()
 
-    if is_python3:
+    if is_py3k:
         def __bool__(self):
             return self.entered()
     else:
@@ -192,7 +192,7 @@ class JSUnlocker(_PyV8.JSUnlocker):
     def __exit__(self, exc_type, exc_value, traceback):
         self.leave()
 
-    if is_python3:
+    if is_py3k:
         def __bool__(self):
             return self.entered()
     else:
@@ -869,7 +869,7 @@ from datetime import *
 import unittest
 import traceback
 
-if is_python3:
+if is_py3k:
     def toNativeString(s):
         return s
     def toUnicodeString(s):
@@ -1411,13 +1411,10 @@ class TestWrapper(unittest.TestCase):
             self.assertTrue(5 in array)
             self.assertFalse(15 in array)
 
-            l = list(array)
-
-            self.assertEqual(10, len(l))
+            self.assertEqual(10, len(array))
 
             for i in range(10):
                 self.assertEqual(10-i, array[i])
-                self.assertEqual(10-i, l[i])
 
             array[5] = 0
 
@@ -1426,6 +1423,27 @@ class TestWrapper(unittest.TestCase):
             del array[5]
 
             self.assertEqual(None, array[5])
+
+            # array         [10, 9, 8, 7, 6, None, 4, 3, 2, 1]
+            # array[4:7]                  4^^^^^^^^^7
+            # array[-3:-1]                         -3^^^^^^-1
+            # array[0:0]    []
+
+            self.assertEqual([6, None, 4], array[4:7])
+            self.assertEqual([3, 2], array[-3:-1])
+            self.assertEqual([], array[0:0])
+
+            array[1:3] = [9, 9, 9]
+
+            self.assertEqual([10, 9, 9, 9, 7, 6, None, 4, 3, 2, 1], list(array))
+
+            array[5:8] = [8, 8]
+
+            self.assertEqual([10, 9, 9, 9, 7, 8, 8, 3, 2, 1], list(array))
+
+            del array[1:4]
+
+            self.assertEqual([10, 7, 8, 8, 3, 2, 1], list(array))
 
             ctxt.locals.array1 = JSArray(5)
             ctxt.locals.array2 = JSArray([1, 2, 3, 4, 5])
@@ -1987,7 +2005,7 @@ class TestEngine(unittest.TestCase):
             var = u'测试'
 
             def __getattr__(self, name):
-                if (name if is_python3 else name.decode('utf-8')) == u'变量':
+                if (name if is_py3k else name.decode('utf-8')) == u'变量':
                     return self.var
 
                 return JSClass.__getattr__(self, name)
@@ -2086,7 +2104,7 @@ class TestEngine(unittest.TestCase):
 
             ret = ctxt.eval(u"helloW('世界')")
 
-            self.assertEqual(u"hello 世界 from javascript", ret if is_python3 else ret.decode('UTF-8'))
+            self.assertEqual(u"hello 世界 from javascript", ret if is_py3k else ret.decode('UTF-8'))
 
     def testNativeExtension(self):
         extSrc = "native function hello();"
