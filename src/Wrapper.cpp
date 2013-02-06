@@ -32,6 +32,12 @@
 #define PyInt_Check               PyLong_Check
 #define PyInt_AsUnsignedLongMask  PyLong_AsUnsignedLong
 
+#define PySlice_Cast(obj) obj
+
+#else
+
+#define PySlice_Cast(obj) ((PySliceObject *) obj)
+
 #endif
 
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
@@ -1315,7 +1321,7 @@ py::object CJavascriptArray::GetItem(py::object key)
     Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
     Py_ssize_t start, stop, step, sliceLen;
     
-    if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+    if (0 == ::PySlice_GetIndicesEx(PySlice_Cast(key.ptr()), arrayLen, &start, &stop, &step, &sliceLen))
     {
       py::list slice;
       
@@ -1369,7 +1375,7 @@ py::object CJavascriptArray::SetItem(py::object key, py::object value)
       Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
       Py_ssize_t start, stop, step, sliceLen;
       
-      if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+      if (0 == ::PySlice_GetIndicesEx(PySlice_Cast(key.ptr()), arrayLen, &start, &stop, &step, &sliceLen))
       {
         if (itemSize != sliceLen)
         {
@@ -1433,7 +1439,7 @@ py::object CJavascriptArray::DelItem(py::object key)
     Py_ssize_t arrayLen = v8::Handle<v8::Array>::Cast(m_obj)->Length();
     Py_ssize_t start, stop, step, sliceLen;
     
-    if (0 == ::PySlice_GetIndicesEx((PySliceObject *) key.ptr(), arrayLen, &start, &stop, &step, &sliceLen))
+    if (0 == ::PySlice_GetIndicesEx(PySlice_Cast(key.ptr()), arrayLen, &start, &stop, &step, &sliceLen))
     {
       for (Py_ssize_t idx=stop; idx<arrayLen; idx++)
       {
