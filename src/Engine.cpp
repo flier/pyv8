@@ -488,7 +488,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
   {
     if (try_catch.HasCaught()) 
     {
-      if(!try_catch.CanContinue() && ::PyErr_Occurred()) 
+      if(!try_catch.CanContinue() && PyErr_OCCURRED()) 
       {
         throw py::error_already_set();         
       }

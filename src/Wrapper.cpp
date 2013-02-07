@@ -27,19 +27,6 @@
     throw CJavascriptException("Javascript object out of context", PyExc_UnboundLocalError); \
   }
 
-#if PY_MAJOR_VERSION >= 3
-
-#define PyInt_Check               PyLong_Check
-#define PyInt_AsUnsignedLongMask  PyLong_AsUnsignedLong
-
-#define PySlice_Cast(obj) obj
-
-#else
-
-#define PySlice_Cast(obj) ((PySliceObject *) obj)
-
-#endif
-
 std::ostream& operator <<(std::ostream& os, const CJavascriptObject& obj)
 { 
   obj.Dump(os);
@@ -137,7 +124,7 @@ void CPythonObject::ThrowIf(void)
 {  
   CPythonGIL python_gil;
   
-  assert(::PyErr_Occurred());
+  assert(PyErr_OCCURRED());
 
   v8::HandleScope handle_scope;
 
@@ -256,7 +243,7 @@ v8::Handle<v8::Value> CPythonObject::NamedGetter(
 
   if (!value)
   {
-    if (::PyErr_Occurred())
+    if (PyErr_OCCURRED())
     {
       if (::PyErr_ExceptionMatches(::PyExc_AttributeError))
       {
