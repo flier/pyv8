@@ -19,10 +19,10 @@ if is_py3k:
 else:
     import thread
 
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 try:
     import json
@@ -1467,17 +1467,17 @@ class TestWrapper(unittest.TestCase):
             self.assertTrue(ctxt.eval('array3[1] === 2'))
             self.assertTrue(ctxt.eval('array3[9] === undefined'))
 
-            cases = [
-                ("a = Array(7); for(i=0; i<a.length; i++) a[i] = i; a[3] = undefined; a[a.length-1]; a", "0,1,2,,4,5,6", [0, 1, 2, None, 4, 5, 6]),
-                ("a = Array(7); for(i=0; i<a.length - 1; i++) a[i] = i; a[a.length-1]; a", "0,1,2,3,4,5,", [0, 1, 2, 3, 4, 5, None]),
-                ("a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a", ",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6])
+            args = [
+                ["a = Array(7); for(i=0; i<a.length; i++) a[i] = i; a[3] = undefined; a[a.length-1]; a", "0,1,2,,4,5,6", [0, 1, 2, None, 4, 5, 6]],
+                ["a = Array(7); for(i=0; i<a.length - 1; i++) a[i] = i; a[a.length-1]; a", "0,1,2,3,4,5,", [0, 1, 2, 3, 4, 5, None]],
+                ["a = Array(7); for(i=1; i<a.length; i++) a[i] = i; a[a.length-1]; a", ",1,2,3,4,5,6", [None, 1, 2, 3, 4, 5, 6]]
             ]
 
-            for case in cases:
-                array = ctxt.eval(case[0])
+            for arg in args:
+                array = ctxt.eval(arg[0])
 
-                self.assertEqual(case[1], str(array))
-                self.assertEqual(case[2], [array[i] for i in range(len(array))])
+                self.assertEqual(arg[1], str(array))
+                self.assertEqual(arg[2], [array[i] for i in range(len(array))])
 
             self.assertEqual(3, ctxt.eval("(function (arr) { return arr.length; })")(JSArray([1, 2, 3])))
             self.assertEqual(2, ctxt.eval("(function (arr, idx) { return arr[idx]; })")(JSArray([1, 2, 3]), 1))

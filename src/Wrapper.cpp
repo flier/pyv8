@@ -501,11 +501,18 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
 
   if (PyGen_Check(obj.ptr())) return v8::Undefined();
 
-  if (::PySequence_Check(obj.ptr()) && (Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
+  if (::PySequence_Check(obj.ptr()))
   {
-    py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
+    if ((Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
+    {
+      py::object ret(py::handle<>(::PySequence_GetItem(obj.ptr(), index)));
 
-    return handle_scope.Close(Wrap(ret));  
+      return handle_scope.Close(Wrap(ret));
+    }
+    else
+    {
+      return v8::Undefined();
+    }
   }
   else if (::PyMapping_Check(obj.ptr()))
   { 
@@ -520,15 +527,6 @@ v8::Handle<v8::Value> CPythonObject::IndexedGetter(
       py::long_ key(index);
 
       value = ::PyObject_GetItem(obj.ptr(), key.ptr());
-    }
-
-    if (!value) 
-    {      
-      PyObject *key = ::PyLong_FromSsize_t(index);
-
-      value = ::PyObject_GetItem(obj.ptr(), key);
-
-      Py_DECREF(key);
     }
 
     if (value)
