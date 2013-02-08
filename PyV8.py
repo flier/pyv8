@@ -1693,11 +1693,11 @@ class TestWrapper(unittest.TestCase):
 
                 obj = Hello()
 
-                self.assertTrue(2, sys.getrefcount(obj))
+                self.assertEqual(2, sys.getrefcount(obj))
 
                 fn(obj)
 
-                self.assertTrue(3, sys.getrefcount(obj))
+                self.assertEqual(4, sys.getrefcount(obj))
 
                 del obj
 
@@ -1707,7 +1707,6 @@ class TestWrapper(unittest.TestCase):
 
         JSEngine.collect()
         gc.collect()
-        JSEngine.collect()
 
         self.assertTrue(owner.deleted)
 
