@@ -48,7 +48,7 @@ void CWrapper::Expose(void)
     .def("__hash__", &CJavascriptObject::GetIdentityHash)
     .def("clone", &CJavascriptObject::Clone, "Clone the object.")
 
-  #if PY_MAJOR_VERSION >= 3
+  #if PY_MAJOR_VERSION < 3
     .add_property("__members__", &CJavascriptObject::GetAttrList)
   #else
     .def("__dir__", &CJavascriptObject::GetAttrList)

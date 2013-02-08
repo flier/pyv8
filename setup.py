@@ -221,19 +221,23 @@ elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
     # scons arch=x64 library=static
 
-    include_dirs += [
-        "/opt/local/include", # MacPorts$ sudo port install boost
-        "/usr/local/include", # HomeBrew$ brew install boost
-    ]
+    if BOOST_HOME:
+        include_dirs += [BOOST_HOME]
+        library_dirs += [os.path.join(BOOST_HOME, 'stage/lib')]
+    else:
+        include_dirs += [
+            "/opt/local/include", # MacPorts$ sudo port install boost
+            "/usr/local/include", # HomeBrew$ brew install boost
+        ]
 
-    library_dirs += [
-        "/opt/local/lib", # MacPorts$ sudo port install boost
-        "/usr/local/lib", # HomeBrew$ brew install boost
-    ]
+        library_dirs += [
+            "/opt/local/lib", # MacPorts$ sudo port install boost
+            "/usr/local/lib", # HomeBrew$ brew install boost
+        ]
 
     libraries += boost_libs
 
-    is_64bit = math.trunc(math.ceil(math.log(sys.maxint, 2)) + 1) == 64 # contribute by viy
+    is_64bit = math.trunc(math.ceil(math.log(sys.maxsize, 2)) + 1) == 64 # contribute by viy
 
     if is_64bit:
         os.environ['ARCHFLAGS'] = '-arch x86_64'
