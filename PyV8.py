@@ -802,7 +802,7 @@ def convert(obj):
         return [convert(v) for v in obj]
 
     if type(obj) == _PyV8.JSObject:
-        return dict([[str(k), convert(obj.__getattr__(str(k)))] for k in obj.__members__])
+        return dict([[str(k), convert(obj.__getattr__(str(k)))] for k in (obj.__dir__() if is_py3k else obj.__members__)])
 
     return obj
 

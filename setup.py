@@ -6,7 +6,7 @@ from __future__ import print_function
 import sys, os, os.path, math, platform
 import subprocess
 
-is_python3 = sys.version_info.major > 2
+is_py3k = sys.version_info[0] > 2
 
 is_winnt = os.name == "nt"
 is_linux = os.name == "posix" and sys.platform.startswith("linux")
@@ -22,7 +22,7 @@ if is_cygwin or is_mingw:
     print("ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
     sys.exit(-1)
 
-if is_python3:
+if is_py3k:
     import distribute_setup
     distribute_setup.use_setuptools()
 else:
@@ -455,7 +455,7 @@ pyv8 = Extension(name = "_PyV8",
 
 extra = {}
 
-if is_python3:
+if is_py3k:
     extra.update({
         'use_2to3': True
     })
