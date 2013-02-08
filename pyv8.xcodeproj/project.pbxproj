@@ -71,7 +71,7 @@
 		5727C733162B0EF500D1F488 /* Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Wrapper.h; sourceTree = "<group>"; };
 		5727C74D162B175800D1F488 /* Python.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python.framework; path = System/Library/Frameworks/Python.framework; sourceTree = SDKROOT; };
 		5727C74F162B179000D1F488 /* libboost_python-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_python-mt.a"; path = "/opt/local/lib/libboost_python-mt.a"; sourceTree = "<absolute>"; };
-		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python; sourceTree = "<absolute>"; };
+		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/Current/Python; sourceTree = "<absolute>"; };
 		57DAC0651664650500E6DDE9 /* libv8_base.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.a; path = ../../Development/v8/out/x64.release/libv8_base.a; sourceTree = "<group>"; };
 		57DAC0661664650500E6DDE9 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
 		57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_thread-mt.a"; path = "/opt/local/lib/libboost_thread-mt.a"; sourceTree = "<absolute>"; };
@@ -303,7 +303,7 @@
 				HEADER_SEARCH_PATHS = (
 					"~/Development/v8/**",
 					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Headers,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				ONLY_ACTIVE_ARCH = YES;
@@ -345,7 +345,7 @@
 				HEADER_SEARCH_PATHS = (
 					"~/Development/v8/**",
 					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Headers,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
 				OTHER_CFLAGS = "";
@@ -359,10 +359,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Development/v8/**",
+					/opt/local/include,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/local/lib,
-					/opt/local/Library/Frameworks/Python.framework/Versions/2.7,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current,
 					"\"$(SRCROOT)/../../Development/v8\"",
 					"\"$(SRCROOT)/../../Development/v8/out/x64.release\"",
 					"\"$(SRCROOT)/../../Development/v8/out/x64.debug\"",
@@ -377,10 +382,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
+				HEADER_SEARCH_PATHS = (
+					"~/Development/v8/**",
+					/opt/local/include,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
+				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/local/lib,
-					/opt/local/Library/Frameworks/Python.framework/Versions/2.7,
+					/opt/local/Library/Frameworks/Python.framework/Versions/Current,
 					"\"$(SRCROOT)/../../Development/v8\"",
 					"\"$(SRCROOT)/../../Development/v8/out/x64.release\"",
 					"\"$(SRCROOT)/../../Development/v8/out/x64.debug\"",
