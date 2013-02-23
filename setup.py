@@ -423,7 +423,7 @@ def build_v8():
 
         options = ' '.join(["%s=%s" % (k, v) for k, v in options.items()])
 
-        cmdline = "%s %s %s.%s" % (MAKE, options, arch, mode)
+        cmdline = "%s -j 8 %s %s.%s" % (MAKE, options, arch, mode)
 
         exec_cmd(cmdline, "build v8 from SVN")
 
