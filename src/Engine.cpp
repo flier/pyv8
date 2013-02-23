@@ -336,7 +336,7 @@ void CEngine::Deserialize(py::object snapshot)
 
 void CEngine::CollectAllGarbage(bool force_compaction)
 {
-  v8i::HandleScope handle_scope;
+  v8i::HandleScope handle_scope(v8i::Isolate::Current());
   
   if (force_compaction) {
     HEAP->CollectAllAvailableGarbage();
