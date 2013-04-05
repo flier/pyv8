@@ -370,6 +370,12 @@ void CAstNode::Expose(void)
 
     .add_property("compound", &CAstAssignment::is_compound)
     ;
+  
+  py::class_<CAstYield, py::bases<CAstExpression> >("AstYield", py::no_init)
+    .add_property("expression", &CAstYield::expression)
+    .add_property("isDelegating", &CAstYield::is_delegating_yield)
+    .add_property("pos", &CAstYield::position)
+    ;
 
   py::class_<CAstThrow, py::bases<CAstExpression> >("AstThrow", py::no_init)
     .add_property("exception", &CAstThrow::GetException)

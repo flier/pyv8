@@ -684,6 +684,16 @@ public:
   int is_compound(void) const { return as<v8i::Assignment>()->is_compound(); }
 };
 
+class CAstYield : public CAstExpression
+{
+public:
+  CAstYield(v8i::Yield *yield) : CAstExpression(yield) {}
+  
+  py::object expression(void) const { return to_python(as<v8i::Yield>()->expression()); }
+  bool is_delegating_yield(void) const { return as<v8i::Yield>()->is_delegating_yield(); }
+  int position(void) const { return as<v8i::Yield>()->position(); }
+};
+
 class CAstThrow : public CAstExpression
 {
 public:

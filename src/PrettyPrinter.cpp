@@ -346,6 +346,12 @@ void PrettyPrinter::VisitAssignment(Assignment* node) {
   Visit(node->value());
 }
 
+    
+void PrettyPrinter::VisitYield(Yield* node) {
+  Print("yield ");
+  Visit(node->expression());
+}
+
 
 void PrettyPrinter::VisitThrow(Throw* node) {
   Print("throw ");
@@ -356,7 +362,7 @@ void PrettyPrinter::VisitThrow(Throw* node) {
 void PrettyPrinter::VisitProperty(Property* node) {
   Expression* key = node->key();
   Literal* literal = key->AsLiteral();
-  if (literal != NULL && literal->handle()->IsSymbol()) {
+  if (literal != NULL && literal->handle()->IsInternalizedString()) {
     Print("(");
     Visit(node->obj());
     Print(").");
@@ -1053,7 +1059,12 @@ void AstPrinter::VisitAssignment(Assignment* node) {
   Visit(node->value());
 }
 
+    
+void AstPrinter::VisitYield(Yield* node) {
+  PrintIndentedVisit("YIELD", node->expression());
+}
 
+    
 void AstPrinter::VisitThrow(Throw* node) {
   PrintIndentedVisit("THROW", node->exception());
 }
@@ -1063,7 +1074,7 @@ void AstPrinter::VisitProperty(Property* node) {
   IndentedScope indent(this, "PROPERTY", node);
   Visit(node->obj());
   Literal* literal = node->key()->AsLiteral();
-  if (literal != NULL && literal->handle()->IsSymbol()) {
+  if (literal != NULL && literal->handle()->IsInternalizedString()) {
     PrintLiteralIndented("NAME", literal->handle(), false);
   } else {
     PrintIndentedVisit("KEY", node->key());
@@ -1426,6 +1437,14 @@ void JsonAstBuilder::VisitAssignment(Assignment* expr) {
   }
   Visit(expr->target());
   Visit(expr->value());
+}
+
+    
+void JsonAstBuilder::VisitYield(Yield* node) {
+  TagScope tag(this, "Yield");
+  {
+    Visit(node->expression());
+  }
 }
 
 
