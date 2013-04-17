@@ -869,6 +869,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
     ts.tm_hour = PyDateTime_DATE_GET_HOUR(obj.ptr());
     ts.tm_min = PyDateTime_DATE_GET_MINUTE(obj.ptr());
     ts.tm_sec = PyDateTime_DATE_GET_SECOND(obj.ptr());
+    ts.tm_isdst = -1;
     
     int ms = PyDateTime_DATE_GET_MICROSECOND(obj.ptr());
 
