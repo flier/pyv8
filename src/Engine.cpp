@@ -4,8 +4,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 
-#include "V8Internal.h"
-
 #ifdef SUPPORT_SERIALIZE
   CEngine::CounterTable CEngine::m_counters;
 #endif
@@ -116,10 +114,10 @@ void CEngine::Expose(void)
     .value("free", v8::kAllocationActionFree)
     .value("all", v8::kAllocationActionAll);
 
-  py::enum_<CScript::LanguageMode>("JSLanguageMode")
-    .value("CLASSIC", CScript::CLASSIC_MODE)
-    .value("STRICT", CScript::STRICT_MODE)
-    .value("EXTENDED", CScript::EXTENDED_MODE);
+  py::enum_<v8i::LanguageMode>("JSLanguageMode")
+    .value("CLASSIC", v8i::CLASSIC_MODE)
+    .value("STRICT", v8i::STRICT_MODE)
+    .value("EXTENDED", v8i::EXTENDED_MODE);
   
   py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is a backend Javascript engine.")
     .def(py::init<>("Create a new script engine instance."))
@@ -209,7 +207,7 @@ void CEngine::Expose(void)
 
   #ifdef SUPPORT_AST
     .def("visit", &CScript::visit, (py::arg("handler"),
-                                    py::arg("mode") = CScript::CLASSIC_MODE), 
+                                    py::arg("mode") = v8i::CLASSIC_MODE),
          "Visit the AST of code with the callback handler.")
   #endif
     ;
@@ -239,20 +237,6 @@ void CEngine::Expose(void)
     ;
 
 #endif 
-  
-  py::class_<CProfiler, boost::noncopyable>("JSProfiler", py::init<>())
-    .add_static_property("started", &CProfiler::IsStarted)
-    .def("start", &CProfiler::Start)  
-    .staticmethod("start")
-    .def("stop", &CProfiler::Stop)    
-    .staticmethod("stop")
-
-    .add_static_property("paused", &v8::V8::IsProfilerPaused)
-    .def("pause", &v8::V8::PauseProfiler)
-    .staticmethod("pause")
-    .def("resume", &v8::V8::ResumeProfiler)
-    .staticmethod("resume")
-    ;
 }
 
 #ifdef SUPPORT_SERIALIZE
@@ -504,7 +488,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 #ifdef SUPPORT_AST
 
-void CScript::visit(py::object handler, LanguageMode mode) const
+void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 {
   v8::HandleScope handle_scope;
 
@@ -515,21 +499,26 @@ void CScript::visit(py::object handler, LanguageMode mode) const
   v8i::Handle<v8i::Script> script(v8i::Script::cast(func->script()));
 
   v8i::CompilationInfoWithZone info(script);
-
-  info.MarkAsGlobal();
-
   v8i::Isolate *isolate = info.isolate();
-  v8i::ZoneScope zone_scope(info.zone(), v8i::DELETE_ON_EXIT);
+    
+  info.MarkAsGlobal();
+  info.SetContext(isolate->native_context());
+  info.SetLanguageMode(mode);
+  
+  v8i::ZoneScope zone_scope(info.zone(), DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone(isolate);
+  
   v8i::FixedArray* array = isolate->native_context()->embedder_data();
-
   script->set_context_data(array->get(0));
   
-  if (v8i::ParserApi::Parse(&info, mode))
   {
-    if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
-    {
-      handler.attr("onProgram")(CAstFunctionLiteral(info.function()));
+    v8i::Parser parser(&info);
+    
+    if (parser.Parse()) {
+      if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
+      {
+        handler.attr("onProgram")(CAstFunctionLiteral(info.function()));
+      }
     }
   }
 }
@@ -676,24 +665,3 @@ py::list CExtension::GetExtensions(void)
 
 #endif // SUPPORT_EXTENSION
 
-#ifdef SUPPORT_PROFILER
-
-void CProfiler::Start(void)
-{
-  char params[] = "--prof --prof_auto --logfile=*";
-
-  v8::V8::SetFlagsFromString(params, strlen(params));
-  LOGGER->SetUp();
-}
-
-void CProfiler::Stop(void)
-{
-  LOGGER->TearDown();
-}
-
-bool CProfiler::IsStarted(void)
-{
-  return v8i::RuntimeProfiler::IsEnabled();
-}
-
-#endif // SUPPORT_PROFILER

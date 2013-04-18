@@ -125,7 +125,6 @@ if V8_OBJECT_PRINT:
 if V8_DEBUGGER_SUPPORT:
     macros += [("ENABLE_DEBUGGER_SUPPORT", None)]
 
-v8_libs = ['v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot']
 boost_libs = ['boost_python', 'boost_thread', 'boost_system']
 
 if BOOST_MT:
@@ -137,7 +136,7 @@ include_dirs = [
     os.path.join(V8_HOME, 'src'),
 ]
 library_dirs = []
-libraries = v8_libs
+libraries = []
 extra_compile_args = []
 extra_link_args = []
 
@@ -172,6 +171,9 @@ if is_winnt:
 
     extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
+
+    os.putenv('MSSdk', 'true')
+    os.putenv('DISTUTILS_USE_SDK', 'true')
 elif is_linux or is_freebsd:
     if BOOST_HOME:
         boost_lib_dir = os.path.join(BOOST_HOME, 'stage/lib')
@@ -180,7 +182,9 @@ elif is_linux or is_freebsd:
         boost_lib_dir = '/usr/local/lib'
         include_dirs += ['/usr/local/include']
 
-    library_dirs += [boost_lib_dir]
+    library_dirs += [
+        boost_lib_dir,
+    ]
 
     if PYTHON_HOME:
         major, minor, _, _, _ = sys.version_info
@@ -253,16 +257,21 @@ else:
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if DEBUG else 'release'
 
-library_dirs += [
-    # OSX
-    "%s/out/%s.%s/" % (V8_HOME, arch, mode),
+libraries += ['v8_base.x64' if is_64bit else 'v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.x64' if is_64bit else 'v8_nosnapshot')]
 
-    # Linux
-    "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
+if is_winnt:
+    library_dirs += [
+        "%s/build/%s/lib" % (V8_HOME, mode),
+    ]
+elif is_linux:
+    library_dirs += [
+        "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
+    ]
+elif is_osx:
+    library_dirs += [
+        "%s/out/%s.%s/" % (V8_HOME, arch, mode),
+    ]
 
-    # Win
-    "%s/build/%s/lib" % (V8_HOME, mode),
-]
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
     print("-" * 20)
@@ -280,6 +289,7 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
         print("DEBUG: %s" % err)
 
     return succeeded
+
 
 def checkout_v8():
     if svn_name:
@@ -326,6 +336,7 @@ def checkout_v8():
 
     exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
 
+
 def prepare_gyp():
     print("=" * 20)
     print("INFO: Installing or updating GYP...")
@@ -345,6 +356,7 @@ def prepare_gyp():
         print("       http://code.google.com/p/v8/wiki/BuildingWithGYP")
 
         sys.exit(-1)
+
 
 def build_v8():
     print("=" * 20)
@@ -427,6 +439,7 @@ def build_v8():
 
         exec_cmd(cmdline, "build v8 from SVN")
 
+
 def prepare_v8():
     try:
         checkout_v8()
@@ -435,11 +448,13 @@ def prepare_v8():
     except Exception as e:
         print("ERROR: fail to checkout and build v8, %s" % e)
 
+
 class build(_build):
     def run(self):
         prepare_v8()
 
         _build.run(self)
+
 
 class develop(_develop):
     def run(self):

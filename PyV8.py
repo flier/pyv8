@@ -55,6 +55,7 @@ DontEnum = JSAttribute(name='dontenum')
 DontDelete = JSAttribute(name='dontdel')
 Internal = JSAttribute(name='internal')
 
+
 class JSError(Exception):
     def __init__(self, impl):
         Exception.__init__(self)
@@ -723,26 +724,10 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         """Perform a minimum step in the current function."""
         return self.debugContinue(action='out', steps=steps)
 
-class JSProfiler(_PyV8.JSProfiler):
-    @property
-    def logs(self):
-        pos = 0
-
-        while True:
-            size, buf = self.getLogLines(pos)
-
-            if size == 0:
-                break
-
-            for line in buf.split('\n'):
-                yield line
-
-            pos += size
-
-profiler = JSProfiler()
 
 JSObjectSpace = _PyV8.JSObjectSpace
 JSAllocationAction = _PyV8.JSAllocationAction
+
 
 class JSEngine(_PyV8.JSEngine):
     def __init__(self):
@@ -760,6 +745,7 @@ JSStackTrace = _PyV8.JSStackTrace
 JSStackTrace.Options = _PyV8.JSStackTraceOptions
 JSStackFrame = _PyV8.JSStackFrame
 
+
 class JSIsolate(_PyV8.JSIsolate):
     def __enter__(self):
         self.enter()
@@ -770,6 +756,7 @@ class JSIsolate(_PyV8.JSIsolate):
         self.leave()
 
         del self
+
 
 class JSContext(_PyV8.JSContext):
     def __init__(self, obj=None, extensions=None, ctxt=None):
@@ -796,6 +783,7 @@ class JSContext(_PyV8.JSContext):
 
         del self
 
+
 # contribute by marc boeker <http://code.google.com/u/marc.boeker/>
 def convert(obj):
     if type(obj) == _PyV8.JSArray:
@@ -805,6 +793,7 @@ def convert(obj):
         return dict([[str(k), convert(obj.__getattr__(str(k)))] for k in (obj.__dir__() if is_py3k else obj.__members__)])
 
     return obj
+
 
 class AST:
     Scope = _PyV8.AstScope
@@ -1572,7 +1561,7 @@ class TestWrapper(unittest.TestCase):
 
             self.assertTrue(now1)
 
-            now2 = datetime.utcnow()
+            now2 = datetime.now()
 
             delta = now2 - now1 if now2 > now1 else now1 - now2
 
@@ -1583,6 +1572,11 @@ class TestWrapper(unittest.TestCase):
             now = datetime.now()
 
             self.assertTrue(str(func(now)).startswith(now.strftime("%a %b %d %Y %H:%M:%S")))
+
+            ctxt.eval("function identity(x) { return x; }")
+            # JS only has millisecond resolution, so cut it off there
+            now3 = now2.replace(microsecond=123000)
+            self.assertEqual(now3, ctxt.locals.identity(now3))
 
     def testUnicode(self):
         with JSContext() as ctxt:
@@ -2269,30 +2263,6 @@ class TestDebug(unittest.TestCase):
             self.assertTrue(not debugger.enabled)
 
         self.assertEqual(4, len(self.events))
-
-class TestProfile(unittest.TestCase):
-    def _testStart(self):
-        self.assertFalse(profiler.started)
-
-        profiler.start()
-
-        self.assertTrue(profiler.started)
-
-        profiler.stop()
-
-        self.assertFalse(profiler.started)
-
-    def _testResume(self):
-        self.assertTrue(profiler.paused)
-
-        self.assertEqual(profiler.Modules.cpu, profiler.modules)
-
-        profiler.resume()
-
-        profiler.resume(profiler.Modules.heap)
-
-        # TODO enable profiler with resume
-        #self.assertFalse(profiler.paused)
 
 
 class TestAST(unittest.TestCase):

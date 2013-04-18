@@ -9,6 +9,8 @@
 #include "Context.h"
 #include "Utils.h"
 
+#include "V8Internal.h"
+
 class CScript;
 
 typedef boost::shared_ptr<CScript> CScriptPtr;
@@ -99,13 +101,7 @@ public:
   }
 
 #ifdef SUPPORT_AST
-  enum LanguageMode
-  {
-    CLASSIC_MODE = 0,
-    STRICT_MODE,
-    EXTENDED_MODE,
-  };
-  void visit(py::object handler, LanguageMode mode=CLASSIC_MODE) const;
+  void visit(py::object handler, v8i::LanguageMode mode=v8i::CLASSIC_MODE) const;
 #endif
 
   const std::string GetSource(void) const;
@@ -144,16 +140,3 @@ public:
 };
 
 #endif // SUPPORT_EXTENSION
-
-#ifdef SUPPORT_PROFILER
-
-class CProfiler
-{
-public:
-  static void Start(void);
-  static void Stop(void);
-
-  static bool IsStarted(void);
-};
-
-#endif // SUPPORT_PROFILER

@@ -20,11 +20,6 @@
 //
 #define SUPPORT_DEBUGGER 1
 
-// 
-// Enable the Javascript profiler supports
-//
-#define SUPPORT_PROFILER 1
-
 //
 // Enable the script AST supports
 //

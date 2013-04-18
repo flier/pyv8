@@ -1178,7 +1178,7 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::O
 
     time_t ts = (time_t) floor(n / 1000);
 
-    tm *t = gmtime(&ts);
+    tm *t = localtime(&ts);
 
     return py::object(py::handle<>(::PyDateTime_FromDateAndTime(
       t->tm_year+1900, t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec, 
