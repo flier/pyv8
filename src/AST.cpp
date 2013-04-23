@@ -370,10 +370,17 @@ void CAstNode::Expose(void)
 
     .add_property("compound", &CAstAssignment::is_compound)
     ;
+
+  py::enum_<v8i::Yield::Kind>("AstYieldKind")
+	  .value("initial", v8i::Yield::INITIAL)
+	  .value("suspend", v8i::Yield::SUSPEND)
+	  .value("delegating", v8i::Yield::DELEGATING)
+	  .value("final", v8i::Yield::FINAL)
+	  ;
   
   py::class_<CAstYield, py::bases<CAstExpression> >("AstYield", py::no_init)
     .add_property("expression", &CAstYield::expression)
-    .add_property("isDelegating", &CAstYield::is_delegating_yield)
+    .add_property("kind", &CAstYield::yield_kind)
     .add_property("pos", &CAstYield::position)
     ;
 

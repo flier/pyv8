@@ -690,7 +690,7 @@ public:
   CAstYield(v8i::Yield *yield) : CAstExpression(yield) {}
   
   py::object expression(void) const { return to_python(as<v8i::Yield>()->expression()); }
-  bool is_delegating_yield(void) const { return as<v8i::Yield>()->is_delegating_yield(); }
+  bool yield_kind(void) const { return as<v8i::Yield>()->yield_kind(); }
   int position(void) const { return as<v8i::Yield>()->position(); }
 };
 
