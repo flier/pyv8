@@ -31,7 +31,9 @@ using std::isnan;
 
 #ifndef isfinite
 # include <limits>
-# define isfinite(val) (val <= std::numeric_limits<double>::max())
+namespace std {
+  bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
+}
 #endif
 
 #include <strings.h>
