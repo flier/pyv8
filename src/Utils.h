@@ -32,7 +32,7 @@ using std::isnan;
 #ifndef isfinite
 # include <limits>
 namespace std {
-  bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
+  inline bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
 }
 #endif
 
