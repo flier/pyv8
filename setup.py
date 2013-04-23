@@ -44,6 +44,14 @@ V8_HOME = None
 V8_SVN_URL = "http://v8.googlecode.com/svn/trunk/"
 V8_SVN_REVISION = None
 
+v8_svn_rev_file = os.path.normpath(os.path.join(os.path.dirname(__file__), 'REVISION'))
+
+if os.path.exists(v8_svn_rev_file):
+    try:
+        V8_SVN_REVISION = int(open(v8_svn_rev_file).read().strip())
+    except ValueError:
+        print("WARN: invalid revision number in REVISION file")
+
 INCLUDE = None
 LIB = None
 DEBUG = False
@@ -56,11 +64,13 @@ V8_OBJECT_PRINT = DEBUG         # enable object printing
 V8_EXTRA_CHECKS = DEBUG         # enable extra checks
 V8_VERIFY_HEAP = DEBUG          # enable verify heap
 V8_GDB_JIT = DEBUG              # enable GDB jit
+V8_VTUNE_JIT = DEBUG
 V8_DISASSEMBLEER = DEBUG        # enable the disassembler to inspect generated code
 V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
 V8_WERROR = False               # ignore compile warnings
 V8_STRICTALIASING = True        # enable strict aliasing
+V8_BACKTRACE = True
 
 # load defaults from config file
 try:
@@ -397,11 +407,13 @@ def build_v8():
         'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
         'extrachecks': 'on' if V8_EXTRA_CHECKS else 'off',
         'gdbjit': 'on' if V8_GDB_JIT else 'off',
+        'vtunejit': 'on' if V8_VTUNE_JIT else 'off',
         'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
         'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
         'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
         'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
         'werror': 'yes' if V8_WERROR else 'no',
+        'backtrace': 'on' if V8_BACKTRACE else 'off',
         'visibility': 'on',
         'component': 'shared_library',
     }
