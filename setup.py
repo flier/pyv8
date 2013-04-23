@@ -179,8 +179,15 @@ if is_winnt:
 
     libraries += ["winmm", "ws2_32"]
 
-    extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
+    if DEBUG:
+        extra_compile_args += ["/Od", "/MTd", "/EHsc", "/Gy", "/Zi"]
+    else:
+        extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
+
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
+
+    if DEBUG:
+        extra_link_args += ["/DEBUG"]
 
     os.putenv('MSSdk', 'true')
     os.putenv('DISTUTILS_USE_SDK', 'true')
