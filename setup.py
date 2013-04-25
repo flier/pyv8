@@ -274,7 +274,7 @@ else:
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if DEBUG else 'release'
 
-libraries += ['v8_base.x64' if is_64bit else 'v8_base', 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.x64' if is_64bit else 'v8_nosnapshot')]
+libraries += ['v8_base.' + arch, 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.' + arch)]
 
 if is_winnt:
     library_dirs += [
