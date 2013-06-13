@@ -19,28 +19,28 @@ struct MemoryAllocationCallbackBase
 
 template <v8::ObjectSpace SPACE, v8::AllocationAction ACTION>
 struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
-{  
+{
   static py::object s_callback;
-  
+
   typedef boost::mutex lock_t;
   typedef boost::lock_guard<lock_t> lock_guard_t;
-  
+
   static lock_t s_callbackLock;
 
   static void onMemoryAllocation(v8::ObjectSpace space, v8::AllocationAction action, int size)
   {
     lock_guard_t hold(s_callbackLock);
-    
+
     if (s_callback.ptr() != Py_None) s_callback(space, action, size);
   }
 
   virtual void Set(py::object callback)
   {
     lock_guard_t hold(s_callbackLock);
-    
+
     if (s_callback.ptr() == Py_None && callback.ptr() != Py_None)
     {
-      v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, SPACE, ACTION);  
+      v8::V8::AddMemoryAllocationCallback(&onMemoryAllocation, SPACE, ACTION);
     }
     else if (s_callback.ptr() != Py_None && callback.ptr() == Py_None)
     {
@@ -51,7 +51,7 @@ struct MemoryAllocationCallbackStub : public MemoryAllocationCallbackBase
   }
 };
 
-template<v8::ObjectSpace space, v8::AllocationAction action> 
+template<v8::ObjectSpace space, v8::AllocationAction action>
 py::object MemoryAllocationCallbackStub<space, action>::s_callback;
 
 template<v8::ObjectSpace space, v8::AllocationAction action>
@@ -79,13 +79,13 @@ public:
   }
 
   static void SetCallback(py::object callback, v8::ObjectSpace space, v8::AllocationAction action)
-  {      
+  {
     s_callbacks[std::make_pair(space, action)]->Set(callback);
   }
 };
 
 MemoryAllocationManager::CallbackMap MemoryAllocationManager::s_callbacks;
-  
+
 void CEngine::Expose(void)
 {
 #ifndef SUPPORT_SERIALIZE
@@ -100,7 +100,7 @@ void CEngine::Expose(void)
 
   py::enum_<v8::ObjectSpace>("JSObjectSpace")
     .value("New", v8::kObjectSpaceNewSpace)
-  
+
     .value("OldPointer", v8::kObjectSpaceOldPointerSpace)
     .value("OldData", v8::kObjectSpaceOldDataSpace)
     .value("Code", v8::kObjectSpaceCodeSpace)
@@ -118,10 +118,10 @@ void CEngine::Expose(void)
     .value("CLASSIC", v8i::CLASSIC_MODE)
     .value("STRICT", v8i::STRICT_MODE)
     .value("EXTENDED", v8i::EXTENDED_MODE);
-  
+
   py::class_<CEngine, boost::noncopyable>("JSEngine", "JSEngine is a backend Javascript engine.")
     .def(py::init<>("Create a new script engine instance."))
-    .add_static_property("version", &CEngine::GetVersion, 
+    .add_static_property("version", &CEngine::GetVersion,
                          "Get the V8 engine version.")
 
     .add_static_property("dead", &v8::V8::IsDead,
@@ -177,9 +177,9 @@ void CEngine::Expose(void)
          "the size cannot be adjusted after the VM is initialized.")
     .staticmethod("setMemoryLimit")
 
-    .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback, 
+    .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback,
                                         (py::arg("callback"),
-                                         py::arg("space") = v8::kObjectSpaceAll, 
+                                         py::arg("space") = v8::kObjectSpaceAll,
                                          py::arg("action") = v8::kAllocationActionAll),
                                         "Enables the host application to provide a mechanism to be notified "
                                         "and perform custom logging when V8 Allocates Executable Memory.")
@@ -188,16 +188,16 @@ void CEngine::Expose(void)
     .def("precompile", &CEngine::PreCompile, (py::arg("source")))
     .def("precompile", &CEngine::PreCompileW, (py::arg("source")))
 
-    .def("compile", &CEngine::Compile, (py::arg("source"), 
+    .def("compile", &CEngine::Compile, (py::arg("source"),
                                         py::arg("name") = std::string(),
                                         py::arg("line") = -1,
                                         py::arg("col") = -1,
-                                        py::arg("precompiled") = py::object()))    
-    .def("compile", &CEngine::CompileW, (py::arg("source"), 
+                                        py::arg("precompiled") = py::object()))
+    .def("compile", &CEngine::CompileW, (py::arg("source"),
                                          py::arg("name") = std::wstring(),
                                          py::arg("line") = -1,
                                          py::arg("col") = -1,
-                                         py::arg("precompiled") = py::object()))    
+                                         py::arg("precompiled") = py::object()))
     ;
 
   py::class_<CScript, boost::noncopyable>("JSScript", "JSScript is a compiled JavaScript script.", py::no_init)
@@ -212,14 +212,14 @@ void CEngine::Expose(void)
   #endif
     ;
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CScript>, 
-    py::objects::make_ptr_instance<CScript, 
+  py::objects::class_value_wrapper<boost::shared_ptr<CScript>,
+    py::objects::make_ptr_instance<CScript,
     py::objects::pointer_holder<boost::shared_ptr<CScript>, CScript> > >();
 
 #ifdef SUPPORT_EXTENSION
 
-  py::class_<CExtension, boost::noncopyable>("JSExtension", "JSExtension is a reusable script module.", py::no_init)    
-    .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"), 
+  py::class_<CExtension, boost::noncopyable>("JSExtension", "JSExtension is a reusable script module.", py::no_init)
+    .def(py::init<const std::string&, const std::string&, py::object, py::list, bool>((py::arg("name"),
                                                                                        py::arg("source"),
                                                                                        py::arg("callback") = py::object(),
                                                                                        py::arg("dependencies") = py::list(),
@@ -236,7 +236,7 @@ void CEngine::Expose(void)
     .def("register", &CExtension::Register, "Register the extension")
     ;
 
-#endif 
+#endif
 }
 
 #ifdef SUPPORT_SERIALIZE
@@ -267,11 +267,11 @@ struct PyBufferByteSink : public v8i::SnapshotByteSink
 {
   std::vector<v8i::byte> m_data;
 
-  virtual void Put(int byte, const char* description) 
+  virtual void Put(int byte, const char* description)
   {
     m_data.push_back(byte);
   }
-  
+
   virtual int Position()
   {
     return (int) m_data.size();
@@ -295,22 +295,22 @@ py::object CEngine::Serialize(void)
 void CEngine::Deserialize(py::object snapshot)
 {
   Py_buffer buf;
-  
+
   if (snapshot.ptr() != Py_None && PyObject_CheckBuffer(snapshot.ptr()))
-  {    
+  {
     if (0 == ::PyObject_GetBuffer(snapshot.ptr(), &buf, PyBUF_WRITABLE))
     {
       Py_BEGIN_ALLOW_THREADS
-      
+
       v8i::SnapshotByteSource source((const v8i::byte *) buf.buf, (int) buf.len);
       v8i::Deserializer deserializer(&source);
-      
+
       deserializer.Deserialize();
-      
+
       v8i::V8::Initialize(&deserializer);
-      
+
       Py_END_ALLOW_THREADS
-      
+
       ::PyBuffer_Release(&buf);
     }
   }
@@ -321,7 +321,7 @@ void CEngine::Deserialize(py::object snapshot)
 void CEngine::CollectAllGarbage(bool force_compaction)
 {
   v8i::HandleScope handle_scope(v8i::Isolate::Current());
-  
+
   if (force_compaction) {
     HEAP->CollectAllAvailableGarbage();
   } else {
@@ -377,7 +377,7 @@ py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
 
   precompiled.reset(v8::ScriptData::PreCompile(src));
 
-  Py_END_ALLOW_THREADS 
+  Py_END_ALLOW_THREADS
 
   if (!precompiled.get()) CJavascriptException::ThrowIf(try_catch);
   if (precompiled->HasError()) throw CJavascriptException("fail to compile", ::PyExc_SyntaxError);
@@ -387,7 +387,7 @@ py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
   return obj;
 }
 
-boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src, 
+boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
                                                     v8::Handle<v8::Value> name,
                                                     int line, int col,
                                                     py::object precompiled)
@@ -401,7 +401,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
   v8::TryCatch try_catch;
 
-  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(src);  
+  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(v8::Isolate::GetCurrent(), src);
 
   v8::Handle<v8::Script> script;
   std::auto_ptr<v8::ScriptData> script_data;
@@ -411,17 +411,17 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
     if (PyObject_CheckBuffer(precompiled.ptr()))
     {
       Py_buffer buf;
-      
+
       if (-1 == ::PyObject_GetBuffer(precompiled.ptr(), &buf, PyBUF_WRITABLE))
       {
         throw CJavascriptException("fail to get data from the precompiled buffer");
       }
-      
+
       script_data.reset(v8::ScriptData::New((const char *)buf.buf, (int) buf.len));
-      
+
       ::PyBuffer_Release(&buf);
     }
-    else 
+    else
     {
       throw CJavascriptException("need a precompiled buffer object");
     }
@@ -442,7 +442,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
     script = v8::Script::Compile(script_source, &script_origin, script_data.get());
   }
 
-  Py_END_ALLOW_THREADS 
+  Py_END_ALLOW_THREADS
 
   if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
@@ -450,7 +450,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 }
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
-{    
+{
   if (!v8::Context::InContext())
   {
     throw CJavascriptException("please enter a context first");
@@ -470,11 +470,11 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
   if (result.IsEmpty())
   {
-    if (try_catch.HasCaught()) 
+    if (try_catch.HasCaught())
     {
-      if(!try_catch.CanContinue() && PyErr_OCCURRED()) 
+      if(!try_catch.CanContinue() && PyErr_OCCURRED())
       {
-        throw py::error_already_set();         
+        throw py::error_already_set();
       }
 
       CJavascriptException::ThrowIf(try_catch);
@@ -500,20 +500,20 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 
   v8i::CompilationInfoWithZone info(script);
   v8i::Isolate *isolate = info.isolate();
-    
+
   info.MarkAsGlobal();
   info.SetContext(isolate->native_context());
   info.SetLanguageMode(mode);
-  
+
   v8i::ZoneScope zone_scope(info.zone(), DELETE_ON_EXIT);
   v8i::PostponeInterruptsScope postpone(isolate);
-  
+
   v8i::FixedArray* array = isolate->native_context()->embedder_data();
   script->set_context_data(array->get(0));
-  
+
   {
     v8i::Parser parser(&info);
-    
+
     if (parser.Parse()) {
       if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
       {
@@ -525,25 +525,25 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 
 #endif
 
-const std::string CScript::GetSource(void) const 
-{ 
-  v8::String::Utf8Value source(m_source); 
+const std::string CScript::GetSource(void) const
+{
+  v8::String::Utf8Value source(m_source);
 
   return std::string(*source, source.length());
 }
 
-py::object CScript::Run(void) 
-{ 
+py::object CScript::Run(void)
+{
   v8::HandleScope handle_scope;
 
-  return m_engine.ExecuteScript(m_script); 
+  return m_engine.ExecuteScript(m_script);
 }
 
 #ifdef SUPPORT_EXTENSION
 
 class CPythonExtension : public v8::Extension
 {
-  py::object m_callback;  
+  py::object m_callback;
 
   static v8::Handle<v8::Value> CallStub(const v8::Arguments& args)
   {
@@ -558,14 +558,14 @@ class CPythonExtension : public v8::Extension
     case 0: result = func(); break;
     case 1: result = func(CJavascriptObject::Wrap(args[0])); break;
     case 2: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1])); break;
-    case 3: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+    case 3: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
                           CJavascriptObject::Wrap(args[2])); break;
-    case 4: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+    case 4: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
                           CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3])); break;
-    case 5: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+    case 5: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
                           CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                           CJavascriptObject::Wrap(args[4])); break;
-    case 6: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]), 
+    case 6: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
                           CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                           CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
     default:
@@ -593,7 +593,7 @@ public:
     try
     {
       if (::PyCallable_Check(m_callback.ptr()))
-      {      
+      {
         func = m_callback(func_name_str);
       }
       else if (::PyObject_HasAttrString(m_callback.ptr(), *func_name))
@@ -605,10 +605,10 @@ public:
         return v8::Handle<v8::FunctionTemplate>();
       }
     }
-    catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } 
-    catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } 
-    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); } 
-    
+    catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); }
+    catch (const py::error_already_set&) { CPythonObject::ThrowIf(); }
+    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); }
+
     v8::Handle<v8::External> func_data = v8::External::New(new py::object(func));
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(CallStub, func_data);
 
@@ -618,7 +618,7 @@ public:
 
 std::vector< boost::shared_ptr<v8::Extension> > CExtension::s_extensions;
 
-CExtension::CExtension(const std::string& name, const std::string& source, 
+CExtension::CExtension(const std::string& name, const std::string& source,
                        py::object callback, py::list deps, bool autoRegister)
   : m_deps(deps), m_registered(false)
 {
@@ -626,31 +626,31 @@ CExtension::CExtension(const std::string& name, const std::string& source,
   {
     py::extract<const std::string> extractor(::PyList_GetItem(deps.ptr(), i));
 
-    if (extractor.check()) 
+    if (extractor.check())
     {
       m_depNames.push_back(extractor());
       m_depPtrs.push_back(m_depNames.rbegin()->c_str());
     }
   }
 
-  m_extension.reset(new CPythonExtension(name.c_str(), source.c_str(), 
+  m_extension.reset(new CPythonExtension(name.c_str(), source.c_str(),
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
-  
+
   if (autoRegister) this->Register();
 }
 
-void CExtension::Register(void) 
-{ 
-  v8::RegisterExtension(m_extension.get()); 
-  
-  m_registered = true; 
-  
-  s_extensions.push_back(m_extension); 
+void CExtension::Register(void)
+{
+  v8::RegisterExtension(m_extension.get());
+
+  m_registered = true;
+
+  s_extensions.push_back(m_extension);
 }
 
 py::list CExtension::GetExtensions(void)
 {
-  v8::RegisteredExtension *ext = v8::RegisteredExtension::first_extension(); 
+  v8::RegisteredExtension *ext = v8::RegisteredExtension::first_extension();
   py::list extensions;
 
   while (ext)

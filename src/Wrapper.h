@@ -78,7 +78,7 @@ protected:
   }
 public:
   CJavascriptObject(v8::Handle<v8::Object> obj)
-    : m_obj(v8::Persistent<v8::Object>::New(obj))
+    : m_obj(v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), obj))
   {
   }
 
@@ -172,7 +172,7 @@ class CJavascriptFunction : public CJavascriptObject
   py::object Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds);
 public:
   CJavascriptFunction(v8::Handle<v8::Object> self, v8::Handle<v8::Function> func)
-    : CJavascriptObject(func), m_self(v8::Persistent<v8::Object>::New(self))
+    : CJavascriptObject(func), m_self(v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), self))
   {
   }
 

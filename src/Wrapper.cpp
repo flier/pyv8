@@ -440,7 +440,10 @@ v8::Handle<v8::Array> CPythonObject::NamedEnumerator(const v8::AccessorInfo& inf
   }
   else if (::PyMapping_Check(obj.ptr()))
   {
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wwrite-strings"
     keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));
+  #pragma GCC diagnostic pop
   }
   else if (PyGen_CheckExact(obj.ptr()))
   {
@@ -741,7 +744,7 @@ v8::Persistent<v8::ObjectTemplate> CPythonObject::CreateObjectTemplate(void)
 
   SetupObjectTemplate(clazz);
 
-  return v8::Persistent<v8::ObjectTemplate>::New(clazz);
+  return v8::Persistent<v8::ObjectTemplate>::New(v8::Isolate::GetCurrent(), clazz);
 }
 
 bool CPythonObject::IsWrapped(v8::Handle<v8::Object> obj)
@@ -1284,7 +1287,7 @@ void CJavascriptArray::LazyConstructor(void)
     }
   }
 
-  m_obj = v8::Persistent<v8::Object>::New(array);
+  m_obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), array);
 }
 size_t CJavascriptArray::Length(void)
 {
@@ -1724,7 +1727,7 @@ py::object CJavascriptFunction::GetOwner(void) const
 #ifdef SUPPORT_TRACE_LIFECYCLE
 
 ObjectTracer::ObjectTracer(v8::Handle<v8::Value> handle, py::object *object)
-  : m_handle(v8::Persistent<v8::Value>::New(handle)),
+  : m_handle(v8::Persistent<v8::Value>::New(v8::Isolate::GetCurrent(), handle)),
     m_object(object), m_living(GetLivingMapping())
 {
 }

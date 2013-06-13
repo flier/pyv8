@@ -9,14 +9,14 @@
 #include "Config.h"
 #include "Utils.h"
 
-#define BEGIN_HANDLE_PYTHON_EXCEPTION try 
+#define BEGIN_HANDLE_PYTHON_EXCEPTION try
 #define END_HANDLE_PYTHON_EXCEPTION \
   catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); } \
   catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } \
   catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); }
 
 #define BEGIN_HANDLE_JAVASCRIPT_EXCEPTION v8::TryCatch try_catch;
-#define END_HANDLE_JAVASCRIPT_EXCEPTION if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch); 
+#define END_HANDLE_JAVASCRIPT_EXCEPTION if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
 class CJavascriptException;
 
@@ -38,8 +38,8 @@ class CJavascriptStackTrace
 {
   v8::Persistent<v8::StackTrace> m_st;
 public:
-  CJavascriptStackTrace(v8::Handle<v8::StackTrace> st) 
-    : m_st(v8::Persistent<v8::StackTrace>::New(st))
+  CJavascriptStackTrace(v8::Handle<v8::StackTrace> st)
+    : m_st(v8::Persistent<v8::StackTrace>::New(v8::Isolate::GetCurrent(), st))
   {
 
   }
@@ -47,12 +47,12 @@ public:
   int GetFrameCount() const { return m_st->GetFrameCount(); }
   CJavascriptStackFramePtr GetFrame(size_t idx) const;
 
-  static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit, 
+  static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
     v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview);
 
   void Dump(std::ostream& os) const;
 
-  class FrameIterator 
+  class FrameIterator
     : public boost::iterator_facade<FrameIterator, CJavascriptStackFramePtr const, boost::forward_traversal_tag, CJavascriptStackFramePtr>
   {
     CJavascriptStackTrace *m_st;
@@ -78,8 +78,8 @@ class CJavascriptStackFrame
 {
   v8::Persistent<v8::StackFrame> m_frame;
 public:
-  CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame) 
-    : m_frame(v8::Persistent<v8::StackFrame>::New(frame))
+  CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame)
+    : m_frame(v8::Persistent<v8::StackFrame>::New(v8::Isolate::GetCurrent(), frame))
   {
 
   }
@@ -105,11 +105,11 @@ class CJavascriptException : public std::runtime_error
 protected:
   CJavascriptException(v8::TryCatch& try_catch, PyObject *type)
     : std::runtime_error(Extract(try_catch)), m_type(type),
-      m_exc(v8::Persistent<v8::Value>::New(try_catch.Exception())),
-      m_stack(v8::Persistent<v8::Value>::New(try_catch.StackTrace())),
-      m_msg(v8::Persistent<v8::Message>::New(try_catch.Message()))
+      m_exc(v8::Persistent<v8::Value>::New(v8::Isolate::GetCurrent(), try_catch.Exception())),
+      m_stack(v8::Persistent<v8::Value>::New(v8::Isolate::GetCurrent(), try_catch.StackTrace())),
+      m_msg(v8::Persistent<v8::Message>::New(v8::Isolate::GetCurrent(), try_catch.Message()))
   {
-    
+
   }
 public:
   CJavascriptException(const std::string& msg, PyObject *type = NULL)
@@ -134,7 +134,7 @@ public:
   int GetEndColumn(void);
   const std::string GetSourceLine(void);
   const std::string GetStackTrace(void);
-  
+
   void PrintCallStack(py::object file);
 
   static void ThrowIf(v8::TryCatch& try_catch);

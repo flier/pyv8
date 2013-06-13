@@ -10,7 +10,7 @@ class CLocker
 
   std::auto_ptr<v8::Locker> m_locker;
   CIsolatePtr m_isolate;
-public:  
+public:
   CLocker() {}
   CLocker(CIsolatePtr isolate) : m_isolate(isolate)
   {
@@ -35,19 +35,19 @@ class CUnlocker
 public:
   bool entered(void) { return NULL != m_unlocker.get(); }
 
-  void enter(void) 
-  { 
+  void enter(void)
+  {
     Py_BEGIN_ALLOW_THREADS
 
-    m_unlocker.reset(new v8::Unlocker()); 
+    m_unlocker.reset(new v8::Unlocker(v8::Isolate::GetCurrent()));
 
     Py_END_ALLOW_THREADS
   }
-  void leave(void) 
-  { 
+  void leave(void)
+  {
     Py_BEGIN_ALLOW_THREADS
 
-    m_unlocker.reset(); 
+    m_unlocker.reset();
 
     Py_END_ALLOW_THREADS
   }

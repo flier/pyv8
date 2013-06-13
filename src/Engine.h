@@ -16,7 +16,7 @@ class CScript;
 typedef boost::shared_ptr<CScript> CScriptPtr;
 
 class CEngine
-{  
+{
 protected:
   py::object InternalPreCompile(v8::Handle<v8::String> src);
   CScriptPtr InternalCompile(v8::Handle<v8::String> src, v8::Handle<v8::Value> name, int line, int col, py::object precompiled);
@@ -34,19 +34,19 @@ protected:
   static void TerminateAllThreads(void);
 
   static void ReportFatalError(const char* location, const char* message);
-  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);      
+  static void ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data);
 public:
-  py::object PreCompile(const std::string& src) 
-  { 
+  py::object PreCompile(const std::string& src)
+  {
     v8::HandleScope scope;
 
-    return InternalPreCompile(ToString(src)); 
+    return InternalPreCompile(ToString(src));
   }
-  py::object PreCompileW(const std::wstring& src) 
-  { 
+  py::object PreCompileW(const std::wstring& src)
+  {
     v8::HandleScope scope;
 
-    return InternalPreCompile(ToString(src)); 
+    return InternalPreCompile(ToString(src));
   }
 
   CScriptPtr Compile(const std::string& src, const std::string name = std::string(),
@@ -65,7 +65,7 @@ public:
   }
 
   void RaiseError(v8::TryCatch& try_catch);
-public:  
+public:
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
@@ -87,10 +87,10 @@ class CScript
   CEngine& m_engine;
 
   v8::Persistent<v8::String> m_source;
-  v8::Persistent<v8::Script> m_script;  
+  v8::Persistent<v8::Script> m_script;
 public:
-  CScript(CEngine& engine, v8::Persistent<v8::String> source, v8::Handle<v8::Script> script) 
-    : m_engine(engine), m_source(source), m_script(v8::Persistent<v8::Script>::New(script))
+  CScript(CEngine& engine, v8::Persistent<v8::String> source, v8::Handle<v8::Script> script)
+    : m_engine(engine), m_source(source), m_script(v8::Persistent<v8::Script>::New(v8::Isolate::GetCurrent(), script))
   {
 
   }
@@ -111,7 +111,7 @@ public:
 
 #ifdef SUPPORT_EXTENSION
 
-class CExtension 
+class CExtension
 {
   py::list m_deps;
   std::vector<std::string> m_depNames;

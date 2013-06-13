@@ -13,7 +13,7 @@ void CContext::Expose(void)
 
     .add_property("locked", &CIsolate::IsLocked)
 
-    .def("enter", &CIsolate::Enter, 
+    .def("enter", &CIsolate::Enter,
          "Sets this isolate as the entered one for the current thread. "
          "Saves the previously entered one (if any), so that it can be "
          "restored when exiting.  Re-entering an isolate is allowed.")
@@ -23,35 +23,35 @@ void CContext::Expose(void)
          "The isolate may still stay the same, if it was entered more than once.")
     ;
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CIsolate>, 
-    py::objects::make_ptr_instance<CIsolate, 
+  py::objects::class_value_wrapper<boost::shared_ptr<CIsolate>,
+    py::objects::make_ptr_instance<CIsolate,
     py::objects::pointer_holder<boost::shared_ptr<CIsolate>,CIsolate> > >();
 
   py::class_<CContext, boost::noncopyable>("JSContext", "JSContext is an execution context.", py::no_init)
     .def(py::init<const CContext&>("create a new context base on a exists context"))
-    .def(py::init<py::object, py::list>((py::arg("global") = py::object(), 
-                                         py::arg("extensions") = py::list()), 
+    .def(py::init<py::object, py::list>((py::arg("global") = py::object(),
+                                         py::arg("extensions") = py::list()),
                                         "create a new context base on global object"))
-                  
+
     .add_property("securityToken", &CContext::GetSecurityToken, &CContext::SetSecurityToken)
-    
+
     .add_property("locals", &CContext::GetGlobal, "Local variables within context")
-    
-    .add_static_property("entered", &CContext::GetEntered, 
+
+    .add_static_property("entered", &CContext::GetEntered,
                          "The last entered context.")
-    .add_static_property("current", &CContext::GetCurrent, 
+    .add_static_property("current", &CContext::GetCurrent,
                          "The context that is on the top of the stack.")
     .add_static_property("calling", &CContext::GetCalling,
                          "The context of the calling JavaScript code.")
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
 
-    .def("eval", &CContext::Evaluate, (py::arg("source"), 
+    .def("eval", &CContext::Evaluate, (py::arg("source"),
                                        py::arg("name") = std::string(),
                                        py::arg("line") = -1,
                                        py::arg("col") = -1,
                                        py::arg("precompiled") = py::object()))
-    .def("eval", &CContext::EvaluateW, (py::arg("source"), 
+    .def("eval", &CContext::EvaluateW, (py::arg("source"),
                                         py::arg("name") = std::wstring(),
                                         py::arg("line") = -1,
                                         py::arg("col") = -1,
@@ -67,8 +67,8 @@ void CContext::Expose(void)
     .def("__nonzero__", &CContext::IsEntered, "the context has been entered.")
     ;
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CContext>, 
-    py::objects::make_ptr_instance<CContext, 
+  py::objects::class_value_wrapper<boost::shared_ptr<CContext>,
+    py::objects::make_ptr_instance<CContext,
     py::objects::pointer_holder<boost::shared_ptr<CContext>,CContext> > >();
 }
 
@@ -80,14 +80,14 @@ py::object CIsolate::GetCurrent(void)
 
   return !isolate ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CIsolate>(
-    CIsolatePtr(new CIsolate(isolate)))));  
+    CIsolatePtr(new CIsolate(isolate)))));
 }
 
 CContext::CContext(v8::Handle<v8::Context> context)
 {
   v8::HandleScope handle_scope;
 
-  m_context = v8::Persistent<v8::Context>::New(context);
+  m_context = v8::Persistent<v8::Context>::New(v8::Isolate::GetCurrent(), context);
 }
 
 CContext::CContext(const CContext& context)
@@ -99,7 +99,7 @@ CContext::CContext(const CContext& context)
 
 CContext::CContext(py::object global, py::list extensions)
 {
-  v8::HandleScope handle_scope;  
+  v8::HandleScope handle_scope;
 
   std::auto_ptr<v8::ExtensionConfiguration> cfg;
   std::vector<std::string> ext_names;
@@ -109,9 +109,9 @@ CContext::CContext(py::object global, py::list extensions)
   {
     py::extract<const std::string> extractor(::PyList_GetItem(extensions.ptr(), i));
 
-    if (extractor.check()) 
+    if (extractor.check())
     {
-      ext_names.push_back(extractor());      
+      ext_names.push_back(extractor());
     }
   }
 
@@ -121,66 +121,68 @@ CContext::CContext(py::object global, py::list extensions)
   }
 
   if (!ext_ptrs.empty()) cfg.reset(new v8::ExtensionConfiguration(ext_ptrs.size(), &ext_ptrs[0]));
-  
-  m_context = v8::Context::New(cfg.get());
+
+  v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), cfg.get());
+
+  m_context = v8::Persistent<v8::Context>::New(v8::Isolate::GetCurrent(), context);
 
   v8::Context::Scope context_scope(m_context);
 
   if (global.ptr() != Py_None)
-  {    
-    m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));  
+  {
+    m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));
   }
 }
 
-py::object CContext::GetGlobal(void) 
-{ 
+py::object CContext::GetGlobal(void)
+{
   v8::HandleScope handle_scope;
 
-  return CJavascriptObject::Wrap(m_context->Global()); 
+  return CJavascriptObject::Wrap(m_context->Global());
 }
 
 py::str CContext::GetSecurityToken(void)
 {
   v8::HandleScope handle_scope;
- 
+
   v8::Handle<v8::Value> token = m_context->GetSecurityToken();
 
   if (token.IsEmpty()) return py::str();
-  
+
   v8::String::AsciiValue str(token->ToString());
 
-  return py::str(*str, str.length());    
+  return py::str(*str, str.length());
 }
 
 void CContext::SetSecurityToken(py::str token)
 {
   v8::HandleScope handle_scope;
 
-  if (token.ptr() == Py_None) 
+  if (token.ptr() == Py_None)
   {
     m_context->UseDefaultSecurityToken();
   }
   else
-  {    
-    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));  
+  {
+    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));
   }
 }
 
-py::object CContext::GetEntered(void) 
-{ 
+py::object CContext::GetEntered(void)
+{
   v8::HandleScope handle_scope;
 
   return !v8::Context::InContext() ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
       CContextPtr(new CContext(v8::Context::GetEntered())))));
 }
-py::object CContext::GetCurrent(void) 
-{ 
+py::object CContext::GetCurrent(void)
+{
   v8::HandleScope handle_scope;
 
   return !v8::Context::InContext() ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-      CContextPtr(new CContext(v8::Context::GetCurrent()))))); 
+      CContextPtr(new CContext(v8::Context::GetCurrent())))));
 }
 py::object CContext::GetCalling(void)
 {
@@ -193,26 +195,26 @@ py::object CContext::GetCalling(void)
       CContextPtr(new CContext(handle_scope.Close(calling))))));
 }
 
-py::object CContext::Evaluate(const std::string& src, 
+py::object CContext::Evaluate(const std::string& src,
                               const std::string name,
                               int line, int col,
-                              py::object precompiled) 
-{ 
+                              py::object precompiled)
+{
   CEngine engine;
 
   CScriptPtr script = engine.Compile(src, name, line, col, precompiled);
 
-  return script->Run(); 
+  return script->Run();
 }
 
-py::object CContext::EvaluateW(const std::wstring& src, 
+py::object CContext::EvaluateW(const std::wstring& src,
                                const std::wstring name,
                                int line, int col,
-                               py::object precompiled) 
-{ 
+                               py::object precompiled)
+{
   CEngine engine;
 
   CScriptPtr script = engine.CompileW(src, name, line, col, precompiled);
 
-  return script->Run(); 
+  return script->Run();
 }
