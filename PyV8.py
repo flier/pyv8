@@ -38,7 +38,7 @@ __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSObject", "JSArray", "JSFunction",
            "JSClass", "JSEngine", "JSContext",
            "JSObjectSpace", "JSAllocationAction",
-           "JSStackTrace", "JSStackFrame", "profiler", 
+           "JSStackTrace", "JSStackFrame", "profiler",
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
 
 class JSAttribute(object):
@@ -47,7 +47,7 @@ class JSAttribute(object):
 
     def __call__(self, func):
         setattr(func, "__%s__" % self.name, True)
-        
+
         return func
 
 ReadOnly = JSAttribute(name='readonly')
@@ -374,7 +374,7 @@ class JSDebugProtocol(object):
         obj = json.loads(payload)
 
         return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
-    
+
 class JSDebugEvent(_PyV8.JSDebugEvent):
     class FrameData(object):
         def __init__(self, frame, count, name, value):
@@ -732,7 +732,7 @@ JSAllocationAction = _PyV8.JSAllocationAction
 class JSEngine(_PyV8.JSEngine):
     def __init__(self):
         _PyV8.JSEngine.__init__(self)
-        
+
     def __enter__(self):
         return self
 
@@ -1163,7 +1163,7 @@ class TestWrapper(unittest.TestCase):
             self.assertEqual(14, func.colnum)
             self.assertEqual(0, func.lineoff)
             self.assertEqual(0, func.coloff)
-            
+
             #TODO fix me, why the setter doesn't work?
             # func.name = "hello"
             # it seems __setattr__ was called instead of CJavascriptFunction::SetName
@@ -2337,13 +2337,18 @@ class TestAST(unittest.TestCase):
 . . VAR "i"
 . . VAR "j"
 . BLOCK INIT
-. . CALL RUNTIME  InitializeVarGlobal
-. . . LITERAL "i"
-. . . LITERAL 0
-. . CALL RUNTIME  InitializeVarGlobal
-. . . LITERAL "j"
-. . . LITERAL 0
+. . EXPRESSION STATEMENT
+. . . CALL RUNTIME
+. . . . NAME InitializeVarGlobal
+. . . . LITERAL "i"
+. . . . LITERAL 0
+. . EXPRESSION STATEMENT
+. . . CALL RUNTIME
+. . . . NAME InitializeVarGlobal
+. . . . LITERAL "j"
+. . . . LITERAL 0
 """, checker.ast)
+
             self.assertEqual([u'FunctionLiteral', {u'name': u''},
                 [u'Declaration', {u'mode': u'VAR'},
                     [u'Variable', {u'name': u'i'}]

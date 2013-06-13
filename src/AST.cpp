@@ -23,7 +23,7 @@ void CAstNode::Expose(void)
     .add_property("outer", &CAstScope::GetOuter)
 
     .add_property("declarations", &CAstScope::GetDeclarations)
-    
+
     .add_property("num_parameters", &CAstScope::GetParametersNumer)
     .def("parameter", &CAstScope::GetParameter, (py::args("index")))
     ;
@@ -65,13 +65,13 @@ void CAstNode::Expose(void)
     .add_property("unused", &CAstLabel::IsUnused)
     .add_property("linked", &CAstLabel::IsLinked)
     ;
-  
+
   #define DECLARE_TYPE_ENUM(type) .value(#type, v8i::AstNode::k##type)
 
-  py::enum_<v8i::AstNode::Type>("AstNodeType")
+  py::enum_<v8i::AstNode::NodeType>("AstNodeType")
     AST_NODE_LIST(DECLARE_TYPE_ENUM)
 
-    .value("Invalid", v8i::AstNode::kInvalid)    
+    .value("Invalid", v8i::AstNode::kInvalid)
     ;
 
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
@@ -87,8 +87,8 @@ void CAstNode::Expose(void)
 
     .add_property("pos", &CAstStatement::GetPosition, &CAstStatement::SetPosition)
     ;
-    
-  py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)    
+
+  py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)
     .add_property("isPropertyName", &CAstExpression::IsPropertyName)
     .add_property("isSmi", &CAstExpression::IsSmiLiteral)
     .add_property("isString", &CAstExpression::IsStringLiteral)
@@ -168,9 +168,21 @@ void CAstNode::Expose(void)
     .add_property("fastLoop", &CAstForStatement::IsFastLoop)
     ;
 
-  py::class_<CAstForInStatement, py::bases<CAstIterationStatement> >("AstForInStatement", py::no_init)
-    .add_property("each", &CAstForInStatement::GetEach)
+  py::class_<CAstForEachStatement, py::bases<CAstIterationStatement> >("AstForEachStatement", py::no_init)
+    .add_property("each", &CAstForEachStatement::GetEach)
+    .add_property("subject", &CAstForEachStatement::GetSubject)
+    ;
+
+  py::class_<CAstForInStatement, py::bases<CAstForEachStatement> >("AstForInStatement", py::no_init)
     .add_property("enumerable", &CAstForInStatement::GetEnumerable)
+    ;
+
+  py::class_<CAstForOfStatement, py::bases<CAstForEachStatement> >("AstForOfStatement", py::no_init)
+    .add_property("iterable", &CAstForOfStatement::GetIterable)
+    .add_property("assignIterator", &CAstForOfStatement::AssignIterator)
+    .add_property("next", &CAstForOfStatement::NextResult)
+    .add_property("done", &CAstForOfStatement::ResultDone)
+    .add_property("assignEach", &CAstForOfStatement::AssignEach)
     ;
 
   py::class_<CAstExpressionStatement, py::bases<CAstStatement> >("AstExpressionStatement", py::no_init)
@@ -193,7 +205,7 @@ void CAstNode::Expose(void)
     .add_property("expression", &CAstWithStatement::expression)
     .add_property("statement", &CAstWithStatement::statement)
     ;
-  
+
   py::class_<CAstCaseClause>("AstCaseClause", py::no_init)
     .add_property("isDefault", &CAstCaseClause::is_default)
     .add_property("label", &CAstCaseClause::label)
@@ -291,7 +303,7 @@ void CAstNode::Expose(void)
     .add_property("var", &CAstVariableProxy::var)
     .add_property("isThis", &CAstVariableProxy::is_this)
     ;
-  
+
   py::class_<CAstProperty, py::bases<CAstExpression> >("AstProperty", py::no_init)
     ;
 
@@ -377,7 +389,7 @@ void CAstNode::Expose(void)
 	  .value("delegating", v8i::Yield::DELEGATING)
 	  .value("final", v8i::Yield::FINAL)
 	  ;
-  
+
   py::class_<CAstYield, py::bases<CAstExpression> >("AstYield", py::no_init)
     .add_property("expression", &CAstYield::expression)
     .add_property("kind", &CAstYield::yield_kind)
@@ -391,12 +403,12 @@ void CAstNode::Expose(void)
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)
     .add_property("name", &CAstFunctionLiteral::GetName)
-    .add_property("scope", &CAstFunctionLiteral::GetScope)    
+    .add_property("scope", &CAstFunctionLiteral::GetScope)
     .add_property("body", &CAstFunctionLiteral::GetBody)
 
     .add_property("startPos", &CAstFunctionLiteral::GetStartPosition)
     .add_property("endPos", &CAstFunctionLiteral::GetEndPosition)
-    .add_property("isExpression", &CAstFunctionLiteral::IsExpression)    
+    .add_property("isExpression", &CAstFunctionLiteral::IsExpression)
 
     .def("toAST", &CAstFunctionLiteral::ToAST)
     .def("toJSON", &CAstFunctionLiteral::ToJSON)

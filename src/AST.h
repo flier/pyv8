@@ -42,7 +42,7 @@ inline py::list to_python(v8i::ZoneList<T *>* lst);
 
 template <typename T>
 T _to_string(v8i::Handle<v8i::String> str)
-{ 
+{
   if (str.is_null()) return T();
 
   v8i::String::FlatContent content = str->GetFlatContent();
@@ -89,7 +89,7 @@ class CAstVariable;
 class CAstVariableProxy;
 class CAstFunctionLiteral;
 
-class CAstScope 
+class CAstScope
 {
   v8i::Scope *m_scope;
 public:
@@ -116,7 +116,7 @@ public:
   py::object GetArguments(void) const;
 };
 
-class CAstVariable 
+class CAstVariable
 {
   v8i::Variable *m_var;
 public:
@@ -152,7 +152,7 @@ public:
 };
 
 class CAstNode
-{  
+{
 protected:
   v8i::AstNode *m_node;
 
@@ -167,7 +167,7 @@ public:
 
   static void Expose(void);
 
-  v8i::AstNode::Type GetType(void) const { return m_node->node_type(); }
+  v8i::AstNode::NodeType GetType(void) const { return m_node->node_type(); }
 
   const std::string ToString(void) const { return v8i::PrettyPrinter().Print(m_node); }
 };
@@ -189,13 +189,13 @@ protected:
   CAstExpression(v8i::Expression *expr) : CAstNode(expr) {}
 public:
   bool IsPropertyName(void) { return as<v8i::Expression>()->IsPropertyName(); }
-  
+
   // True iff the expression is a literal represented as a smi.
   bool IsSmiLiteral(void) { return as<v8i::Expression>()->IsSmiLiteral(); }
-  
+
   // True iff the expression is a string literal.
   bool IsStringLiteral(void) { return as<v8i::Expression>()->IsStringLiteral(); }
-  
+
   // True iff the expression is the null literal.
   bool IsNullLiteral(void) { return as<v8i::Expression>()->IsNullLiteral(); }
 };
@@ -205,7 +205,7 @@ class CAstBreakableStatement : public CAstStatement
 protected:
   CAstBreakableStatement(v8i::BreakableStatement *stat) : CAstStatement(stat) {}
 public:
-  bool IsTargetForAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }  
+  bool IsTargetForAnonymous(void) const { return as<v8i::BreakableStatement>()->is_target_for_anonymous(); }
 
   CAstLabel GetBreakTarget(void) { return CAstLabel(as<v8i::BreakableStatement>()->break_target()); }
 };
@@ -228,7 +228,7 @@ public:
   CAstDeclaration(v8i::Declaration *decl) : CAstNode(decl) {}
 
   py::object GetProxy(void) const;
-  v8i::VariableMode GetMode(void) const { return as<v8i::Declaration>()->mode(); }  
+  v8i::VariableMode GetMode(void) const { return as<v8i::Declaration>()->mode(); }
   CAstScope GetScope(void) const { return CAstScope(as<v8i::Declaration>()->scope()); }
 };
 
@@ -313,7 +313,7 @@ public:
     CAstModuleStatement(v8i::ModuleStatement *stat) : CAstStatement(stat) {}
 
     py::object GetProxy(void) const { return to_python(as<v8i::ModuleStatement>()->proxy()); }
-    
+
     py::object GetBody(void) const { return to_python(as<v8i::ModuleStatement>()->body()); }
 };
 
@@ -357,17 +357,37 @@ public:
 
   CAstVariable GetLoopVariable(void) const { return CAstVariable(as<v8i::ForStatement>()->loop_variable()); }
   void SetLoopVariable(CAstVariable& var) { as<v8i::ForStatement>()->set_loop_variable(var.GetVariable()); }
-  
+
   bool IsFastLoop(void) const { return as<v8i::ForStatement>()->is_fast_smi_loop(); }
 };
 
-class CAstForInStatement : public CAstIterationStatement
+class CAstForEachStatement : public CAstIterationStatement
 {
 public:
-  CAstForInStatement(v8i::ForInStatement *stat) : CAstIterationStatement(stat) {}
+  CAstForEachStatement(v8i::ForEachStatement *stat) : CAstIterationStatement(stat) {}
 
-  py::object GetEach(void) const { return to_python(as<v8i::ForInStatement>()->each()); }
+  py::object GetEach(void) const { return to_python(as<v8i::ForEachStatement>()->each()); }
+  py::object GetSubject(void) const { return to_python(as<v8i::ForEachStatement>()->subject()); }
+};
+
+class CAstForInStatement : public CAstForEachStatement
+{
+public:
+  CAstForInStatement(v8i::ForInStatement *stat) : CAstForEachStatement(stat) {}
+
   py::object GetEnumerable(void) const { return to_python(as<v8i::ForInStatement>()->enumerable()); }
+};
+
+class CAstForOfStatement : public CAstForEachStatement
+{
+public:
+  CAstForOfStatement(v8i::ForOfStatement *stat) : CAstForEachStatement(stat) {}
+
+  py::object GetIterable(void) const { return to_python(as<v8i::ForOfStatement>()->iterable()); }
+  py::object AssignIterator(void) const { return to_python(as<v8i::ForOfStatement>()->assign_iterator()); }
+  py::object NextResult(void) const { return to_python(as<v8i::ForOfStatement>()->next_result()); }
+  py::object ResultDone(void) const { return to_python(as<v8i::ForOfStatement>()->result_done()); }
+  py::object AssignEach(void) const { return to_python(as<v8i::ForOfStatement>()->assign_each()); }
 };
 
 class CAstExpressionStatement : public CAstStatement
@@ -411,20 +431,20 @@ public:
   py::object statement(void) const { return to_python(as<v8i::WithStatement>()->statement()); }
 };
 
-class CAstCaseClause 
+class CAstCaseClause
 {
   v8i::CaseClause *m_clause;
 public:
   CAstCaseClause(v8i::CaseClause *clause) : m_clause(clause) {}
-  
+
   bool is_default(void) { return m_clause->is_default(); }
-    
+
   py::object label(void) { return m_clause->is_default() ? py::object() : to_python(m_clause->label()); }
-  
+
   CAstLabel body_target(void) { return CAstLabel(m_clause->body_target()); }
-  
+
   py::object statements(void) { return to_python(m_clause->statements()); }
-  
+
   int position(void) { return m_clause->position(); }
 };
 
@@ -638,7 +658,7 @@ public:
   bool is_postfix(void) const { return as<v8i::CountOperation>()->is_postfix(); }
 
   v8i::Token::Value op(void) const { return as<v8i::CountOperation>()->op(); }
-  v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }  
+  v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }
 
   py::object expression(void) const { return to_python(as<v8i::CountOperation>()->expression()); }
   int position(void) const { return as<v8i::CountOperation>()->position(); }
@@ -688,7 +708,7 @@ class CAstYield : public CAstExpression
 {
 public:
   CAstYield(v8i::Yield *yield) : CAstExpression(yield) {}
-  
+
   py::object expression(void) const { return to_python(as<v8i::Yield>()->expression()); }
   bool yield_kind(void) const { return as<v8i::Yield>()->yield_kind(); }
   int position(void) const { return as<v8i::Yield>()->position(); }
@@ -746,7 +766,7 @@ public:
     if (::PyCallable_Check(callback.ptr())) { \
       callback(py::object(CAst##type(node))); }; } }
 
-  AST_NODE_LIST(DECLARE_VISIT) 
+  AST_NODE_LIST(DECLARE_VISIT)
 
 #undef DECLARE_VISIT
 
@@ -756,7 +776,7 @@ public:
 struct CAstObjectCollector : public v8i::AstVisitor
 {
   py::object m_obj;
-    
+
   CAstObjectCollector() {
     InitializeAstVisitor();
   }
@@ -764,7 +784,7 @@ struct CAstObjectCollector : public v8i::AstVisitor
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_obj = py::object(CAst##type(node)); }
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
-    
+
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
@@ -772,12 +792,12 @@ template <typename T>
 inline py::object to_python(T *node)
 {
   if (!node) return py::object();
-  
+
   CAstObjectCollector collector;
 
   node->Accept(&collector);
 
-  return collector.m_obj;  
+  return collector.m_obj;
 }
 
 struct CAstListCollector : public v8i::AstVisitor
@@ -787,11 +807,11 @@ struct CAstListCollector : public v8i::AstVisitor
   CAstListCollector() {
     InitializeAstVisitor();
   }
-    
+
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }
   AST_NODE_LIST(DECLARE_VISIT)
 #undef DECLARE_VISIT
-    
+
   DEFINE_AST_VISITOR_SUBCLASS_MEMBERS();
 };
 
@@ -825,19 +845,19 @@ inline py::list to_python(v8i::ZoneList<T *>* lst)
   return targets;
 }
 
-inline py::object CAstScope::GetReceiver(void) const 
-{ 
+inline py::object CAstScope::GetReceiver(void) const
+{
   if (m_scope->receiver())
   {
     CAstVariable proxy(m_scope->receiver());
 
     return to_python(proxy);
   }
-  
-  return py::object(); 
+
+  return py::object();
 }
-inline py::object CAstScope::GetFunction(void) const 
-{ 
+inline py::object CAstScope::GetFunction(void) const
+{
   if (m_scope->function())
   {
     CAstVariableDeclaration var(m_scope->function());
@@ -845,22 +865,22 @@ inline py::object CAstScope::GetFunction(void) const
     return to_python(var);
   }
 
-  return py::object(); 
+  return py::object();
 }
-inline CAstVariable CAstScope::GetParameter(int index) const 
-{ 
-  return CAstVariable(m_scope->parameter(index)); 
+inline CAstVariable CAstScope::GetParameter(int index) const
+{
+  return CAstVariable(m_scope->parameter(index));
 }
-inline py::object CAstScope::GetArguments(void) const 
-{ 
+inline py::object CAstScope::GetArguments(void) const
+{
   if (m_scope->arguments())
   {
     CAstVariable var(m_scope->arguments());
 
     return to_python(var);
   }
-  
-  return py::object(); 
+
+  return py::object();
 }
 
 inline void CAstNode::Visit(py::object handler) { CAstVisitor(handler).Visit(m_node); }

@@ -15,7 +15,7 @@ typedef boost::shared_ptr<CJavascriptObject> CJavascriptObjectPtr;
 typedef boost::shared_ptr<CJavascriptFunction> CJavascriptFunctionPtr;
 
 struct CWrapper
-{  
+{
   static void Expose(void);
 };
 
@@ -100,20 +100,20 @@ public:
   CJavascriptObjectPtr Clone(void);
 
   bool Contains(const std::string& name);
-  
+
   operator long() const;
   operator double() const;
-  operator bool() const;  
-  
+  operator bool() const;
+
   bool Equals(CJavascriptObjectPtr other) const;
   bool Unequals(CJavascriptObjectPtr other) const { return !Equals(other); }
-  
-  void Dump(std::ostream& os) const;  
+
+  void Dump(std::ostream& os) const;
 
   static py::object Wrap(CJavascriptObject *obj);
   static py::object Wrap(v8::Handle<v8::Value> value,
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
-  static py::object Wrap(v8::Handle<v8::Object> obj, 
+  static py::object Wrap(v8::Handle<v8::Object> obj,
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
 };
 
@@ -122,7 +122,7 @@ class CJavascriptArray : public CJavascriptObject, public ILazyObject
   py::object m_items;
   size_t m_size;
 public:
-  class ArrayIterator 
+  class ArrayIterator
     : public boost::iterator_facade<ArrayIterator, py::object const, boost::forward_traversal_tag, py::object>
   {
     CJavascriptArray *m_array;
@@ -146,7 +146,7 @@ public:
 
   }
 
-  CJavascriptArray(py::object items) 
+  CJavascriptArray(py::object items)
     : m_items(items), m_size(0)
   {
   }
@@ -212,10 +212,10 @@ class ObjectTracer
   std::auto_ptr<py::object> m_object;
 
   LivingMap *m_living;
-  
+
   void Trace(void);
-  
-  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> value, void* parameter);
+
+  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> *value, ObjectTracer* parameter);
 
   static LivingMap *GetLivingMapping(void);
 public:
@@ -224,7 +224,7 @@ public:
 
   v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
   py::object *Object(void) const { return m_object.get(); }
-  
+
   void Dispose(void);
 
   static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object);
@@ -236,14 +236,14 @@ class ContextTracer
 {
   v8::Persistent<v8::Context> m_ctxt;
   std::auto_ptr<LivingMap> m_living;
-  
+
   void Trace(void);
-  
-  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> value, void* parameter);
+
+  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Context> *value, ContextTracer* parameter);
 public:
   ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living);
   ~ContextTracer(void);
-  
+
   static void Trace(v8::Handle<v8::Context> ctxt, LivingMap *living);
 };
 
