@@ -17,9 +17,9 @@ class CDebug
 
   v8::Persistent<v8::Context> m_debug_context, m_eval_context;
 
-  static void OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state, 
+  static void OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state,
     v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data);
-  static void OnDebugMessage(const uint16_t* message, int length, 
+  static void OnDebugMessage(const uint16_t* message, int length,
     v8::Debug::ClientData* client_data);
   static void OnDispatchDebugMessages(void);
 
@@ -30,6 +30,9 @@ public:
     Init();
   }
 
+  v8::Handle<v8::Context> DebugContext() const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_debug_context); }
+  v8::Handle<v8::Context> EvalContext() const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_eval_context); }
+
   bool IsEnabled(void) { return m_enabled; }
   void SetEnable(bool enable);
 
@@ -37,7 +40,7 @@ public:
   void DebugBreakForCommand(py::object data);
   void CancelDebugBreak(void) { v8::Debug::CancelDebugBreak(); }
   void ProcessDebugMessages(void) { v8::Debug::ProcessDebugMessages(); }
-  
+
   void Listen(const std::string& name, int port, bool wait_for_connection);
   void SendCommand(const std::string& cmd);
 

@@ -39,12 +39,21 @@ class CJavascriptStackTrace
   v8::Persistent<v8::StackTrace> m_st;
 public:
   CJavascriptStackTrace(v8::Handle<v8::StackTrace> st)
-    : m_st(v8::Persistent<v8::StackTrace>::New(v8::Isolate::GetCurrent(), st))
+    : m_st(v8::Isolate::GetCurrent(), st)
   {
 
   }
 
-  int GetFrameCount() const { return m_st->GetFrameCount(); }
+  CJavascriptStackTrace(const CJavascriptStackTrace& st)
+  {
+    v8::HandleScope handle_scope;
+    
+    m_st.Reset(v8::Isolate::GetCurrent(), st.Handle());
+  }
+
+  v8::Handle<v8::StackTrace> Handle() const { return v8::Local<v8::StackTrace>::New(v8::Isolate::GetCurrent(), m_st); }
+
+  int GetFrameCount() const { v8::HandleScope handle_scope; return Handle()->GetFrameCount(); }
   CJavascriptStackFramePtr GetFrame(size_t idx) const;
 
   static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
@@ -79,17 +88,26 @@ class CJavascriptStackFrame
   v8::Persistent<v8::StackFrame> m_frame;
 public:
   CJavascriptStackFrame(v8::Handle<v8::StackFrame> frame)
-    : m_frame(v8::Persistent<v8::StackFrame>::New(v8::Isolate::GetCurrent(), frame))
+    : m_frame(v8::Isolate::GetCurrent(), frame)
   {
 
   }
 
-  int GetLineNumber() const { return m_frame->GetLineNumber(); }
-  int GetColumn() const { return m_frame->GetColumn(); }
+  CJavascriptStackFrame(const CJavascriptStackFrame& frame)
+  {
+    v8::HandleScope handle_scope;
+    
+    m_frame.Reset(v8::Isolate::GetCurrent(), frame.Handle());
+  }
+
+  v8::Handle<v8::StackFrame> Handle() const { return v8::Local<v8::StackFrame>::New(v8::Isolate::GetCurrent(), m_frame); }
+
+  int GetLineNumber() const { v8::HandleScope handle_scope; return Handle()->GetLineNumber(); }
+  int GetColumn() const { v8::HandleScope handle_scope; return Handle()->GetColumn(); }
   const std::string GetScriptName() const;
   const std::string GetFunctionName() const;
-  bool IsEval() const { return m_frame->IsEval(); }
-  bool IsConstructor() const { return m_frame->IsConstructor(); }
+  bool IsEval() const { v8::HandleScope handle_scope; return Handle()->IsEval(); }
+  bool IsConstructor() const { v8::HandleScope handle_scope; return Handle()->IsConstructor(); }
 };
 
 class CJavascriptException : public std::runtime_error
@@ -104,17 +122,28 @@ class CJavascriptException : public std::runtime_error
   static const std::string Extract(v8::TryCatch& try_catch);
 protected:
   CJavascriptException(v8::TryCatch& try_catch, PyObject *type)
-    : std::runtime_error(Extract(try_catch)), m_type(type),
-      m_exc(v8::Persistent<v8::Value>::New(v8::Isolate::GetCurrent(), try_catch.Exception())),
-      m_stack(v8::Persistent<v8::Value>::New(v8::Isolate::GetCurrent(), try_catch.StackTrace())),
-      m_msg(v8::Persistent<v8::Message>::New(v8::Isolate::GetCurrent(), try_catch.Message()))
+    : std::runtime_error(Extract(try_catch)), m_type(type)
   {
-
+    v8::HandleScope handle_scope;
+  
+    m_exc.Reset(v8::Isolate::GetCurrent(), try_catch.Exception());
+    m_stack.Reset(v8::Isolate::GetCurrent(), try_catch.StackTrace());
+    m_msg.Reset(v8::Isolate::GetCurrent(), try_catch.Message());
   }
 public:
   CJavascriptException(const std::string& msg, PyObject *type = NULL)
     : std::runtime_error(msg), m_type(type)
   {
+  }
+
+  CJavascriptException(const CJavascriptException& ex)
+    : std::runtime_error(ex.what()), m_type(ex.m_type)
+  {
+    v8::HandleScope handle_scope;
+    
+    m_exc.Reset(v8::Isolate::GetCurrent(), ex.Exception());
+    m_stack.Reset(v8::Isolate::GetCurrent(), ex.Stack());
+    m_msg.Reset(v8::Isolate::GetCurrent(), ex.Message());
   }
 
   ~CJavascriptException() throw()
@@ -123,7 +152,10 @@ public:
     if (!m_msg.IsEmpty()) m_msg.Dispose();
   }
 
-  v8::Persistent<v8::Value> GetException(void) const { return m_exc; }
+  v8::Handle<v8::Value> Exception() const { return v8::Local<v8::Value>::New(v8::Isolate::GetCurrent(), m_exc); }
+  v8::Handle<v8::Value> Stack() const { return v8::Local<v8::Value>::New(v8::Isolate::GetCurrent(), m_stack); }
+  v8::Handle<v8::Message> Message() const { return v8::Local<v8::Message>::New(v8::Isolate::GetCurrent(), m_msg); }
+
   const std::string GetName(void);
   const std::string GetMessage(void);
   const std::string GetScriptName(void);

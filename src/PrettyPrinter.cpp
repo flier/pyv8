@@ -309,7 +309,7 @@ void PrettyPrinter::VisitConditional(Conditional* node) {
 
 
 void PrettyPrinter::VisitLiteral(Literal* node) {
-  PrintLiteral(node->handle(), true);
+  PrintLiteral(node->value(), true);
 }
 
 
@@ -373,11 +373,11 @@ void PrettyPrinter::VisitThrow(Throw* node) {
 void PrettyPrinter::VisitProperty(Property* node) {
   Expression* key = node->key();
   Literal* literal = key->AsLiteral();
-  if (literal != NULL && literal->handle()->IsInternalizedString()) {
+  if (literal != NULL && literal->value()->IsInternalizedString()) {
     Print("(");
     Visit(node->obj());
     Print(").");
-    PrintLiteral(literal->handle(), false);
+    PrintLiteral(literal->value(), false);
   } else {
     Visit(node->obj());
     Print("[");
@@ -991,7 +991,7 @@ void AstPrinter::VisitConditional(Conditional* node) {
 
 // TODO(svenpanne) Start with IndentedScope.
 void AstPrinter::VisitLiteral(Literal* node) {
-  PrintLiteralIndented("LITERAL", node->handle(), true);
+  PrintLiteralIndented("LITERAL", node->value(), true);
 }
 
 
@@ -1097,8 +1097,8 @@ void AstPrinter::VisitProperty(Property* node) {
   IndentedScope indent(this, "PROPERTY");
   Visit(node->obj());
   Literal* literal = node->key()->AsLiteral();
-  if (literal != NULL && literal->handle()->IsInternalizedString()) {
-    PrintLiteralIndented("NAME", literal->handle(), false);
+  if (literal != NULL && literal->value()->IsInternalizedString()) {
+    PrintLiteralIndented("NAME", literal->value(), false);
   } else {
     PrintIndentedVisit("KEY", node->key());
   }
@@ -1435,7 +1435,7 @@ void JsonAstBuilder::VisitLiteral(Literal* expr) {
   TagScope tag(this, "Literal");
   {
     AttributesScope attributes(this);
-    Handle<Object> handle = expr->handle();
+    Handle<Object> handle = expr->value();
     if (handle->IsString()) {
       AddAttribute("handle", Handle<String>(String::cast(*handle)));
     } else if (handle->IsSmi()) {

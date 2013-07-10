@@ -58,13 +58,13 @@ DEBUG = False
 
 MAKE = 'gmake' if is_freebsd else 'make'
 
-V8_SNAPSHOT_ENABLED = True      # build using snapshots for faster start-up
+V8_SNAPSHOT_ENABLED = not DEBUG # build using snapshots for faster start-up
 V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
 V8_OBJECT_PRINT = DEBUG         # enable object printing
 V8_EXTRA_CHECKS = DEBUG         # enable extra checks
 V8_VERIFY_HEAP = DEBUG          # enable verify heap
-V8_GDB_JIT = DEBUG              # enable GDB jit
-V8_VTUNE_JIT = DEBUG
+V8_GDB_JIT = False              # enable GDB jit
+V8_VTUNE_JIT = False
 V8_DISASSEMBLEER = DEBUG        # enable the disassembler to inspect generated code
 V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
 V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugger
@@ -231,6 +231,11 @@ elif is_linux or is_freebsd:
     else:
         macros += [("V8_TARGET_ARCH_IA32", None)]
 
+    if DEBUG:
+        extra_compile_args += ['-g', '-O0', '-fno-inline']
+    else:
+        extra_compile_args += ['-g', '-O3']
+
 elif is_mac: # contribute by Artur Ventura
     include_dirs += [
         BOOST_HOME,
@@ -267,6 +272,11 @@ elif is_osx: # contribute by progrium and alec
     else:
         os.environ['ARCHFLAGS'] = '-arch i386'
         macros += [("V8_TARGET_ARCH_IA32", None)]
+
+    if DEBUG:
+        extra_compile_args += ['-g', '-O0', '-fno-inline']
+    else:
+        extra_compile_args += ['-g', '-O3']
 
 else:
     print("ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform))

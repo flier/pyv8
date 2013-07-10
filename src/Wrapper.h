@@ -21,34 +21,26 @@ struct CWrapper
 
 class CPythonObject : public CWrapper
 {
-  static v8::Handle<v8::Value> NamedGetter(
-    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Value> NamedSetter(
-    v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Integer> NamedQuery(
-    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Boolean> NamedDeleter(
-    v8::Local<v8::String> prop, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Array> NamedEnumerator(const v8::AccessorInfo& info);
-
-  static v8::Handle<v8::Value> IndexedGetter(
-    uint32_t index, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Value> IndexedSetter(
-    uint32_t index, v8::Local<v8::Value> value, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Integer> IndexedQuery(
-    uint32_t index, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Boolean> IndexedDeleter(
-    uint32_t index, const v8::AccessorInfo& info);
-  static v8::Handle<v8::Array> IndexedEnumerator(const v8::AccessorInfo& info);
-
-  static v8::Handle<v8::Value> Caller(const v8::Arguments& args);
-
+  static void NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info);
+  static void NamedSetter(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info);
+  static void NamedQuery(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Integer>& info);
+  static void NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Boolean>& info);
+  static void NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info);
+  
+  static void IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info);
+  static void IndexedSetter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info);
+  static void IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info);
+  static void IndexedDeleter(uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info);
+  static void IndexedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info);
+  
+  static void Caller(const v8::FunctionCallbackInfo<v8::Value>& info);
+  
 #ifdef SUPPORT_TRACE_LIFECYCLE
   static void DisposeCallback(v8::Persistent<v8::Value> object, void* parameter);
 #endif
 protected:
   static void SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz);
-  static v8::Persistent<v8::ObjectTemplate> CreateObjectTemplate(void);
+  static v8::Handle<v8::ObjectTemplate> CreateObjectTemplate(void);
 
   static v8::Handle<v8::Value> WrapInternal(py::object obj);
 public:
@@ -78,7 +70,7 @@ protected:
   }
 public:
   CJavascriptObject(v8::Handle<v8::Object> obj)
-    : m_obj(v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), obj))
+    : m_obj(v8::Isolate::GetCurrent(), obj)
   {
   }
 
@@ -87,8 +79,7 @@ public:
     m_obj.Dispose();
   }
 
-  v8::Handle<v8::Object> Object(void) { return m_obj; }
-  long Native(void) { return reinterpret_cast<long>(*m_obj); }
+  v8::Handle<v8::Object> Object(void) const { return v8::Local<v8::Object>::New(v8::Isolate::GetCurrent(), m_obj); }
 
   py::object GetAttr(const std::string& name);
   void SetAttr(const std::string& name, py::object value);
@@ -172,7 +163,7 @@ class CJavascriptFunction : public CJavascriptObject
   py::object Call(v8::Handle<v8::Object> self, py::list args, py::dict kwds);
 public:
   CJavascriptFunction(v8::Handle<v8::Object> self, v8::Handle<v8::Function> func)
-    : CJavascriptObject(func), m_self(v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), self))
+    : CJavascriptObject(func), m_self(v8::Isolate::GetCurrent(), self)
   {
   }
 
@@ -180,6 +171,8 @@ public:
   {
     m_self.Dispose();
   }
+
+  v8::Handle<v8::Object> Self(void) const { return v8::Local<v8::Object>::New(v8::Isolate::GetCurrent(), m_self); }
 
   static py::object CallWithArgs(py::tuple args, py::dict kwds);
   static py::object CreateWithArgs(CJavascriptFunctionPtr proto, py::tuple args, py::dict kwds);
@@ -222,14 +215,14 @@ public:
   ObjectTracer(v8::Handle<v8::Value> handle, py::object *object);
   ~ObjectTracer(void);
 
-  v8::Persistent<v8::Value> Handle(void) const { return m_handle; }
+  const v8::Persistent<v8::Value>& Handle(void) const { return m_handle; }
   py::object *Object(void) const { return m_object.get(); }
 
   void Dispose(void);
 
   static ObjectTracer& Trace(v8::Handle<v8::Value> handle, py::object *object);
 
-  static v8::Persistent<v8::Value> FindCache(py::object obj);
+  static v8::Handle<v8::Value> FindCache(py::object obj);
 };
 
 class ContextTracer
@@ -243,6 +236,8 @@ class ContextTracer
 public:
   ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living);
   ~ContextTracer(void);
+
+  v8::Handle<v8::Context> Context(void) const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_ctxt); }
 
   static void Trace(v8::Handle<v8::Context> ctxt, LivingMap *living);
 };

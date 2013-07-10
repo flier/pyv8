@@ -33,7 +33,7 @@ public:
   bool IsLocked(void) { return v8::Locker::IsLocked(m_isolate); }
 };
 
-class CContext 
+class CContext
 {
   v8::Persistent<v8::Context> m_context;
 public:
@@ -44,9 +44,9 @@ public:
   ~CContext()
   {
     m_context.Dispose();
-  }  
+  }
 
-  v8::Handle<v8::Context> Handle(void) { return m_context; }
+  v8::Handle<v8::Context> Handle(void) const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_context); }
 
   py::object GetGlobal(void);
 
@@ -54,8 +54,8 @@ public:
   void SetSecurityToken(py::str token);
 
   bool IsEntered(void) { return !m_context.IsEmpty(); }
-  void Enter(void) { m_context->Enter(); }
-  void Leave(void) { m_context->Exit(); }
+  void Enter(void) { v8::HandleScope handle_scope; Handle()->Enter(); }
+  void Leave(void) { v8::HandleScope handle_scope; Handle()->Exit(); }
 
   py::object Evaluate(const std::string& src, const std::string name = std::string(),
                       int line = -1, int col = -1, py::object precompiled = py::object());

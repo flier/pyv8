@@ -87,14 +87,14 @@ CContext::CContext(v8::Handle<v8::Context> context)
 {
   v8::HandleScope handle_scope;
 
-  m_context = v8::Persistent<v8::Context>::New(v8::Isolate::GetCurrent(), context);
+  m_context.Reset(context->GetIsolate(), context);
 }
 
 CContext::CContext(const CContext& context)
 {
   v8::HandleScope handle_scope;
 
-  m_context = context.m_context;
+  m_context.Reset(context.Handle()->GetIsolate(), context.Handle());
 }
 
 CContext::CContext(py::object global, py::list extensions)
@@ -124,13 +124,13 @@ CContext::CContext(py::object global, py::list extensions)
 
   v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), cfg.get());
 
-  m_context = v8::Persistent<v8::Context>::New(v8::Isolate::GetCurrent(), context);
+  m_context.Reset(v8::Isolate::GetCurrent(), context);
 
-  v8::Context::Scope context_scope(m_context);
+  v8::Context::Scope context_scope(Handle());
 
   if (global.ptr() != Py_None)
   {
-    m_context->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));
+    Handle()->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));
   }
 }
 
@@ -138,18 +138,18 @@ py::object CContext::GetGlobal(void)
 {
   v8::HandleScope handle_scope;
 
-  return CJavascriptObject::Wrap(m_context->Global());
+  return CJavascriptObject::Wrap(Handle()->Global());
 }
 
 py::str CContext::GetSecurityToken(void)
 {
   v8::HandleScope handle_scope;
 
-  v8::Handle<v8::Value> token = m_context->GetSecurityToken();
+  v8::Handle<v8::Value> token = Handle()->GetSecurityToken();
 
   if (token.IsEmpty()) return py::str();
 
-  v8::String::AsciiValue str(token->ToString());
+  v8::String::Utf8Value str(token->ToString());
 
   return py::str(*str, str.length());
 }
@@ -160,29 +160,31 @@ void CContext::SetSecurityToken(py::str token)
 
   if (token.ptr() == Py_None)
   {
-    m_context->UseDefaultSecurityToken();
+    Handle()->UseDefaultSecurityToken();
   }
   else
   {
-    m_context->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));
+    Handle()->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));
   }
 }
 
 py::object CContext::GetEntered(void)
 {
   v8::HandleScope handle_scope;
+  
+  v8::Handle<v8::Context> entered = v8::Context::GetEntered();
 
-  return !v8::Context::InContext() ? py::object() :
-    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-      CContextPtr(new CContext(v8::Context::GetEntered())))));
+  return (!v8::Context::InContext() || entered.IsEmpty()) ? py::object() :
+    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(entered)))));
 }
 py::object CContext::GetCurrent(void)
 {
   v8::HandleScope handle_scope;
+  
+  v8::Handle<v8::Context> current = v8::Isolate::GetCurrent()->GetCurrentContext();
 
-  return !v8::Context::InContext() ? py::object() :
-    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-      CContextPtr(new CContext(v8::Context::GetCurrent())))));
+  return (!v8::Context::InContext() || current.IsEmpty()) ? py::object() :
+    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(current)))));
 }
 py::object CContext::GetCalling(void)
 {
@@ -190,9 +192,8 @@ py::object CContext::GetCalling(void)
 
   v8::Handle<v8::Context> calling = v8::Context::GetCalling();
 
-  return calling.IsEmpty() ? py::object() :
-    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-      CContextPtr(new CContext(handle_scope.Close(calling))))));
+  return (!v8::Context::InContext() || calling.IsEmpty()) ? py::object() :
+    py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(calling)))));
 }
 
 py::object CContext::Evaluate(const std::string& src,

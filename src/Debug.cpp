@@ -17,11 +17,11 @@ void CDebug::Init(void)
 
   v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_template);
 
-  m_debug_context = v8::Persistent<v8::Context>::New(v8::Isolate::GetCurrent(), context);
-  m_debug_context->SetSecurityToken(v8::Undefined());
+  m_debug_context.Reset(v8::Isolate::GetCurrent(), context);
+  DebugContext()->SetSecurityToken(v8::Undefined());
 
 #ifdef SUPPORT_DEBUGGER
-  v8::Context::Scope context_scope(m_debug_context);
+  v8::Context::Scope context_scope(DebugContext());
 
   // Install the debugger object in the utility scope
   v8i::Debug *debug = v8i::Isolate::Current()->debug();
@@ -29,7 +29,7 @@ void CDebug::Init(void)
   debug->Load();
 
   v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global_object());
-  m_debug_context->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
+  DebugContext()->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
 
   // Set the security token of the debug context to allow access.
   debug->debug_context()->set_security_token(HEAP->undefined_value());
@@ -63,7 +63,7 @@ py::object CDebug::GetDebugContext(void)
   v8::HandleScope handle_scope;
 
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
-    CContextPtr(new CContext(m_debug_context)))));
+    CContextPtr(new CContext(DebugContext())))));
 }
 
 void CDebug::Listen(const std::string& name, int port, bool wait_for_connection)
@@ -157,6 +157,8 @@ void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::Clie
 
 void CDebug::OnDispatchDebugMessages(void)
 {
+  v8::HandleScope scope;
+  
   BEGIN_HANDLE_PYTHON_EXCEPTION
   {
     if (GetInstance().m_onDispatchDebugMessages.ptr() == Py_None ||

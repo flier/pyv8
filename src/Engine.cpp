@@ -89,7 +89,6 @@ MemoryAllocationManager::CallbackMap MemoryAllocationManager::s_callbacks;
 void CEngine::Expose(void)
 {
 #ifndef SUPPORT_SERIALIZE
-  v8::V8::Initialize();
   v8::V8::SetFatalErrorHandler(ReportFatalError);
   v8::V8::AddMessageListener(ReportMessage);
 #endif
@@ -401,9 +400,10 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
   v8::TryCatch try_catch;
 
-  v8::Persistent<v8::String> script_source = v8::Persistent<v8::String>::New(v8::Isolate::GetCurrent(), src);
+  v8::Persistent<v8::String> script_source(v8::Isolate::GetCurrent(), src);
 
   v8::Handle<v8::Script> script;
+  v8::Handle<v8::String> source = v8::Local<v8::String>::New(v8::Isolate::GetCurrent(), script_source);
   std::auto_ptr<v8::ScriptData> script_data;
 
   if (precompiled.ptr() != Py_None)
@@ -433,13 +433,13 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
   {
     v8::ScriptOrigin script_origin(name, v8::Integer::New(line), v8::Integer::New(col));
 
-    script = v8::Script::Compile(script_source, &script_origin, script_data.get());
+    script = v8::Script::Compile(source, &script_origin, script_data.get());
   }
   else
   {
     v8::ScriptOrigin script_origin(name);
 
-    script = v8::Script::Compile(script_source, &script_origin, script_data.get());
+    script = v8::Script::Compile(source, &script_origin, script_data.get());
   }
 
   Py_END_ALLOW_THREADS
@@ -492,11 +492,9 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 {
   v8::HandleScope handle_scope;
 
-  v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*m_script);
-  v8i::Handle<v8i::SharedFunctionInfo> func = obj->IsSharedFunctionInfo() ?
-    v8i::Handle<v8i::SharedFunctionInfo>(v8i::SharedFunctionInfo::cast(*obj)) :
-    v8i::Handle<v8i::SharedFunctionInfo>(v8i::JSFunction::cast(*obj)->shared());
-  v8i::Handle<v8i::Script> script(v8i::Script::cast(func->script()));
+  v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*Source());
+  
+  v8i::Handle<v8i::Script> script(v8i::Isolate::Current()->factory()->NewScript(obj));
 
   v8i::CompilationInfoWithZone info(script);
   v8i::Isolate *isolate = info.isolate();
@@ -505,7 +503,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
   info.SetContext(isolate->native_context());
   info.SetLanguageMode(mode);
 
-  v8i::ZoneScope zone_scope(info.zone(), DELETE_ON_EXIT);
+  v8i::ZoneScope zone_scope(info.zone());
   v8i::PostponeInterruptsScope postpone(isolate);
 
   v8i::FixedArray* array = isolate->native_context()->embedder_data();
@@ -527,7 +525,9 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 
 const std::string CScript::GetSource(void) const
 {
-  v8::String::Utf8Value source(m_source);
+  v8::HandleScope handle_scope;
+  
+  v8::String::Utf8Value source(Source());
 
   return std::string(*source, source.length());
 }
@@ -536,7 +536,7 @@ py::object CScript::Run(void)
 {
   v8::HandleScope handle_scope;
 
-  return m_engine.ExecuteScript(m_script);
+  return m_engine.ExecuteScript(Script());
 }
 
 #ifdef SUPPORT_EXTENSION
@@ -545,7 +545,7 @@ class CPythonExtension : public v8::Extension
 {
   py::object m_callback;
 
-  static v8::Handle<v8::Value> CallStub(const v8::Arguments& args)
+  static void CallStub(const v8::FunctionCallbackInfo<v8::Value>& args)
   {
     v8::HandleScope handle_scope;
     CPythonGIL python_gil;
@@ -568,11 +568,28 @@ class CPythonExtension : public v8::Extension
     case 6: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
                           CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
                           CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5])); break;
+    case 7: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
+                          CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
+                          CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5]),
+                          CJavascriptObject::Wrap(args[6])); break;
+    case 8: result = func(CJavascriptObject::Wrap(args[0]), CJavascriptObject::Wrap(args[1]),
+                          CJavascriptObject::Wrap(args[2]), CJavascriptObject::Wrap(args[3]),
+                          CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5]),
+                          CJavascriptObject::Wrap(args[7]), CJavascriptObject::Wrap(args[8])); break;
     default:
-      return v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
+      v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
+      break;
     }
 
-    return handle_scope.Close(CPythonObject::Wrap(result));
+    if (result.ptr() == Py_None) {
+      args.GetReturnValue().SetNull();
+    } else if (result.ptr() == Py_True) {
+      args.GetReturnValue().Set(true);
+    } else if (result.ptr() == Py_False) {
+      args.GetReturnValue().Set(false);
+    } else {
+      args.GetReturnValue().Set(CPythonObject::Wrap(result));
+    }
   }
 public:
   CPythonExtension(const char *name, const char *source, py::object callback, int dep_count, const char**deps)

@@ -89,16 +89,31 @@ class CScript
   v8::Persistent<v8::String> m_source;
   v8::Persistent<v8::Script> m_script;
 public:
-  CScript(CEngine& engine, v8::Persistent<v8::String> source, v8::Handle<v8::Script> script)
-    : m_engine(engine), m_source(source), m_script(v8::Persistent<v8::Script>::New(v8::Isolate::GetCurrent(), script))
+  CScript(CEngine& engine, v8::Persistent<v8::String>& source, v8::Handle<v8::Script> script)
+    : m_engine(engine),
+      m_source(v8::Isolate::GetCurrent(), source),
+      m_script(v8::Isolate::GetCurrent(), script)
   {
 
   }
+
+  CScript(const CScript& script)
+    : m_engine(script.m_engine)
+  {
+    v8::HandleScope handle_scope;
+
+    m_source.Reset(v8::Isolate::GetCurrent(), script.Source());
+    m_script.Reset(v8::Isolate::GetCurrent(), script.Script());
+  }
+
   ~CScript()
   {
     m_source.Dispose();
     m_script.Dispose();
   }
+
+  v8::Handle<v8::String> Source() const { return v8::Local<v8::String>::New(v8::Isolate::GetCurrent(), m_source); }
+  v8::Handle<v8::Script> Script() const { return v8::Local<v8::Script>::New(v8::Isolate::GetCurrent(), m_script); }
 
 #ifdef SUPPORT_AST
   void visit(py::object handler, v8i::LanguageMode mode=v8i::CLASSIC_MODE) const;
