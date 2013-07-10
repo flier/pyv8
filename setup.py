@@ -293,10 +293,12 @@ if is_winnt:
 elif is_linux:
     library_dirs += [
         "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
+        "%s/out/native/obj.target/tools/gyp/" % V8_HOME,
     ]
 elif is_osx:
     library_dirs += [
         "%s/out/%s.%s/" % (V8_HOME, arch, mode),
+        "%s/out/native/" % V8_HOME,
     ]
 
 
