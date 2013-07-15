@@ -293,13 +293,21 @@ if is_winnt:
 elif is_linux:
     library_dirs += [
         "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
-        "%s/out/native/obj.target/tools/gyp/" % V8_HOME,
     ]
+
+    native_path = "%s/out/native/obj.target/tools/gyp/" % V8_HOME
+
+    if os.path.isdir(native_path):
+        library_dirs.append(native_path)
 elif is_osx:
     library_dirs += [
         "%s/out/%s.%s/" % (V8_HOME, arch, mode),
-        "%s/out/native/" % V8_HOME,
     ]
+
+    native_path = "%s/out/native/" % V8_HOME
+
+    if os.path.isdir(native_path):
+        library_dirs.append(native_path)
 
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
