@@ -256,10 +256,14 @@ elif is_osx: # contribute by progrium and alec
             "/usr/local/include", # HomeBrew$ brew install boost
         ]
 
-        library_dirs += [
-            "/opt/local/lib", # MacPorts$ sudo port install boost
-            "/usr/local/lib", # HomeBrew$ brew install boost
-        ]
+        # MacPorts$ sudo port install boost
+        if os.path.isdir("/opt/local/lib"):
+            library_dirs.append("/opt/local/lib")
+
+        # HomeBrew$ brew install boost
+        if os.path.isdir("/usr/local/lib"):
+            library_dirs.append("/usr/local/lib")
+
 
     libraries += boost_libs
 
