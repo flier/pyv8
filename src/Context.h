@@ -35,6 +35,7 @@ public:
 
 class CContext
 {
+  py::object m_global;
   v8::Persistent<v8::Context> m_context;
 public:
   CContext(v8::Handle<v8::Context> context);

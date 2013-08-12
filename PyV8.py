@@ -1621,7 +1621,10 @@ class TestWrapper(unittest.TestCase):
         class Global(JSClass):
             pass
 
-        with JSContext(Global()) as ctxt:
+        g = Global()
+        g_refs = sys.getrefcount(g)
+
+        with JSContext(g) as ctxt:
             ctxt.eval("""
                 var none = null;
             """)
@@ -1633,6 +1636,10 @@ class TestWrapper(unittest.TestCase):
             """)
 
             self.assertEqual(count+1, sys.getrefcount(None))
+
+            del ctxt
+
+        self.assertEqual(g_refs, sys.getrefcount(g))
 
     def testProperty(self):
         class Global(JSClass):

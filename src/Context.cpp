@@ -98,6 +98,7 @@ CContext::CContext(const CContext& context)
 }
 
 CContext::CContext(py::object global, py::list extensions)
+  : m_global(global)
 {
   v8::HandleScope handle_scope;
 
@@ -131,6 +132,8 @@ CContext::CContext(py::object global, py::list extensions)
   if (global.ptr() != Py_None)
   {
     Handle()->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));
+
+    Py_DECREF(global.ptr());
   }
 }
 
@@ -171,7 +174,7 @@ void CContext::SetSecurityToken(py::str token)
 py::object CContext::GetEntered(void)
 {
   v8::HandleScope handle_scope;
-  
+
   v8::Handle<v8::Context> entered = v8::Context::GetEntered();
 
   return (!v8::Context::InContext() || entered.IsEmpty()) ? py::object() :
@@ -180,7 +183,7 @@ py::object CContext::GetEntered(void)
 py::object CContext::GetCurrent(void)
 {
   v8::HandleScope handle_scope;
-  
+
   v8::Handle<v8::Context> current = v8::Isolate::GetCurrent()->GetCurrentContext();
 
   return (!v8::Context::InContext() || current.IsEmpty()) ? py::object() :
