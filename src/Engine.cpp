@@ -493,7 +493,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
   v8::HandleScope handle_scope;
 
   v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*Source());
-  
+
   v8i::Handle<v8i::Script> script(v8i::Isolate::Current()->factory()->NewScript(obj));
 
   v8i::CompilationInfoWithZone info(script);
@@ -526,7 +526,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 const std::string CScript::GetSource(void) const
 {
   v8::HandleScope handle_scope;
-  
+
   v8::String::Utf8Value source(Source());
 
   return std::string(*source, source.length());

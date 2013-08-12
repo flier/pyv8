@@ -1204,15 +1204,13 @@ py::object CJavascriptObject::Wrap(v8::Handle<v8::Object> obj, v8::Handle<v8::Ob
 
     return Wrap(new CJavascriptArray(array));
   }
-  else if (obj->IsFunction())
-  {
-    if (CPythonObject::IsWrapped(obj)) return CPythonObject::Unwrap(obj);
-
-    return Wrap(new CJavascriptFunction(self, v8::Handle<v8::Function>::Cast(obj)));
-  }
   else if (CPythonObject::IsWrapped(obj))
   {
     return CPythonObject::Unwrap(obj);
+  }
+  else if (obj->IsFunction())
+  {
+    return Wrap(new CJavascriptFunction(self, v8::Handle<v8::Function>::Cast(obj)));
   }
 
   return Wrap(new CJavascriptObject(obj));
