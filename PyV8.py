@@ -35,7 +35,7 @@ __author__ = 'Flier Lu <flier.lu@gmail.com>'
 __version__ = '1.0'
 
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
-           "JSError", "JSObject", "JSArray", "JSFunction",
+           "JSError", "JSObject", "JSNull", "JSUndefined", "JSArray", "JSFunction",
            "JSClass", "JSEngine", "JSContext",
            "JSObjectSpace", "JSAllocationAction",
            "JSStackTrace", "JSStackFrame", "profiler",
@@ -117,6 +117,8 @@ class JSError(Exception):
 _PyV8._JSError._jsclass = JSError
 
 JSObject = _PyV8.JSObject
+JSNull = _PyV8.JSNull
+JSUndefined = _PyV8.JSUndefined
 JSArray = _PyV8.JSArray
 JSFunction = _PyV8.JSFunction
 
@@ -124,6 +126,7 @@ JSFunction = _PyV8.JSFunction
 
 JS_ESCAPABLE = re.compile(r'([^\x00-\x7f])')
 HAS_UTF8 = re.compile(r'[\x80-\xff]')
+
 
 def _js_escape_unicode_re_callack(match):
     n = ord(match.group(0))
@@ -136,6 +139,7 @@ def _js_escape_unicode_re_callack(match):
         s2 = 0xdc00 | (n & 0x3ff)
         return '\\u%04x\\u%04x' % (s1, s2)
 
+
 def js_escape_unicode(text):
     """Return an ASCII-only representation of a JavaScript string"""
     if isinstance(text, str):
@@ -146,9 +150,11 @@ def js_escape_unicode(text):
 
     return str(JS_ESCAPABLE.sub(_js_escape_unicode_re_callack, text))
 
+
 class JSExtension(_PyV8.JSExtension):
     def __init__(self, name, source, callback=None, dependencies=[], register=True):
         _PyV8.JSExtension.__init__(self, js_escape_unicode(name), js_escape_unicode(source), callback, dependencies, register)
+
 
 def func_apply(self, thisArg, argArray=[]):
     if isinstance(thisArg, JSObject):
@@ -159,6 +165,7 @@ def func_apply(self, thisArg, argArray=[]):
     return self.invoke(this, argArray)
 
 JSFunction.apply = func_apply
+
 
 class JSLocker(_PyV8.JSLocker):
     def __enter__(self):
@@ -184,6 +191,7 @@ class JSLocker(_PyV8.JSLocker):
         def __nonzero__(self):
             return self.entered()
 
+
 class JSUnlocker(_PyV8.JSUnlocker):
     def __enter__(self):
         self.enter()
@@ -199,6 +207,7 @@ class JSUnlocker(_PyV8.JSUnlocker):
     else:
         def __nonzero__(self):
             return self.entered()
+
 
 class JSClass(object):
     __properties__ = {}
@@ -270,6 +279,7 @@ class JSClass(object):
         "Removes a watchpoint set with the watch method."
         del self.__watchpoints__[prop]
 
+
 class JSClassConstructor(JSClass):
     def __init__(self, cls):
         self.cls = cls
@@ -284,6 +294,7 @@ class JSClassConstructor(JSClass):
     def __call__(self, *args, **kwds):
         return self.cls(*args, **kwds)
 
+
 class JSClassPrototype(JSClass):
     def __init__(self, cls):
         self.cls = cls
@@ -295,6 +306,7 @@ class JSClassPrototype(JSClass):
     @property
     def name(self):
         return self.cls.__name__
+
 
 class JSDebugProtocol(object):
     """
@@ -374,6 +386,7 @@ class JSDebugProtocol(object):
         obj = json.loads(payload)
 
         return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
+
 
 class JSDebugEvent(_PyV8.JSDebugEvent):
     class FrameData(object):
@@ -622,6 +635,7 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
     onNewFunction = None
     onBeforeCompile = None
     onAfterCompile = None
+
 
 class JSDebugger(JSDebugProtocol, JSDebugEvent):
     def __init__(self):
@@ -1815,6 +1829,29 @@ class TestWrapper(unittest.TestCase):
         with JSContext(Global()) as ctxt:
             self.assertEqual(None, ctxt.eval('document.x'))
             self.assertRaises(TypeError, ctxt.eval, 'document.y')
+
+    def testUndefined(self):
+        class Global(JSClass):
+            def returnNull(self):
+                return JSNull()
+
+            def returnUndefined(self):
+                return JSUndefined()
+
+            def returnNone(self):
+                return None
+
+        with JSContext(Global()) as ctxt:
+            self.assertFalse(bool(JSNull()))
+            self.assertFalse(bool(JSUndefined()))
+
+            self.assertEqual("null", str(JSNull()))
+            self.assertEqual("undefined", str(JSUndefined()))
+
+            self.assertTrue(ctxt.eval('null == returnNull()'))
+            self.assertTrue(ctxt.eval('undefined == returnUndefined()'))
+            self.assertTrue(ctxt.eval('null == returnNone()'))
+
 
 class TestMultithread(unittest.TestCase):
     def testLocker(self):

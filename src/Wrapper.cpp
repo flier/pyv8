@@ -77,6 +77,16 @@ void CWrapper::Expose(void)
 	  .staticmethod("create")
     ;
 
+  py::class_<CJavascriptNull, py::bases<CJavascriptObject>, boost::noncopyable>("JSNull")
+    .def("__nonzero__", &CJavascriptNull::nonzero)
+    .def("__str__", &CJavascriptNull::str)
+    ;
+
+  py::class_<CJavascriptUndefined, py::bases<CJavascriptObject>, boost::noncopyable>("JSUndefined")
+    .def("__nonzero__", &CJavascriptUndefined::nonzero)
+    .def("__str__", &CJavascriptUndefined::str)
+    ;
+
   py::class_<CJavascriptArray, py::bases<CJavascriptObject>, boost::noncopyable>("JSArray", py::no_init)
     .def(py::init<py::object>())
 
@@ -243,9 +253,9 @@ void CPythonObject::ThrowIf(void)
 void CPythonObject::NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Undefined())
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -277,7 +287,7 @@ void CPythonObject::NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCa
 
       if (result.ptr() != Py_None) CALLBACK_RETURN(Wrap(result));
     }
-    
+
     CALLBACK_RETURN(v8::Handle<v8::Value>());
   }
 
@@ -303,9 +313,9 @@ void CPythonObject::NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCa
 void CPythonObject::NamedSetter(v8::Local<v8::String> prop, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Undefined())
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -363,9 +373,9 @@ void CPythonObject::NamedSetter(v8::Local<v8::String> prop, v8::Local<v8::Value>
 void CPythonObject::NamedQuery(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Integer>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -376,16 +386,16 @@ void CPythonObject::NamedQuery(v8::Local<v8::String> prop, const v8::PropertyCal
                 (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
 
   if (exists) CALLBACK_RETURN(v8::Integer::New(v8::None));
-  
+
   END_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
 }
 
 void CPythonObject::NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Boolean>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Boolean>())
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -428,9 +438,9 @@ void CPythonObject::NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyC
 void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -497,9 +507,9 @@ void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& i
 void CPythonObject::IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Undefined());
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -541,9 +551,9 @@ void CPythonObject::IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo
 void CPythonObject::IndexedSetter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Undefined());
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -570,9 +580,9 @@ void CPythonObject::IndexedSetter(uint32_t index, v8::Local<v8::Value> value, co
 void CPythonObject::IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Integer>());
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -604,9 +614,9 @@ void CPythonObject::IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<
 void CPythonObject::IndexedDeleter(uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Boolean>());
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -630,9 +640,9 @@ void CPythonObject::IndexedDeleter(uint32_t index, const v8::PropertyCallbackInf
 void CPythonObject::IndexedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Handle<v8::Array>());
-  
+
   CPythonGIL python_gil;
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
@@ -678,9 +688,9 @@ void CPythonObject::IndexedEnumerator(const v8::PropertyCallbackInfo<v8::Array>&
 void CPythonObject::Caller(const v8::FunctionCallbackInfo<v8::Value>& info)
 {
   v8::HandleScope handle_scope;
-  
+
   TRY_HANDLE_EXCEPTION(v8::Undefined());
-  
+
   CPythonGIL python_gil;
 
   py::object self;
@@ -796,6 +806,9 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   if (extractor.check())
   {
     CJavascriptObject& jsobj = extractor();
+
+    if (dynamic_cast<CJavascriptNull *>(&jsobj)) return v8::Null();
+    if (dynamic_cast<CJavascriptUndefined *>(&jsobj)) return v8::Undefined();
 
     if (jsobj.Object().IsEmpty())
     {
@@ -921,7 +934,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
 {
   assert(v8::Context::InContext());
-  
+
   v8::HandleScope handle_scope;
 
   if (!Object()->Has(name))
@@ -1017,7 +1030,7 @@ py::list CJavascriptObject::GetAttrList(void)
 int CJavascriptObject::GetIdentityHash(void)
 {
   CHECK_V8_CONTEXT();
-  
+
   v8::HandleScope handle_scope;
 
   return Object()->GetIdentityHash();
@@ -1706,7 +1719,7 @@ int CJavascriptFunction::GetColumnOffset(void) const
 py::object CJavascriptFunction::GetOwner(void) const
 {
   CHECK_V8_CONTEXT();
-  
+
   v8::HandleScope handle_scope;
 
   return CJavascriptObject::Wrap(Self());

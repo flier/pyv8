@@ -26,15 +26,15 @@ class CPythonObject : public CWrapper
   static void NamedQuery(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Integer>& info);
   static void NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyCallbackInfo<v8::Boolean>& info);
   static void NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info);
-  
+
   static void IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info);
   static void IndexedSetter(uint32_t index, v8::Local<v8::Value> value, const v8::PropertyCallbackInfo<v8::Value>& info);
   static void IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info);
   static void IndexedDeleter(uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info);
   static void IndexedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info);
-  
+
   static void Caller(const v8::FunctionCallbackInfo<v8::Value>& info);
-  
+
 #ifdef SUPPORT_TRACE_LIFECYCLE
   static void DisposeCallback(v8::Persistent<v8::Value> object, void* parameter);
 #endif
@@ -106,6 +106,20 @@ public:
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
   static py::object Wrap(v8::Handle<v8::Object> obj,
     v8::Handle<v8::Object> self = v8::Handle<v8::Object>());
+};
+
+class CJavascriptNull : public CJavascriptObject
+{
+public:
+  bool nonzero(void) const { return false; }
+  const std::string str(void) const { return "null"; }
+};
+
+class CJavascriptUndefined : public CJavascriptObject
+{
+public:
+  bool nonzero(void) const { return false; }
+  const std::string str(void) const { return "undefined"; }
 };
 
 class CJavascriptArray : public CJavascriptObject, public ILazyObject

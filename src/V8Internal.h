@@ -1,6 +1,8 @@
 #pragma once
 
 #undef COMPILER
+#undef TRUE
+#undef FALSE
 
 #include "src/v8.h"
 
