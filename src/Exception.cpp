@@ -209,7 +209,7 @@ int CJavascriptException::GetLineNumber(void)
 int CJavascriptException::GetStartPosition(void)
 {
   assert(v8::Context::InContext());
-  
+
   v8::HandleScope handle_scope;
 
   return m_msg.IsEmpty() ? 1 : Message()->GetStartPosition();
@@ -217,7 +217,7 @@ int CJavascriptException::GetStartPosition(void)
 int CJavascriptException::GetEndPosition(void)
 {
   assert(v8::Context::InContext());
-  
+
   v8::HandleScope handle_scope;
 
   return m_msg.IsEmpty() ? 1 : Message()->GetEndPosition();
@@ -225,7 +225,7 @@ int CJavascriptException::GetEndPosition(void)
 int CJavascriptException::GetStartColumn(void)
 {
   assert(v8::Context::InContext());
-  
+
   v8::HandleScope handle_scope;
 
   return m_msg.IsEmpty() ? 1 : Message()->GetStartColumn();
@@ -233,7 +233,7 @@ int CJavascriptException::GetStartColumn(void)
 int CJavascriptException::GetEndColumn(void)
 {
   assert(v8::Context::InContext());
-  
+
   v8::HandleScope handle_scope;
 
   return m_msg.IsEmpty() ? 1 : Message()->GetEndColumn();
@@ -363,7 +363,7 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
   else
   {
     v8::HandleScope handle_scope;
-    
+
     if (!ex.Exception().IsEmpty() && ex.Exception()->IsObject())
     {
       v8::Handle<v8::Object> obj = ex.Exception()->ToObject();
@@ -434,7 +434,7 @@ void CJavascriptException::PrintCallStack(py::object file)
 {
   CPythonGIL python_gil;
 
-  PyObject *out = file.ptr() == Py_None ? ::PySys_GetObject((char *) "stdout") : file.ptr();
+  PyObject *out = file.is_none() ? ::PySys_GetObject((char *) "stdout") : file.ptr();
 
   int fd = ::PyObject_AsFileDescriptor(out);
 

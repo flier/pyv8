@@ -107,7 +107,7 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 
   if (!pThis->m_enabled) return;
 
-  if (pThis->m_onDebugEvent.ptr() == Py_None) return;
+  if (pThis->m_onDebugEvent.is_none()) return;
 
   CPythonGIL python_gil;
 
@@ -131,7 +131,7 @@ public:
 
 void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data)
 {
-  if (GetInstance().m_onDebugMessage.ptr() == Py_None) return;
+  if (GetInstance().m_onDebugMessage.is_none()) return;
 
   v8::HandleScope scope;
 
@@ -158,10 +158,10 @@ void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::Clie
 void CDebug::OnDispatchDebugMessages(void)
 {
   v8::HandleScope scope;
-  
+
   BEGIN_HANDLE_PYTHON_EXCEPTION
   {
-    if (GetInstance().m_onDispatchDebugMessages.ptr() == Py_None ||
+    if (GetInstance().m_onDispatchDebugMessages.is_none() ||
       py::call<bool>(GetInstance().m_onDispatchDebugMessages.ptr()))
     {
       v8::Debug::ProcessDebugMessages();
@@ -174,7 +174,7 @@ void CDebug::DebugBreakForCommand(py::object data)
 {
   BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
   {
-    v8::Debug::DebugBreakForCommand(data.ptr() == Py_None ? NULL : new DebugClientData(data));
+    v8::Debug::DebugBreakForCommand(data.is_none() ? NULL : new DebugClientData(data));
   }
   END_HANDLE_JAVASCRIPT_EXCEPTION
 }

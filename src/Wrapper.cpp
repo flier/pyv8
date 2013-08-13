@@ -285,7 +285,7 @@ void CPythonObject::NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCa
     {
       py::object result(py::handle<>(::PyMapping_GetItemString(obj.ptr(), *name)));
 
-      if (result.ptr() != Py_None) CALLBACK_RETURN(Wrap(result));
+      if (!result.is_none()) CALLBACK_RETURN(Wrap(result));
     }
 
     CALLBACK_RETURN(v8::Handle<v8::Value>());
@@ -298,7 +298,7 @@ void CPythonObject::NamedGetter(v8::Local<v8::String> prop, const v8::PropertyCa
   {
     py::object getter = attr.attr("fget");
 
-    if (getter.ptr() == Py_None)
+    if (getter.is_none())
       throw CJavascriptException("unreadable attribute", ::PyExc_AttributeError);
 
     attr = getter();
@@ -353,7 +353,7 @@ void CPythonObject::NamedSetter(v8::Local<v8::String> prop, v8::Local<v8::Value>
       {
         py::object setter = attr.attr("fset");
 
-        if (setter.ptr() == Py_None)
+        if (setter.is_none())
           throw CJavascriptException("can't set attribute", ::PyExc_AttributeError);
 
         setter(newval);
@@ -418,7 +418,7 @@ void CPythonObject::NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyC
     {
       py::object deleter = attr.attr("fdel");
 
-      if (deleter.ptr() == Py_None)
+      if (deleter.is_none())
         throw CJavascriptException("can't delete attribute", ::PyExc_AttributeError);
 
       CALLBACK_RETURN(py::extract<bool>(deleter()));
@@ -797,7 +797,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 
   TERMINATE_EXECUTION_CHECK(v8::Undefined())
 
-  if (obj.ptr() == Py_None) return v8::Null();
+  if (obj.is_none()) return v8::Null();
   if (obj.ptr() == Py_True) return v8::True();
   if (obj.ptr() == Py_False) return v8::False();
 
@@ -1233,7 +1233,7 @@ void CJavascriptArray::LazyConstructor(void)
 
   v8::Handle<v8::Array> array;
 
-  if (m_items.ptr() == Py_None)
+  if (m_items.is_none())
   {
     array = v8::Array::New(m_size);
   }
