@@ -17,10 +17,8 @@ class CDebug
 
   v8::Persistent<v8::Context> m_debug_context, m_eval_context;
 
-  static void OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state,
-    v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data);
-  static void OnDebugMessage(const uint16_t* message, int length,
-    v8::Debug::ClientData* client_data);
+  static void OnDebugEvent(const v8::Debug::EventDetails& details);
+  static void OnDebugMessage(const v8::Debug::Message& message);
   static void OnDispatchDebugMessages(void);
 
   void Init(void);

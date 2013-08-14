@@ -50,8 +50,8 @@ void CDebug::SetEnable(bool enable)
 
       v8::Handle<v8::External> data = v8::External::New(this);
 
-      v8::Debug::SetDebugEventListener(OnDebugEvent, data);
-      v8::Debug::SetMessageHandler(OnDebugMessage);
+      v8::Debug::SetDebugEventListener2(OnDebugEvent, data);
+      v8::Debug::SetMessageHandler2(OnDebugMessage);
       v8::Debug::SetDebugMessageDispatchHandler(OnDispatchDebugMessages);
     }
     END_HANDLE_JAVASCRIPT_EXCEPTION
@@ -93,15 +93,14 @@ void CDebug::SendCommand(const std::string& cmd)
   END_HANDLE_JAVASCRIPT_EXCEPTION
 }
 
-void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_state,
-  v8::Handle<v8::Object> event_data, v8::Handle<v8::Value> data)
+void CDebug::OnDebugEvent(const v8::Debug::EventDetails& details)
 {
   v8::HandleScope scope;
   CDebug *pThis;
 
   BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
   {
-    pThis = static_cast<CDebug *>(v8::Handle<v8::External>::Cast(data)->Value());
+    pThis = static_cast<CDebug *>(v8::Handle<v8::External>::Cast(details.GetCallbackData())->Value());
   }
   END_HANDLE_JAVASCRIPT_EXCEPTION
 
@@ -113,9 +112,9 @@ void CDebug::OnDebugEvent(v8::DebugEvent event, v8::Handle<v8::Object> exec_stat
 
   BEGIN_HANDLE_PYTHON_EXCEPTION
   {
-    py::call<void>(pThis->m_onDebugEvent.ptr(), event,
-      CJavascriptObjectPtr(new CJavascriptObject(exec_state)),
-      CJavascriptObjectPtr(new CJavascriptObject(event_data)));
+    py::call<void>(pThis->m_onDebugEvent.ptr(), details.GetEvent(),
+      CJavascriptObjectPtr(new CJavascriptObject(details.GetExecutionState())),
+      CJavascriptObjectPtr(new CJavascriptObject(details.GetEventData())));
   }
   END_HANDLE_PYTHON_EXCEPTION
 }
@@ -129,21 +128,19 @@ public:
   py::object data(void) const { return m_data; }
 };
 
-void CDebug::OnDebugMessage(const uint16_t* message, int length, v8::Debug::ClientData* client_data)
+void CDebug::OnDebugMessage(const v8::Debug::Message& message)
 {
   if (GetInstance().m_onDebugMessage.is_none()) return;
 
   v8::HandleScope scope;
 
-  v8::Handle<v8::String> msg(v8::String::New(message, length));
-
-  v8::String::Utf8Value str(msg);
+  v8::String::Utf8Value str(message.GetJSON());
 
   py::object data;
 
-  if (client_data)
+  if (message.GetClientData())
   {
-    data = static_cast<DebugClientData *>(client_data)->data();
+    data = static_cast<DebugClientData *>(message.GetClientData())->data();
   }
 
   CPythonGIL python_gil;

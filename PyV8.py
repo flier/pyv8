@@ -2646,12 +2646,14 @@ class TestAST(unittest.TestCase):
             def onBinaryOperation(self, expr):
                 self.called.append('binOp')
 
-                self.assertEqual(AST.Op.ADD, expr.op)
-                self.assertEqual("i", str(expr.left))
-                self.assertEqual("j", str(expr.right))
-                self.assertEqual(36, expr.pos)
-
-                #print "bin", expr
+                if expr.op == AST.Op.BIT_XOR:
+                    self.assertEqual("i", str(expr.left))
+                    self.assertEqual("-1", str(expr.right))
+                    self.assertEqual(124, expr.pos)
+                else:
+                    self.assertEqual("i", str(expr.left))
+                    self.assertEqual("j", str(expr.right))
+                    self.assertEqual(36, expr.pos)
 
             def onAssignment(self, expr):
                 self.called.append('assign')
@@ -2706,7 +2708,7 @@ class TestAST(unittest.TestCase):
                 self.assertEqual(146, expr.elseExprPos)
 
         with OperationChecker(self) as checker:
-            self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'unaryOp', 'conditional'], checker.test("""
+            self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'binOp', 'conditional'], checker.test("""
             var i, j;
             i+j;
             i+=1;
