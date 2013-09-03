@@ -758,7 +758,7 @@ class CAstVisitor : public v8i::AstVisitor
 public:
   CAstVisitor(py::object handler) : m_handler(handler)
   {
-    InitializeAstVisitor();
+    InitializeAstVisitor(v8i::Isolate::Current());
   }
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { \
   if (::PyObject_HasAttrString(m_handler.ptr(), "on"#type)) { \
@@ -778,7 +778,7 @@ struct CAstObjectCollector : public v8i::AstVisitor
   py::object m_obj;
 
   CAstObjectCollector() {
-    InitializeAstVisitor();
+    InitializeAstVisitor(v8i::Isolate::Current());
   }
 
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_obj = py::object(CAst##type(node)); }
@@ -805,7 +805,7 @@ struct CAstListCollector : public v8i::AstVisitor
   py::list m_nodes;
 
   CAstListCollector() {
-    InitializeAstVisitor();
+    InitializeAstVisitor(v8i::Isolate::Current());
   }
 
 #define DECLARE_VISIT(type) virtual void Visit##type(v8i::type* node) { m_nodes.append(py::object(CAst##type(node))); }

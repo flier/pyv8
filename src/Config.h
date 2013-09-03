@@ -29,3 +29,8 @@
 // Trace the object lifecycle
 //
 #define SUPPORT_TRACE_LIFECYCLE 1
+
+//
+// Enable the dtrace or systemtap probes
+//
+#define SUPPORT_PROBES 1

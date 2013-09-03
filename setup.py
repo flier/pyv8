@@ -264,7 +264,6 @@ elif is_osx: # contribute by progrium and alec
         if os.path.isdir("/usr/local/lib"):
             library_dirs.append("/usr/local/lib")
 
-
     libraries += boost_libs
 
     is_64bit = math.trunc(math.ceil(math.log(sys.maxsize, 2)) + 1) == 64 # contribute by viy
@@ -483,11 +482,40 @@ def build_v8():
         exec_cmd(cmdline, "build v8 from SVN")
 
 
+def generate_probes():
+    probes_d = os.path.join(V8_HOME, "src/probes.d")
+    probes_h = os.path.join(V8_HOME, "src/probes.h")
+
+    if exec_cmd("dtrace -h -xnolibs -s %s -o %s" % [probes_d, probes_h]):
+        pass
+    elif exec_cmd("dtrace -h -C -s %s -o %s" % [probes_d, probes_h]):
+        pass
+    else:
+        print("INFO: dtrace or systemtap doesn't works, force to disable probes")
+
+        config_file = os.path.join(V8_HOME, "src/Config.h")
+
+        with open(config_file, "r") as f:
+            config_settings= f.read()
+
+        modified_config_settings = config_settings.replace("\n#define SUPPORT_PROBES 1", "\n//#define SUPPORT_PROBES 1")
+
+        if modified_config_settings != config_settings:
+            if os.path.exists(config_file + '.bak'):
+                os.remove(config_file + '.bak')
+
+            os.rename(config_file, config_file + '.bak')
+
+            with open(config_file, 'w') as f:
+                f.write(modified_config_settings)
+
+
 def prepare_v8():
     try:
         checkout_v8()
         prepare_gyp()
         build_v8()
+        generate_probes()
     except Exception as e:
         print("ERROR: fail to checkout and build v8, %s" % e)
 

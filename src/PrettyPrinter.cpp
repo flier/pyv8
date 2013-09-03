@@ -38,7 +38,7 @@ PrettyPrinter::PrettyPrinter() {
   size_ = 0;
   pos_ = 0;
 
-  InitializeAstVisitor();
+  InitializeAstVisitor(v8i::Isolate::Current());
 }
 
 
