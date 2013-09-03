@@ -460,9 +460,16 @@ def build_v8():
 
         exec_cmd(cmdline, "Update Cygwin from SVN")
 
+        if not os.path.isdir(os.path.join(V8_HOME, 'third_party', 'python_26')):
+            cmdline = 'svn co http://src.chromium.org/svn/trunk/tools/third_party/python_26@89111 third_party/python_26'
+        else:
+            cmdline = 'svn up third_party/python_26'
+
+        exec_cmd(cmdline, "Update Python 2.6 from SVN")        
+
         print("INFO: Generating the Visual Studio project files")
 
-        exec_cmd('python build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
+        exec_cmd('third_party\python_26\python.exe build\gyp_v8 -Dtarget_arch=%s' % arch, "Generate Visual Studio project files")
 
         VSINSTALLDIR = os.getenv('VSINSTALLDIR')
 
