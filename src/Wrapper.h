@@ -222,7 +222,7 @@ class ObjectTracer
 
   void Trace(void);
 
-  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> *value, ObjectTracer* parameter);
+  static void WeakCallback(const v8::WeakCallbackData<v8::Value, ObjectTracer>& data);
 
   static LivingMap *GetLivingMapping(void);
 public:
@@ -246,7 +246,7 @@ class ContextTracer
 
   void Trace(void);
 
-  static void WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Context> *value, ContextTracer* parameter);
+  static void WeakCallback(const v8::WeakCallbackData<v8::Context, ContextTracer>& data);
 public:
   ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living);
   ~ContextTracer(void);

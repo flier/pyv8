@@ -27,7 +27,6 @@ protected:
   static CounterTable m_counters;
 
   static int *CounterLookup(const char* name);
-
 #endif
 
   static void CollectAllGarbage(bool force_compaction);

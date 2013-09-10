@@ -1761,18 +1761,18 @@ ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *obje
 
 void ObjectTracer::Trace(void)
 {
-  m_handle.MakeWeak(v8::Isolate::GetCurrent(), this, WeakCallback);
+  m_handle.SetWeak(this, WeakCallback);
 
   m_living->insert(std::make_pair(m_object->ptr(), this));
 }
 
-void ObjectTracer::WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> *value, ObjectTracer* parameter)
+void ObjectTracer::WeakCallback(const v8::WeakCallbackData<v8::Value, ObjectTracer>& data)
 {
   assert(value->IsNearDeath());
 
-  std::auto_ptr<ObjectTracer> tracer(parameter);
+  std::auto_ptr<ObjectTracer> tracer(data.GetParameter());
 
-  assert(*value == tracer->m_handle);
+  assert(data.GetValue() == tracer->m_handle);
 }
 
 LivingMap * ObjectTracer::GetLivingMapping(void)
@@ -1835,9 +1835,9 @@ ContextTracer::~ContextTracer(void)
   }
 }
 
-void ContextTracer::WeakCallback(v8::Isolate* isolate, v8::Persistent<v8::Context> *value, ContextTracer* parameter)
+void ContextTracer::WeakCallback(const v8::WeakCallbackData<v8::Context, ContextTracer>& data)
 {
-  delete parameter;
+  delete data.GetParameter();
 }
 
 void ContextTracer::Trace(v8::Handle<v8::Context> ctxt, LivingMap *living)
@@ -1849,7 +1849,7 @@ void ContextTracer::Trace(v8::Handle<v8::Context> ctxt, LivingMap *living)
 
 void ContextTracer::Trace(void)
 {
-  m_ctxt.MakeWeak(v8::Isolate::GetCurrent(), this, WeakCallback);
+  m_ctxt.SetWeak(this, WeakCallback);
 }
 
 #endif // SUPPORT_TRACE_LIFECYCLE

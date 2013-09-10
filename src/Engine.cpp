@@ -95,8 +95,6 @@ void CEngine::Expose(void)
 
   MemoryAllocationManager::Init();
 
-  void (*terminateExecution)(int) = &v8::V8::TerminateExecution;
-
   py::enum_<v8::ObjectSpace>("JSObjectSpace")
     .value("New", v8::kObjectSpaceNewSpace)
 
@@ -126,9 +124,6 @@ void CEngine::Expose(void)
     .add_static_property("dead", &v8::V8::IsDead,
                          "Check if V8 is dead and therefore unusable.")
 
-    .add_static_property("currentThreadId", &v8::V8::GetCurrentThreadId,
-                         "The V8 thread id of the calling thread.")
-
     .def("setFlags", &CEngine::SetFlags, "Sets V8 flags from a string.")
     .staticmethod("setFlags")
 
@@ -145,10 +140,6 @@ void CEngine::Expose(void)
     .def("deserialize", &CEngine::Deserialize)
     .staticmethod("deserialize")
   #endif
-
-    .def("terminateThread", terminateExecution, (py::arg("thread_id")),
-         "Forcefully terminate execution of a JavaScript thread.")
-    .staticmethod("terminateThread")
 
     .def("terminateAllThreads", &CEngine::TerminateAllThreads,
          "Forcefully terminate the current thread of JavaScript execution.")
@@ -330,7 +321,7 @@ void CEngine::CollectAllGarbage(bool force_compaction)
 
 void CEngine::TerminateAllThreads(void)
 {
-  v8::V8::TerminateExecution();
+  v8::V8::TerminateExecution(v8::Isolate::GetCurrent());
 }
 
 void CEngine::ReportFatalError(const char* location, const char* message)
