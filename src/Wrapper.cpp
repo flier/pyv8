@@ -1768,8 +1768,6 @@ void ObjectTracer::Trace(void)
 
 void ObjectTracer::WeakCallback(const v8::WeakCallbackData<v8::Value, ObjectTracer>& data)
 {
-  assert(data.GetValue()->IsNearDeath());
-
   std::auto_ptr<ObjectTracer> tracer(data.GetParameter());
 
   assert(data.GetValue() == tracer->m_handle);
