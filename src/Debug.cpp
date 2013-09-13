@@ -11,7 +11,7 @@
 
 void CDebug::Init(void)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
 
@@ -32,7 +32,7 @@ void CDebug::Init(void)
   DebugContext()->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
 
   // Set the security token of the debug context to allow access.
-  debug->debug_context()->set_security_token(HEAP->undefined_value());
+  debug->debug_context()->set_security_token(v8i::Isolate::Current()->heap()->undefined_value());
 #endif
 }
 
@@ -46,7 +46,7 @@ void CDebug::SetEnable(bool enable)
   {
     BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
     {
-      v8::HandleScope scope;
+      v8::HandleScope scope(v8::Isolate::GetCurrent());
 
       v8::Handle<v8::External> data = v8::External::New(this);
 
@@ -60,7 +60,7 @@ void CDebug::SetEnable(bool enable)
 
 py::object CDebug::GetDebugContext(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
     CContextPtr(new CContext(DebugContext())))));
@@ -95,7 +95,7 @@ void CDebug::SendCommand(const std::string& cmd)
 
 void CDebug::OnDebugEvent(const v8::Debug::EventDetails& details)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
   CDebug *pThis;
 
   BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
@@ -132,7 +132,7 @@ void CDebug::OnDebugMessage(const v8::Debug::Message& message)
 {
   if (GetInstance().m_onDebugMessage.is_none()) return;
 
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value str(message.GetJSON());
 
@@ -154,7 +154,7 @@ void CDebug::OnDebugMessage(const v8::Debug::Message& message)
 
 void CDebug::OnDispatchDebugMessages(void)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   BEGIN_HANDLE_PYTHON_EXCEPTION
   {

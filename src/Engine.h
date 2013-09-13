@@ -37,13 +37,13 @@ protected:
 public:
   py::object PreCompile(const std::string& src)
   {
-    v8::HandleScope scope;
+    v8::HandleScope scope(v8::Isolate::GetCurrent());
 
     return InternalPreCompile(ToString(src));
   }
   py::object PreCompileW(const std::wstring& src)
   {
-    v8::HandleScope scope;
+    v8::HandleScope scope(v8::Isolate::GetCurrent());
 
     return InternalPreCompile(ToString(src));
   }
@@ -51,14 +51,14 @@ public:
   CScriptPtr Compile(const std::string& src, const std::string name = std::string(),
                      int line = -1, int col = -1, py::object precompiled = py::object())
   {
-    v8::HandleScope scope;
+    v8::HandleScope scope(v8::Isolate::GetCurrent());
 
     return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
   }
   CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(),
                       int line = -1, int col = -1, py::object precompiled = py::object())
   {
-    v8::HandleScope scope;
+    v8::HandleScope scope(v8::Isolate::GetCurrent());
 
     return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
   }
@@ -99,7 +99,7 @@ public:
   CScript(const CScript& script)
     : m_engine(script.m_engine)
   {
-    v8::HandleScope handle_scope;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
     m_source.Reset(v8::Isolate::GetCurrent(), script.Source());
     m_script.Reset(v8::Isolate::GetCurrent(), script.Script());

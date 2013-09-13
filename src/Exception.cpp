@@ -82,7 +82,7 @@ void CJavascriptException::Expose(void)
 CJavascriptStackTracePtr CJavascriptStackTrace::GetCurrentStackTrace(
   int frame_limit, v8::StackTrace::StackTraceOptions options)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
 
@@ -95,7 +95,7 @@ CJavascriptStackTracePtr CJavascriptStackTrace::GetCurrentStackTrace(
 
 CJavascriptStackFramePtr CJavascriptStackTrace::GetFrame(size_t idx) const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
 
@@ -108,7 +108,7 @@ CJavascriptStackFramePtr CJavascriptStackTrace::GetFrame(size_t idx) const
 
 void CJavascriptStackTrace::Dump(std::ostream& os) const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
 
@@ -144,7 +144,7 @@ void CJavascriptStackTrace::Dump(std::ostream& os) const
 
 const std::string CJavascriptStackFrame::GetScriptName() const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value name(Handle()->GetScriptName());
 
@@ -152,7 +152,7 @@ const std::string CJavascriptStackFrame::GetScriptName() const
 }
 const std::string CJavascriptStackFrame::GetFunctionName() const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value name(Handle()->GetFunctionName());
 
@@ -164,7 +164,7 @@ const std::string CJavascriptException::GetName(void)
 
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::New("name"))));
 
@@ -176,7 +176,7 @@ const std::string CJavascriptException::GetMessage(void)
 
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::New("message"))));
 
@@ -186,7 +186,7 @@ const std::string CJavascriptException::GetScriptName(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   if (!m_msg.IsEmpty() && !Message()->GetScriptResourceName().IsEmpty() &&
       !Message()->GetScriptResourceName()->IsUndefined())
@@ -202,7 +202,7 @@ int CJavascriptException::GetLineNumber(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_msg.IsEmpty() ? 1 : Message()->GetLineNumber();
 }
@@ -210,7 +210,7 @@ int CJavascriptException::GetStartPosition(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_msg.IsEmpty() ? 1 : Message()->GetStartPosition();
 }
@@ -218,7 +218,7 @@ int CJavascriptException::GetEndPosition(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_msg.IsEmpty() ? 1 : Message()->GetEndPosition();
 }
@@ -226,7 +226,7 @@ int CJavascriptException::GetStartColumn(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_msg.IsEmpty() ? 1 : Message()->GetStartColumn();
 }
@@ -234,7 +234,7 @@ int CJavascriptException::GetEndColumn(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_msg.IsEmpty() ? 1 : Message()->GetEndColumn();
 }
@@ -242,7 +242,7 @@ const std::string CJavascriptException::GetSourceLine(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   if (!m_msg.IsEmpty() && !Message()->GetSourceLine().IsEmpty() &&
       !Message()->GetSourceLine()->IsUndefined())
@@ -258,7 +258,7 @@ const std::string CJavascriptException::GetStackTrace(void)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   if (!m_stack.IsEmpty())
   {
@@ -273,7 +273,7 @@ const std::string CJavascriptException::Extract(v8::TryCatch& try_catch)
 {
   assert(v8::Context::InContext());
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   std::ostringstream oss;
 
@@ -324,7 +324,7 @@ void CJavascriptException::ThrowIf(v8::TryCatch& try_catch)
 {
   if (try_catch.HasCaught() && try_catch.CanContinue())
   {
-    v8::HandleScope handle_scope;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
     PyObject *type = NULL;
     v8::Handle<v8::Value> obj = try_catch.Exception();
@@ -362,7 +362,7 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
   }
   else
   {
-    v8::HandleScope handle_scope;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
     if (!ex.Exception().IsEmpty() && ex.Exception()->IsObject())
     {

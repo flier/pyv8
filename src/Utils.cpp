@@ -13,13 +13,13 @@
 
 v8::Handle<v8::String> ToString(const std::string& str)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   return scope.Close(v8::String::New(str.c_str(), str.size()));
 }
 v8::Handle<v8::String> ToString(const std::wstring& str)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   if (sizeof(wchar_t) == sizeof(uint16_t))
   {
@@ -39,13 +39,13 @@ v8::Handle<v8::String> ToString(const std::wstring& str)
 }
 v8::Handle<v8::String> ToString(py::object str)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   if (PyBytes_CheckExact(str.ptr()))
   {
     return scope.Close(v8::String::New(PyBytes_AS_STRING(str.ptr()), PyBytes_GET_SIZE(str.ptr())));
   }
-  
+
   if (PyUnicode_CheckExact(str.ptr()))
   {
   #ifndef Py_UNICODE_WIDE
@@ -54,7 +54,7 @@ v8::Handle<v8::String> ToString(py::object str)
   #else
     Py_ssize_t len = PyUnicode_GET_SIZE(str.ptr());
     const uint32_t *p = reinterpret_cast<const uint32_t *>(PyUnicode_AS_UNICODE(str.ptr()));
-    
+
     std::vector<uint16_t> data(len+1);
 
     for(Py_ssize_t i=0; i<len; i++)
@@ -67,13 +67,13 @@ v8::Handle<v8::String> ToString(py::object str)
     return scope.Close(v8::String::New(&data[0], len));
   #endif
   }
-    
+
   return ToString(py::object(py::handle<>(::PyObject_Str(str.ptr()))));
 }
 
 v8::Handle<v8::String> DecodeUtf8(const std::string& str)
 {
-  v8::HandleScope scope;
+  v8::HandleScope scope(v8::Isolate::GetCurrent());
 
   std::vector<uint16_t> data;
 
@@ -105,7 +105,7 @@ const std::string EncodeUtf8(const std::wstring& str)
   return std::string((const char *) &data[0], data.size());
 }
 
-CPythonGIL::CPythonGIL() 
+CPythonGIL::CPythonGIL()
 {
   while (CLocker::IsPreemption() && PyThreadState_GET() && ::PyGILState_GetThisThreadState() != PyThreadState_GET())
   {
@@ -118,4 +118,4 @@ CPythonGIL::CPythonGIL()
 CPythonGIL::~CPythonGIL()
 {
   ::PyGILState_Release(m_state);
-}  
+}

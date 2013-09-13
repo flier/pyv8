@@ -313,9 +313,9 @@ void CEngine::CollectAllGarbage(bool force_compaction)
   v8i::HandleScope handle_scope(v8i::Isolate::Current());
 
   if (force_compaction) {
-    HEAP->CollectAllAvailableGarbage();
+    v8i::Isolate::Current()->heap()->CollectAllAvailableGarbage();
   } else {
-    HEAP->CollectAllGarbage(v8i::Heap::kMakeHeapIterableMask);
+    v8i::Isolate::Current()->heap()->CollectAllGarbage(v8i::Heap::kMakeHeapIterableMask);
   }
 }
 
@@ -387,7 +387,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
     throw CJavascriptException("please enter a context first");
   }
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
 
@@ -447,7 +447,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
     throw CJavascriptException("please enter a context first");
   }
 
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
 
@@ -481,7 +481,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*Source());
 
@@ -516,7 +516,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 
 const std::string CScript::GetSource(void) const
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::String::Utf8Value source(Source());
 
@@ -525,7 +525,7 @@ const std::string CScript::GetSource(void) const
 
 py::object CScript::Run(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return m_engine.ExecuteScript(Script());
 }
@@ -538,7 +538,7 @@ class CPythonExtension : public v8::Extension
 
   static void CallStub(const v8::FunctionCallbackInfo<v8::Value>& args)
   {
-    v8::HandleScope handle_scope;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
     CPythonGIL python_gil;
     py::object func = *static_cast<py::object *>(v8::External::Cast(*args.Data())->Value());
 
@@ -591,7 +591,7 @@ public:
 
   virtual v8::Handle<v8::FunctionTemplate> GetNativeFunction(v8::Handle<v8::String> name)
   {
-    v8::HandleScope handle_scope;
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
     CPythonGIL python_gil;
 
     py::object func;

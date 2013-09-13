@@ -74,9 +74,9 @@ void CContext::Expose(void)
 
 py::object CIsolate::GetCurrent(void)
 {
-  v8::HandleScope handle_scope;
-
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+  v8::HandleScope handle_scope(isolate);
 
   return !isolate ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CIsolate>(
@@ -85,14 +85,14 @@ py::object CIsolate::GetCurrent(void)
 
 CContext::CContext(v8::Handle<v8::Context> context)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   m_context.Reset(context->GetIsolate(), context);
 }
 
 CContext::CContext(const CContext& context)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   m_context.Reset(context.Handle()->GetIsolate(), context.Handle());
 }
@@ -100,7 +100,7 @@ CContext::CContext(const CContext& context)
 CContext::CContext(py::object global, py::list extensions)
   : m_global(global)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   std::auto_ptr<v8::ExtensionConfiguration> cfg;
   std::vector<std::string> ext_names;
@@ -139,14 +139,14 @@ CContext::CContext(py::object global, py::list extensions)
 
 py::object CContext::GetGlobal(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return CJavascriptObject::Wrap(Handle()->Global());
 }
 
 py::str CContext::GetSecurityToken(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::Value> token = Handle()->GetSecurityToken();
 
@@ -159,7 +159,7 @@ py::str CContext::GetSecurityToken(void)
 
 void CContext::SetSecurityToken(py::str token)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   if (token.is_none())
   {
@@ -173,7 +173,7 @@ void CContext::SetSecurityToken(py::str token)
 
 py::object CContext::GetEntered(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::Context> entered = v8::Context::GetEntered();
 
@@ -182,7 +182,7 @@ py::object CContext::GetEntered(void)
 }
 py::object CContext::GetCurrent(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::Context> current = v8::Isolate::GetCurrent()->GetCurrentContext();
 
@@ -191,7 +191,7 @@ py::object CContext::GetCurrent(void)
 }
 py::object CContext::GetCalling(void)
 {
-  v8::HandleScope handle_scope;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::Context> calling = v8::Context::GetCalling();
 

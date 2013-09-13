@@ -46,14 +46,14 @@ public:
 
   CJavascriptStackTrace(const CJavascriptStackTrace& st)
   {
-    v8::HandleScope handle_scope;
-    
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
     m_st.Reset(v8::Isolate::GetCurrent(), st.Handle());
   }
 
   v8::Handle<v8::StackTrace> Handle() const { return v8::Local<v8::StackTrace>::New(v8::Isolate::GetCurrent(), m_st); }
 
-  int GetFrameCount() const { v8::HandleScope handle_scope; return Handle()->GetFrameCount(); }
+  int GetFrameCount() const { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->GetFrameCount(); }
   CJavascriptStackFramePtr GetFrame(size_t idx) const;
 
   static CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
@@ -95,19 +95,19 @@ public:
 
   CJavascriptStackFrame(const CJavascriptStackFrame& frame)
   {
-    v8::HandleScope handle_scope;
-    
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
     m_frame.Reset(v8::Isolate::GetCurrent(), frame.Handle());
   }
 
   v8::Handle<v8::StackFrame> Handle() const { return v8::Local<v8::StackFrame>::New(v8::Isolate::GetCurrent(), m_frame); }
 
-  int GetLineNumber() const { v8::HandleScope handle_scope; return Handle()->GetLineNumber(); }
-  int GetColumn() const { v8::HandleScope handle_scope; return Handle()->GetColumn(); }
+  int GetLineNumber() const { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->GetLineNumber(); }
+  int GetColumn() const { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->GetColumn(); }
   const std::string GetScriptName() const;
   const std::string GetFunctionName() const;
-  bool IsEval() const { v8::HandleScope handle_scope; return Handle()->IsEval(); }
-  bool IsConstructor() const { v8::HandleScope handle_scope; return Handle()->IsConstructor(); }
+  bool IsEval() const { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->IsEval(); }
+  bool IsConstructor() const { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->IsConstructor(); }
 };
 
 class CJavascriptException : public std::runtime_error
@@ -124,8 +124,8 @@ protected:
   CJavascriptException(v8::TryCatch& try_catch, PyObject *type)
     : std::runtime_error(Extract(try_catch)), m_type(type)
   {
-    v8::HandleScope handle_scope;
-  
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
     m_exc.Reset(v8::Isolate::GetCurrent(), try_catch.Exception());
     m_stack.Reset(v8::Isolate::GetCurrent(), try_catch.StackTrace());
     m_msg.Reset(v8::Isolate::GetCurrent(), try_catch.Message());
@@ -139,8 +139,8 @@ public:
   CJavascriptException(const CJavascriptException& ex)
     : std::runtime_error(ex.what()), m_type(ex.m_type)
   {
-    v8::HandleScope handle_scope;
-    
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
     m_exc.Reset(v8::Isolate::GetCurrent(), ex.Exception());
     m_stack.Reset(v8::Isolate::GetCurrent(), ex.Stack());
     m_msg.Reset(v8::Isolate::GetCurrent(), ex.Message());
