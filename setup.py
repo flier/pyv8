@@ -354,7 +354,9 @@ def checkout_v8():
         else:
             r = svnClient.checkout(V8_SVN_URL, V8_HOME, revision=rev)
 
-        if r: return
+        if r:
+            print("%s Google V8 code (r%d) from SVN to %s" % ("Update" if update_code else "Checkout", r[-1].number, V8_HOME))
+            return
 
         print("ERROR: Failed to export from V8 svn repository")
     except ImportError:
