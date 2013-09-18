@@ -435,6 +435,15 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
   Py_END_ALLOW_THREADS
 
+#ifdef SUPPORT_PROBES
+  if (ENGINE_SCRIPT_COMPILE_ENABLED()) {
+    v8::String::Utf8Value s(source);
+    v8::String::Utf8Value n(v8::Handle<v8::String>::Cast(name));
+
+    ENGINE_SCRIPT_COMPILE(&script, *s, *n, line, col);
+  }
+#endif
+
   if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
   return boost::shared_ptr<CScript>(new CScript(*this, script_source, script));
@@ -442,6 +451,12 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 {
+ #ifdef SUPPORT_PROBES
+  if (ENGINE_SCRIPT_RUN_ENABLED()) {
+    ENGINE_SCRIPT_RUN(&script);
+  }
+#endif
+
   if (!v8::Context::InContext())
   {
     throw CJavascriptException("please enter a context first");

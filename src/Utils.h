@@ -62,7 +62,7 @@ namespace py = boost::python;
 # pragma warning( pop )
 #endif
 
-#endif 
+#endif
 
 #if defined(__GNUC__)
   #define UNUSED_VAR(x) x __attribute__((unused))
@@ -107,3 +107,16 @@ struct CPythonGIL
   CPythonGIL();
   ~CPythonGIL();
 };
+
+#ifdef SUPPORT_PROBES
+
+#define PyObject_t PyObject
+
+typedef v8::Persistent<v8::Object> V8Object_t;
+typedef v8::Persistent<v8::Object> V8Array_t;
+typedef v8::Handle<v8::Script> V8Script_t;
+typedef const char * string_t;
+
+#include "probes.h"
+
+#endif

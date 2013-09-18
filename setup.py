@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import sys, os, os.path, math, platform
 import subprocess
+import traceback
 
 is_py3k = sys.version_info[0] > 2
 
@@ -465,7 +466,7 @@ def build_v8():
         else:
             cmdline = 'svn up third_party/python_26'
 
-        exec_cmd(cmdline, "Update Python 2.6 from SVN")        
+        exec_cmd(cmdline, "Update Python 2.6 from SVN")
 
         print("INFO: Generating the Visual Studio project files")
 
@@ -490,17 +491,17 @@ def build_v8():
 
 
 def generate_probes():
-    probes_d = os.path.join(V8_HOME, "src/probes.d")
-    probes_h = os.path.join(V8_HOME, "src/probes.h")
+    probes_d = os.path.join(PYV8_HOME, "src/probes.d")
+    probes_h = os.path.join(PYV8_HOME, "src/probes.h")
 
-    if exec_cmd("dtrace -h -xnolibs -s %s -o %s" % [probes_d, probes_h]):
+    if exec_cmd("dtrace -h -xnolibs -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
         pass
-    elif exec_cmd("dtrace -h -C -s %s -o %s" % [probes_d, probes_h]):
+    elif exec_cmd("dtrace -h -C -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
         pass
     else:
         print("INFO: dtrace or systemtap doesn't works, force to disable probes")
 
-        config_file = os.path.join(V8_HOME, "src/Config.h")
+        config_file = os.path.join(PYV8_HOME, "src/Config.h")
 
         with open(config_file, "r") as f:
             config_settings= f.read()
@@ -525,6 +526,7 @@ def prepare_v8():
         generate_probes()
     except Exception as e:
         print("ERROR: fail to checkout and build v8, %s" % e)
+        traceback.print_exc()
 
 
 class build(_build):

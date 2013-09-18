@@ -950,6 +950,12 @@ void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
 
 py::object CJavascriptObject::GetAttr(const std::string& name)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_OBJECT_GETATTR_ENABLED()) {
+    WRAPPER_JS_OBJECT_GETATTR(&m_obj, name.c_str());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
@@ -970,6 +976,12 @@ py::object CJavascriptObject::GetAttr(const std::string& name)
 
 void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_OBJECT_SETATTR_ENABLED()) {
+    WRAPPER_JS_OBJECT_SETATTR(&m_obj, name.c_str(), value.ptr());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
@@ -989,6 +1001,12 @@ void CJavascriptObject::SetAttr(const std::string& name, py::object value)
 }
 void CJavascriptObject::DelAttr(const std::string& name)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_OBJECT_DELATTR_ENABLED()) {
+    WRAPPER_JS_OBJECT_DELATTR(&m_obj, name.c_str());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
@@ -1298,6 +1316,12 @@ size_t CJavascriptArray::Length(void)
 }
 py::object CJavascriptArray::GetItem(py::object key)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_ARRAY_GETITEM_ENABLED()) {
+    WRAPPER_JS_ARRAY_GETITEM(&m_obj, key.ptr());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   LazyConstructor();
@@ -1345,6 +1369,12 @@ py::object CJavascriptArray::GetItem(py::object key)
 
 py::object CJavascriptArray::SetItem(py::object key, py::object value)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_ARRAY_SETITEM_ENABLED()) {
+    WRAPPER_JS_ARRAY_SETITEM(&m_obj, key.ptr(), value.ptr());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   LazyConstructor();
@@ -1416,6 +1446,12 @@ py::object CJavascriptArray::SetItem(py::object key, py::object value)
 }
 py::object CJavascriptArray::DelItem(py::object key)
 {
+#ifdef SUPPORT_PROBES
+  if (WRAPPER_JS_ARRAY_DELITEM_ENABLED()) {
+    WRAPPER_JS_ARRAY_DELITEM(&m_obj, key.ptr());
+  }
+#endif
+
   CHECK_V8_CONTEXT();
 
   LazyConstructor();
