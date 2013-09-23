@@ -435,6 +435,9 @@ void CPythonObject::NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyC
   END_HANDLE_EXCEPTION(v8::Handle<v8::Boolean>())
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
 void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
@@ -454,10 +457,7 @@ void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& i
   }
   else if (::PyMapping_Check(obj.ptr()))
   {
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wwrite-strings"
     keys = py::list(py::handle<>(PyMapping_Keys(obj.ptr())));
-  #pragma GCC diagnostic pop
   }
   else if (PyGen_CheckExact(obj.ptr()))
   {
@@ -503,6 +503,8 @@ void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& i
 
   END_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
 }
+
+#pragma GCC diagnostic pop
 
 void CPythonObject::IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
