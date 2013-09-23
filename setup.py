@@ -210,7 +210,6 @@ elif is_linux or is_freebsd:
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
-    libraries += ["rt"]
     extra_compile_args += ["-Wno-write-strings"]
 
     if BOOST_STATIC_LINK:
@@ -218,12 +217,11 @@ elif is_linux or is_freebsd:
     else:
         libraries += boost_libs
 
-    if is_linux:
-        libraries += ["rt"]
-
     if is_freebsd:
         libraries += ["execinfo"]
         V8_STRICTALIASING = False
+
+    libraries += ["rt"]
 
     if hasattr(os, 'uname'):
         if os.uname()[-1] in ('x86_64', 'amd64'):
@@ -235,6 +233,9 @@ elif is_linux or is_freebsd:
             macros += [("V8_TARGET_ARCH_ARM", None)]
     else:
         macros += [("V8_TARGET_ARCH_IA32", None)]
+
+    if is_linux:
+        extra_link_args += ["-lrt"] # make ubuntu happy
 
     if DEBUG:
         extra_compile_args += ['-g', '-O0', '-fno-inline']
