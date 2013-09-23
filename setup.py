@@ -150,6 +150,7 @@ library_dirs = []
 libraries = []
 extra_compile_args = []
 extra_link_args = []
+extra_objects = []
 
 if INCLUDE:
     include_dirs += [p for p in INCLUDE.split(os.path.pathsep) if p]
@@ -216,6 +217,9 @@ elif is_linux or is_freebsd:
         extra_link_args += [os.path.join(boost_lib_dir, "lib%s.a") % lib for lib in boost_libs]
     else:
         libraries += boost_libs
+
+    if is_linux:
+        libraries += ["rt"]
 
     if is_freebsd:
         libraries += ["execinfo"]
@@ -495,11 +499,14 @@ def build_v8():
 def generate_probes():
     probes_d = os.path.join(PYV8_HOME, "src/probes.d")
     probes_h = os.path.join(PYV8_HOME, "src/probes.h")
+    probes_o = os.path.join(PYV8_HOME, "build/probes.o")
 
-    if exec_cmd("dtrace -h -xnolibs -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
+    if is_osx and exec_cmd("dtrace -h -xnolibs -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
         pass
-    elif exec_cmd("dtrace -h -C -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
-        pass
+    elif (is_linux or is_freebsd) and \
+         (exec_cmd("dtrace -h -C -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes.h") and \
+          exec_cmd("dtrace -G -C -s %s -o %s" % (probes_d, probes_o), "generate DTrace probes.o")):
+        extra_objects.append(probes_o)
     else:
         print("INFO: dtrace or systemtap doesn't works, force to disable probes")
 
@@ -544,14 +551,15 @@ class develop(_develop):
 
         _develop.run(self)
 
-pyv8 = Extension(name = "_PyV8",
-                 sources = [os.path.join("src", file) for file in source_files],
-                 define_macros = macros,
-                 include_dirs = include_dirs,
-                 library_dirs = library_dirs,
-                 libraries = libraries,
-                 extra_compile_args = extra_compile_args,
-                 extra_link_args = extra_link_args,
+pyv8 = Extension(name="_PyV8",
+                 sources=[os.path.join("src", file) for file in source_files],
+                 define_macros=macros,
+                 include_dirs=include_dirs,
+                 library_dirs=library_dirs,
+                 libraries=libraries,
+                 extra_compile_args=extra_compile_args,
+                 extra_link_args=extra_link_args,
+                 extra_objects=extra_objects,
                  )
 
 extra = {}
