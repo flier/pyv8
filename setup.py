@@ -299,7 +299,7 @@ if is_winnt:
     library_dirs += [
         "%s/build/%s/lib" % (V8_HOME, mode),
     ]
-elif is_linux:
+elif is_linux or is_freebsd:
     library_dirs += [
         "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
     ]
