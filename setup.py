@@ -315,7 +315,8 @@ library_dirs.append(library_path)
 if os.path.isdir(native_path):
     library_dirs.append(native_path)
 
-extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
+if V8_I18N:
+    extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
 
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None):
