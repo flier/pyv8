@@ -494,7 +494,7 @@ def build_v8():
 
         cmdline = "%s -j 8 %s %s.%s" % (MAKE, options, arch, mode)
 
-        exec_cmd(cmdline, "build v8 from SVN", env={'GYPFLAGS', '-Duse_system_icu=1'})
+        exec_cmd(cmdline, "build v8 from SVN", env={'GYPFLAGS': '-Duse_system_icu=1'})
 
 
 def generate_probes():
