@@ -72,6 +72,7 @@ V8_LIVE_OBJECT_LIST = DEBUG     # enable live object list features in the debugg
 V8_WERROR = False               # ignore compile warnings
 V8_STRICTALIASING = True        # enable strict aliasing
 V8_BACKTRACE = True
+V8_I18N = True
 
 # load defaults from config file
 try:
@@ -317,12 +318,12 @@ if os.path.isdir(native_path):
 extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
 
 
-def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
+def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None):
     print("-" * 20)
     print("INFO: %s ..." % msg)
     print("DEBUG: > %s" % cmdline_or_args)
 
-    proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, env=env, stderr=subprocess.PIPE)
 
     out, err = proc.communicate()
 
@@ -450,8 +451,9 @@ def build_v8():
         'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
         'werror': 'yes' if V8_WERROR else 'no',
         'backtrace': 'on' if V8_BACKTRACE else 'off',
+        'i18nsupport': 'on' if V8_I18N else 'off',
         'visibility': 'on',
-        'component': 'static_library',
+        'library': 'shared',
     }
 
     print("=" * 20)
@@ -492,7 +494,7 @@ def build_v8():
 
         cmdline = "%s -j 8 %s %s.%s" % (MAKE, options, arch, mode)
 
-        exec_cmd(cmdline, "build v8 from SVN")
+        exec_cmd(cmdline, "build v8 from SVN", env={'GYPFLAGS', '-Duse_system_icu=1'})
 
 
 def generate_probes():
