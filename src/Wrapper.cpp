@@ -435,8 +435,7 @@ void CPythonObject::NamedDeleter(v8::Local<v8::String> prop, const v8::PropertyC
   END_HANDLE_EXCEPTION(v8::Handle<v8::Boolean>())
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wwrite-strings"
+#pragma GCC diagnostic ignored "-Wdeprecated-writable-strings"
 
 void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info)
 {
@@ -503,8 +502,6 @@ void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& i
 
   END_HANDLE_EXCEPTION(v8::Handle<v8::Array>())
 }
-
-#pragma GCC diagnostic pop
 
 void CPythonObject::IndexedGetter(uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& info)
 {
