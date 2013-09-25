@@ -287,6 +287,8 @@ elif is_osx: # contribute by progrium and alec
     else:
         extra_compile_args += ['-g', '-O3']
 
+    extra_compile_args += ["-Wdeprecated-writable-strings"]
+
 else:
     print("ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform))
 
@@ -296,14 +298,15 @@ mode = 'debug' if DEBUG else 'release'
 libraries += ['v8_base.' + arch, 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.' + arch)]
 
 if is_winnt:
-    library_path = "%s/build/%s/lib/" % (V8_HOME, mode)
+    library_path = icu_path = "%s/build/%s/lib/" % (V8_HOME, mode)
 
 elif is_linux or is_freebsd:
     library_path = "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)
+    icu_path = "%s/out/%s.%s/obj.target/third_party/icu/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/obj.target/tools/gyp/" % V8_HOME
 
 elif is_osx:
-    library_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
+    library_path = icu_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/" % V8_HOME
 
 library_dirs.append(library_path)
@@ -311,7 +314,7 @@ library_dirs.append(library_path)
 if os.path.isdir(native_path):
     library_dirs.append(native_path)
 
-extra_objects += ["%slib%s.a" % (library_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
+extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
 
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
