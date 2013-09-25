@@ -296,27 +296,22 @@ mode = 'debug' if DEBUG else 'release'
 libraries += ['v8_base.' + arch, 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.' + arch)]
 
 if is_winnt:
-    library_dirs += [
-        "%s/build/%s/lib" % (V8_HOME, mode),
-    ]
-elif is_linux or is_freebsd:
-    library_dirs += [
-        "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode),
-    ]
+    library_path = "%s/build/%s/lib/" % (V8_HOME, mode)
 
+elif is_linux or is_freebsd:
+    library_path = "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/obj.target/tools/gyp/" % V8_HOME
 
-    if os.path.isdir(native_path):
-        library_dirs.append(native_path)
 elif is_osx:
-    library_dirs += [
-        "%s/out/%s.%s/" % (V8_HOME, arch, mode),
-    ]
-
+    library_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/" % V8_HOME
 
-    if os.path.isdir(native_path):
-        library_dirs.append(native_path)
+library_dirs.append(library_path)
+
+if os.path.isdir(native_path):
+    library_dirs.append(native_path)
+
+extra_objects += ["%slib%s.a" % (library_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
 
 
 def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME):
@@ -453,7 +448,7 @@ def build_v8():
         'werror': 'yes' if V8_WERROR else 'no',
         'backtrace': 'on' if V8_BACKTRACE else 'off',
         'visibility': 'on',
-        'component': 'shared_library',
+        'component': 'static_library',
     }
 
     print("=" * 20)
