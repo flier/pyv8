@@ -865,7 +865,7 @@ class AST:
     Assignment = _PyV8.AstAssignment
     Throw = _PyV8.AstThrow
     Function = _PyV8.AstFunctionLiteral
-    SharedFunction = _PyV8.AstSharedFunctionInfoLiteral
+    NativeFunction = _PyV8.AstNativeFunctionLiteral
     This = _PyV8.AstThisFunction
 
 from datetime import *

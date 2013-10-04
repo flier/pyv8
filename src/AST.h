@@ -740,10 +740,13 @@ public:
   const std::string ToJSON(void) const { return v8i::JsonAstBuilder().BuildProgram(as<v8i::FunctionLiteral>()); }
 };
 
-class CAstSharedFunctionInfoLiteral : public CAstExpression
+
+class CAstNativeFunctionLiteral : public CAstExpression
 {
 public:
-  CAstSharedFunctionInfoLiteral(v8i::SharedFunctionInfoLiteral *func) : CAstExpression(func) {}
+  CAstNativeFunctionLiteral(v8i::NativeFunctionLiteral *func) : CAstExpression(func) {}
+
+  py::object GetName(void) const { return to_python(as<v8i::NativeFunctionLiteral>()->name()); }
 };
 
 class CAstThisFunction : public CAstExpression

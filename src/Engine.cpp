@@ -451,7 +451,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 {
- #ifdef SUPPORT_PROBES
+#ifdef SUPPORT_PROBES
   if (ENGINE_SCRIPT_RUN_ENABLED()) {
     ENGINE_SCRIPT_RUN(&script);
   }
