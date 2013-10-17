@@ -77,6 +77,8 @@ void CAstNode::Expose(void)
   py::class_<CAstNode, boost::noncopyable>("AstNode", py::no_init)
     .add_property("type", &CAstNode::GetType)
 
+    .add_property("pos", &CAstStatement::GetPosition)
+
     .def("visit", &CAstNode::Visit, (py::arg("handler")))
 
     .def("__str__", &CAstNode::ToString)
@@ -84,8 +86,6 @@ void CAstNode::Expose(void)
 
   py::class_<CAstStatement, py::bases<CAstNode> >("AstStatement", py::no_init)
     .def("__nonzero__", &CAstStatement::operator bool)
-
-    .add_property("pos", &CAstStatement::GetPosition, &CAstStatement::SetPosition)
     ;
 
   py::class_<CAstExpression, py::bases<CAstNode> >("AstExpression", py::no_init)
@@ -154,7 +154,6 @@ void CAstNode::Expose(void)
 
   py::class_<CAstDoWhileStatement, py::bases<CAstIterationStatement> >("AstDoWhileStatement", py::no_init)
     .add_property("condition", &CAstDoWhileStatement::GetCondition)
-    .add_property("conditionPos", &CAstDoWhileStatement::GetConditionPosition, &CAstDoWhileStatement::SetConditionPosition)
     ;
 
   py::class_<CAstWhileStatement, py::bases<CAstIterationStatement> >("AstWhileStatement", py::no_init)
@@ -206,11 +205,10 @@ void CAstNode::Expose(void)
     .add_property("statement", &CAstWithStatement::statement)
     ;
 
-  py::class_<CAstCaseClause>("AstCaseClause", py::no_init)
+  py::class_<CAstCaseClause, py::bases<CAstNode> >("AstCaseClause", py::no_init)
     .add_property("isDefault", &CAstCaseClause::is_default)
     .add_property("label", &CAstCaseClause::label)
     .add_property("bodyTarget", &CAstCaseClause::body_target)
-    .add_property("position", &CAstCaseClause::position)
     .add_property("statements", &CAstCaseClause::statements)
     ;
 
@@ -310,13 +308,11 @@ void CAstNode::Expose(void)
   py::class_<CAstCall, py::bases<CAstExpression> >("AstCall", py::no_init)
     .add_property("expression", &CAstCall::GetExpression)
     .add_property("args", &CAstCall::GetArguments)
-    .add_property("pos", &CAstCall::GetPosition)
     ;
 
   py::class_<CAstCallNew, py::bases<CAstExpression> >("AstCallNew", py::no_init)
     .add_property("expression", &CAstCallNew::GetExpression)
     .add_property("args", &CAstCallNew::GetArguments)
-    .add_property("pos", &CAstCallNew::GetPosition)
     ;
 
   py::class_<CAstCallRuntime, py::bases<CAstExpression> >("AstCallRuntime", py::no_init)
@@ -340,7 +336,6 @@ void CAstNode::Expose(void)
     .add_property("op", &CAstBinaryOperation::op)
     .add_property("left", &CAstBinaryOperation::left)
     .add_property("right", &CAstBinaryOperation::right)
-    .add_property("pos", &CAstBinaryOperation::position)
     ;
 
   py::class_<CAstCountOperation, py::bases<CAstExpression> >("AstCountOperation", py::no_init)
@@ -351,23 +346,18 @@ void CAstNode::Expose(void)
     .add_property("binop", &CAstCountOperation::binary_op)
 
     .add_property("expression", &CAstCountOperation::expression)
-    .add_property("pos", &CAstCountOperation::position)
     ;
 
   py::class_<CAstCompareOperation, py::bases<CAstExpression> >("AstCompareOperation", py::no_init)
     .add_property("op", &CAstCompareOperation::op)
     .add_property("left", &CAstCompareOperation::left)
     .add_property("right", &CAstCompareOperation::right)
-    .add_property("pos", &CAstCompareOperation::position)
     ;
 
   py::class_<CAstConditional, py::bases<CAstExpression> >("AstConditional", py::no_init)
     .add_property("condition", &CAstConditional::condition)
     .add_property("thenExpr", &CAstConditional::then_expression)
     .add_property("elseExpr", &CAstConditional::else_expression)
-
-    .add_property("thenExprPos", &CAstConditional::then_expression_position)
-    .add_property("elseExprPos", &CAstConditional::else_expression_position)
     ;
 
   py::class_<CAstAssignment, py::bases<CAstExpression> >("AstAssignment", py::no_init)
@@ -376,7 +366,6 @@ void CAstNode::Expose(void)
 
     .add_property("target", &CAstAssignment::target)
     .add_property("value", &CAstAssignment::value)
-    .add_property("pos", &CAstAssignment::position)
 
     .add_property("binOperation", &CAstAssignment::binary_operation)
 
@@ -393,12 +382,10 @@ void CAstNode::Expose(void)
   py::class_<CAstYield, py::bases<CAstExpression> >("AstYield", py::no_init)
     .add_property("expression", &CAstYield::expression)
     .add_property("kind", &CAstYield::yield_kind)
-    .add_property("pos", &CAstYield::position)
     ;
 
   py::class_<CAstThrow, py::bases<CAstExpression> >("AstThrow", py::no_init)
     .add_property("exception", &CAstThrow::GetException)
-    .add_property("pos", &CAstThrow::GetPosition)
     ;
 
   py::class_<CAstFunctionLiteral, py::bases<CAstExpression> >("AstFunctionLiteral", py::no_init)

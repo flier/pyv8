@@ -169,6 +169,8 @@ public:
 
   v8i::AstNode::NodeType GetType(void) const { return m_node->node_type(); }
 
+  int GetPosition(void) const { return as<v8i::AstNode>()->position(); }
+
   const std::string ToString(void) const { return v8i::PrettyPrinter().Print(m_node); }
 };
 
@@ -178,9 +180,6 @@ protected:
   CAstStatement(v8i::Statement *stat) : CAstNode(stat) {}
 public:
   operator bool(void) const { return !as<v8i::Statement>()->IsEmpty(); }
-
-  int GetPosition(void) const { return as<v8i::Statement>()->statement_pos(); }
-  void SetPosition(int pos) { as<v8i::Statement>()->set_statement_pos(pos); }
 };
 
 class CAstExpression : public CAstNode
@@ -333,9 +332,6 @@ public:
   CAstDoWhileStatement(v8i::DoWhileStatement *stat) : CAstIterationStatement(stat) {}
 
   py::object GetCondition(void) const { return to_python(as<v8i::DoWhileStatement>()->cond()); }
-
-  int GetConditionPosition(void) { return as<v8i::DoWhileStatement>()->condition_position(); }
-  void SetConditionPosition(int pos) { as<v8i::DoWhileStatement>()->set_condition_position(pos); }
 };
 
 class CAstWhileStatement : public CAstIterationStatement
@@ -431,21 +427,18 @@ public:
   py::object statement(void) const { return to_python(as<v8i::WithStatement>()->statement()); }
 };
 
-class CAstCaseClause
+class CAstCaseClause : public CAstNode
 {
-  v8i::CaseClause *m_clause;
 public:
-  CAstCaseClause(v8i::CaseClause *clause) : m_clause(clause) {}
+  CAstCaseClause(v8i::CaseClause *clause) : CAstNode(clause) {}
 
-  bool is_default(void) { return m_clause->is_default(); }
+  bool is_default(void) { return as<v8i::CaseClause>()->is_default(); }
 
-  py::object label(void) { return m_clause->is_default() ? py::object() : to_python(m_clause->label()); }
+  py::object label(void) { return as<v8i::CaseClause>()->is_default() ? py::object() : to_python(as<v8i::CaseClause>()->label()); }
 
-  CAstLabel body_target(void) { return CAstLabel(m_clause->body_target()); }
+  CAstLabel body_target(void) { return CAstLabel(as<v8i::CaseClause>()->body_target()); }
 
-  py::object statements(void) { return to_python(m_clause->statements()); }
-
-  int position(void) { return m_clause->position(); }
+  py::object statements(void) { return to_python(as<v8i::CaseClause>()->statements()); }
 };
 
 class CAstSwitchStatement : public CAstBreakableStatement
@@ -606,7 +599,6 @@ public:
 
   py::object GetExpression(void) const { return to_python(as<v8i::Call>()->expression()); }
   py::list GetArguments(void) const { return to_python(as<v8i::Call>()->arguments()); }
-  int GetPosition(void) const { return as<v8i::Call>()->position(); }
 };
 
 class CAstCallNew : public CAstExpression
@@ -616,7 +608,6 @@ public:
 
   py::object GetExpression(void) const { return to_python(as<v8i::CallNew>()->expression()); }
   py::list GetArguments(void) const { return to_python(as<v8i::CallNew>()->arguments()); }
-  int GetPosition(void) const { return as<v8i::CallNew>()->position(); }
 };
 
 class CAstCallRuntime : public CAstExpression
@@ -646,7 +637,6 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::BinaryOperation>()->op(); }
   py::object left(void) const { return to_python(as<v8i::BinaryOperation>()->left()); }
   py::object right(void) const { return to_python(as<v8i::BinaryOperation>()->right()); }
-  int position(void) const { return as<v8i::BinaryOperation>()->position(); }
 };
 
 class CAstCountOperation : public CAstExpression
@@ -661,7 +651,6 @@ public:
   v8i::Token::Value binary_op(void) const { return as<v8i::CountOperation>()->binary_op(); }
 
   py::object expression(void) const { return to_python(as<v8i::CountOperation>()->expression()); }
-  int position(void) const { return as<v8i::CountOperation>()->position(); }
 };
 
 class CAstCompareOperation : public CAstExpression
@@ -672,7 +661,6 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::CompareOperation>()->op(); }
   py::object left(void) const { return to_python(as<v8i::CompareOperation>()->left()); }
   py::object right(void) const { return to_python(as<v8i::CompareOperation>()->right()); }
-  int position(void) const { return as<v8i::CompareOperation>()->position(); }
 };
 
 class CAstConditional : public CAstExpression
@@ -683,9 +671,6 @@ public:
   py::object condition(void) const { return to_python(as<v8i::Conditional>()->condition()); }
   py::object then_expression(void) const { return to_python(as<v8i::Conditional>()->then_expression()); }
   py::object else_expression(void) const { return to_python(as<v8i::Conditional>()->else_expression()); }
-
-  int then_expression_position(void) const { return as<v8i::Conditional>()->then_expression_position(); }
-  int else_expression_position(void) const { return as<v8i::Conditional>()->else_expression_position(); }
 };
 
 class CAstAssignment : public CAstExpression
@@ -698,7 +683,6 @@ public:
   v8i::Token::Value op(void) const { return as<v8i::Assignment>()->op(); }
   py::object target(void) const { return to_python(as<v8i::Assignment>()->target()); }
   py::object value(void) const { return to_python(as<v8i::Assignment>()->value()); }
-  int position(void) const { return as<v8i::Assignment>()->position(); }
   CAstBinaryOperation binary_operation(void) const { return CAstBinaryOperation(as<v8i::Assignment>()->binary_operation()); }
 
   int is_compound(void) const { return as<v8i::Assignment>()->is_compound(); }
@@ -711,7 +695,6 @@ public:
 
   py::object expression(void) const { return to_python(as<v8i::Yield>()->expression()); }
   bool yield_kind(void) const { return as<v8i::Yield>()->yield_kind(); }
-  int position(void) const { return as<v8i::Yield>()->position(); }
 };
 
 class CAstThrow : public CAstExpression
@@ -720,7 +703,6 @@ public:
   CAstThrow(v8i::Throw *th) : CAstExpression(th) {}
 
   py::object GetException(void) const { return to_python(as<v8i::Throw>()->exception()); }
-  int GetPosition(void) const { return as<v8i::Throw>()->position(); }
 };
 
 class CAstFunctionLiteral : public CAstExpression
