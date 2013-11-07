@@ -43,6 +43,17 @@ namespace std {
 
 #endif
 
+#if defined(__APPLE__) && !defined(isalnum)
+#include <pyport.h>
+#undef isalnum
+#undef isalpha
+#undef islower
+#undef isspace
+#undef isupper
+#undef tolower
+#undef toupper
+#endif
+
 #include <boost/python.hpp>
 namespace py = boost::python;
 
