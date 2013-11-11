@@ -23,12 +23,8 @@ if is_cygwin or is_mingw:
     print("ERROR: Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
     sys.exit(-1)
 
-if is_py3k:
-    import distribute_setup
-    distribute_setup.use_setuptools()
-else:
-    import ez_setup
-    ez_setup.use_setuptools()
+import ez_setup
+ez_setup.use_setuptools()
 
 from distutils.command.build import build as _build
 from setuptools import setup, Extension
