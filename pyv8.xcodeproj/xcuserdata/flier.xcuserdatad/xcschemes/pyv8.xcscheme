@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0450"
+   LastUpgradeVersion = "0500"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,8 +14,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "5727C702162B0E8200D1F488"
-               BuildableName = "pyv8.dylib"
+               BlueprintIdentifier = "575EA20418224F3200ACFAED"
+               BuildableName = "libpyv8.dylib"
                BlueprintName = "pyv8"
                ReferencedContainer = "container:pyv8.xcodeproj">
             </BuildableReference>

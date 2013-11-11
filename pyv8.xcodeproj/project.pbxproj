@@ -7,220 +7,168 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5727C734162B0EF500D1F488 /* AST.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C718162B0EF500D1F488 /* AST.cpp */; };
-		5727C735162B0EF500D1F488 /* AST.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C719162B0EF500D1F488 /* AST.h */; };
-		5727C736162B0EF500D1F488 /* Config.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71A162B0EF500D1F488 /* Config.h */; };
-		5727C737162B0EF500D1F488 /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71B162B0EF500D1F488 /* Context.cpp */; };
-		5727C738162B0EF500D1F488 /* Context.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71C162B0EF500D1F488 /* Context.h */; };
-		5727C739162B0EF500D1F488 /* Debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71D162B0EF500D1F488 /* Debug.cpp */; };
-		5727C73A162B0EF500D1F488 /* Debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C71E162B0EF500D1F488 /* Debug.h */; };
-		5727C73B162B0EF500D1F488 /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C71F162B0EF500D1F488 /* Engine.cpp */; };
-		5727C73C162B0EF500D1F488 /* Engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C720162B0EF500D1F488 /* Engine.h */; };
-		5727C73D162B0EF500D1F488 /* Exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C721162B0EF500D1F488 /* Exception.cpp */; };
-		5727C73E162B0EF500D1F488 /* Exception.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C722162B0EF500D1F488 /* Exception.h */; };
-		5727C73F162B0EF500D1F488 /* Locker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C723162B0EF500D1F488 /* Locker.cpp */; };
-		5727C740162B0EF500D1F488 /* Locker.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C724162B0EF500D1F488 /* Locker.h */; };
-		5727C741162B0EF500D1F488 /* PrettyPrinter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */; };
-		5727C742162B0EF500D1F488 /* PrettyPrinter.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C726162B0EF500D1F488 /* PrettyPrinter.h */; };
-		5727C743162B0EF500D1F488 /* PyV8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C727162B0EF500D1F488 /* PyV8.cpp */; };
-		5727C744162B0EF500D1F488 /* checked.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72B162B0EF500D1F488 /* checked.h */; };
-		5727C745162B0EF500D1F488 /* core.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72C162B0EF500D1F488 /* core.h */; };
-		5727C746162B0EF500D1F488 /* unchecked.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72D162B0EF500D1F488 /* unchecked.h */; };
-		5727C747162B0EF500D1F488 /* utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C72E162B0EF500D1F488 /* utf8.h */; };
-		5727C748162B0EF500D1F488 /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C72F162B0EF500D1F488 /* Utils.cpp */; };
-		5727C749162B0EF500D1F488 /* Utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C730162B0EF500D1F488 /* Utils.h */; };
-		5727C74A162B0EF500D1F488 /* V8Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C731162B0EF500D1F488 /* V8Internal.h */; };
-		5727C74B162B0EF500D1F488 /* Wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5727C732162B0EF500D1F488 /* Wrapper.cpp */; };
-		5727C74C162B0EF500D1F488 /* Wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 5727C733162B0EF500D1F488 /* Wrapper.h */; };
-		5727C750162B179000D1F488 /* libboost_python-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5727C74F162B179000D1F488 /* libboost_python-mt.a */; };
-		5727C752162B17CB00D1F488 /* Python in Frameworks */ = {isa = PBXBuildFile; fileRef = 5727C751162B17CB00D1F488 /* Python */; };
-		57DF9137178D778C005B8221 /* libv8_base.x64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DF9135178D778C005B8221 /* libv8_base.x64.a */; };
-		57DF9138178D778C005B8221 /* libv8_nosnapshot.x64.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57DF9136178D778C005B8221 /* libv8_nosnapshot.x64.a */; };
-		57EA044C16BE67FC003754B8 /* libboost_thread-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */; };
-		57EA044E16BE6818003754B8 /* libboost_system-mt.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 57EA044D16BE6818003754B8 /* libboost_system-mt.a */; };
+		575EA22318224F7800ACFAED /* AST.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA20C18224F7800ACFAED /* AST.cpp */; };
+		575EA22418224F7800ACFAED /* AST.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA20D18224F7800ACFAED /* AST.h */; };
+		575EA22518224F7800ACFAED /* Config.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA20E18224F7800ACFAED /* Config.h */; };
+		575EA22618224F7800ACFAED /* Context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA20F18224F7800ACFAED /* Context.cpp */; };
+		575EA22718224F7800ACFAED /* Context.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21018224F7800ACFAED /* Context.h */; };
+		575EA22818224F7800ACFAED /* Debug.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21118224F7800ACFAED /* Debug.cpp */; };
+		575EA22918224F7800ACFAED /* Debug.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21218224F7800ACFAED /* Debug.h */; };
+		575EA22A18224F7800ACFAED /* Engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21318224F7800ACFAED /* Engine.cpp */; };
+		575EA22B18224F7800ACFAED /* Engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21418224F7800ACFAED /* Engine.h */; };
+		575EA22C18224F7800ACFAED /* Exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21518224F7800ACFAED /* Exception.cpp */; };
+		575EA22D18224F7800ACFAED /* Exception.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21618224F7800ACFAED /* Exception.h */; };
+		575EA22E18224F7800ACFAED /* Locker.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21718224F7800ACFAED /* Locker.cpp */; };
+		575EA22F18224F7800ACFAED /* Locker.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21818224F7800ACFAED /* Locker.h */; };
+		575EA23018224F7800ACFAED /* PrettyPrinter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21918224F7800ACFAED /* PrettyPrinter.cpp */; };
+		575EA23118224F7800ACFAED /* PrettyPrinter.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21A18224F7800ACFAED /* PrettyPrinter.h */; };
+		575EA23218224F7800ACFAED /* probes.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21B18224F7800ACFAED /* probes.h */; };
+		575EA23318224F7800ACFAED /* PyV8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21C18224F7800ACFAED /* PyV8.cpp */; };
+		575EA23418224F7800ACFAED /* utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21D18224F7800ACFAED /* utf8.h */; };
+		575EA23518224F7800ACFAED /* Utils.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA21E18224F7800ACFAED /* Utils.cpp */; };
+		575EA23618224F7800ACFAED /* Utils.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA21F18224F7800ACFAED /* Utils.h */; };
+		575EA23718224F7800ACFAED /* V8Internal.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA22018224F7800ACFAED /* V8Internal.h */; };
+		575EA23818224F7800ACFAED /* Wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 575EA22118224F7800ACFAED /* Wrapper.cpp */; };
+		575EA23918224F7800ACFAED /* Wrapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA22218224F7800ACFAED /* Wrapper.h */; };
+		575EA23F18224F9E00ACFAED /* checked.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA23C18224F9E00ACFAED /* checked.h */; };
+		575EA24018224F9E00ACFAED /* core.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA23D18224F9E00ACFAED /* core.h */; };
+		575EA24118224F9E00ACFAED /* unchecked.h in Headers */ = {isa = PBXBuildFile; fileRef = 575EA23E18224F9E00ACFAED /* unchecked.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		5727C703162B0E8200D1F488 /* pyv8.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = pyv8.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		5727C718162B0EF500D1F488 /* AST.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AST.cpp; sourceTree = "<group>"; };
-		5727C719162B0EF500D1F488 /* AST.h */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.h; path = AST.h; sourceTree = "<group>"; tabWidth = 2; };
-		5727C71A162B0EF500D1F488 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
-		5727C71B162B0EF500D1F488 /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Context.cpp; sourceTree = "<group>"; };
-		5727C71C162B0EF500D1F488 /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Context.h; sourceTree = "<group>"; };
-		5727C71D162B0EF500D1F488 /* Debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Debug.cpp; sourceTree = "<group>"; };
-		5727C71E162B0EF500D1F488 /* Debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Debug.h; sourceTree = "<group>"; };
-		5727C71F162B0EF500D1F488 /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Engine.cpp; sourceTree = "<group>"; tabWidth = 2; };
-		5727C720162B0EF500D1F488 /* Engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Engine.h; sourceTree = "<group>"; };
-		5727C721162B0EF500D1F488 /* Exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Exception.cpp; sourceTree = "<group>"; };
-		5727C722162B0EF500D1F488 /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Exception.h; sourceTree = "<group>"; };
-		5727C723162B0EF500D1F488 /* Locker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Locker.cpp; sourceTree = "<group>"; };
-		5727C724162B0EF500D1F488 /* Locker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Locker.h; sourceTree = "<group>"; };
-		5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrettyPrinter.cpp; sourceTree = "<group>"; };
-		5727C726162B0EF500D1F488 /* PrettyPrinter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PrettyPrinter.h; sourceTree = "<group>"; };
-		5727C727162B0EF500D1F488 /* PyV8.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PyV8.cpp; sourceTree = "<group>"; };
-		5727C728162B0EF500D1F488 /* PyV8.vcproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PyV8.vcproj; sourceTree = "<group>"; };
-		5727C729162B0EF500D1F488 /* PyV8.vs2010.vcxproj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = PyV8.vs2010.vcxproj; sourceTree = "<group>"; };
-		5727C72B162B0EF500D1F488 /* checked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = checked.h; sourceTree = "<group>"; };
-		5727C72C162B0EF500D1F488 /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
-		5727C72D162B0EF500D1F488 /* unchecked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unchecked.h; sourceTree = "<group>"; };
-		5727C72E162B0EF500D1F488 /* utf8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utf8.h; sourceTree = "<group>"; };
-		5727C72F162B0EF500D1F488 /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Utils.cpp; sourceTree = "<group>"; tabWidth = 2; };
-		5727C730162B0EF500D1F488 /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Utils.h; sourceTree = "<group>"; };
-		5727C731162B0EF500D1F488 /* V8Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = V8Internal.h; sourceTree = "<group>"; };
-		5727C732162B0EF500D1F488 /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.cpp.cpp; path = Wrapper.cpp; sourceTree = "<group>"; tabWidth = 2; };
-		5727C733162B0EF500D1F488 /* Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Wrapper.h; sourceTree = "<group>"; };
-		5727C74D162B175800D1F488 /* Python.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python.framework; path = System/Library/Frameworks/Python.framework; sourceTree = SDKROOT; };
-		5727C74F162B179000D1F488 /* libboost_python-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_python-mt.a"; path = "/opt/local/lib/libboost_python-mt.a"; sourceTree = "<absolute>"; };
-		5727C751162B17CB00D1F488 /* Python */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = Python; path = /opt/local/Library/Frameworks/Python.framework/Versions/Current/Python; sourceTree = "<absolute>"; };
-		575D8872171F9CE00075AAF1 /* libv8_base.x64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.x64.a; path = /Volumes/Workspace/Development/v8/out/x64.release/libv8_base.x64.a; sourceTree = "<absolute>"; };
-		575D8873171F9CE00075AAF1 /* libv8_nosnapshot.x64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_nosnapshot.x64.a; path = /Volumes/Workspace/Development/v8/out/x64.release/libv8_nosnapshot.x64.a; sourceTree = "<absolute>"; };
-		57DAC0661664650500E6DDE9 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
-		57DF9133178D7776005B8221 /* libv8_snapshot.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_snapshot.a; path = ../../../../Volumes/Backup/Development/v8/out/x64.release/libv8_snapshot.a; sourceTree = "<group>"; };
-		57DF9135178D778C005B8221 /* libv8_base.x64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_base.x64.a; path = ../../../../Volumes/Backup/Development/v8/out/x64.release/libv8_base.x64.a; sourceTree = "<group>"; };
-		57DF9136178D778C005B8221 /* libv8_nosnapshot.x64.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libv8_nosnapshot.x64.a; path = ../../../../Volumes/Backup/Development/v8/out/x64.release/libv8_nosnapshot.x64.a; sourceTree = "<group>"; };
-		57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_thread-mt.a"; path = "/opt/local/lib/libboost_thread-mt.a"; sourceTree = "<absolute>"; };
-		57EA044D16BE6818003754B8 /* libboost_system-mt.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_system-mt.a"; path = "/opt/local/lib/libboost_system-mt.a"; sourceTree = "<absolute>"; };
+		575EA20518224F3200ACFAED /* libpyv8.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libpyv8.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		575EA20C18224F7800ACFAED /* AST.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = AST.cpp; path = src/AST.cpp; sourceTree = "<group>"; };
+		575EA20D18224F7800ACFAED /* AST.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AST.h; path = src/AST.h; sourceTree = "<group>"; };
+		575EA20E18224F7800ACFAED /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Config.h; path = src/Config.h; sourceTree = "<group>"; };
+		575EA20F18224F7800ACFAED /* Context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Context.cpp; path = src/Context.cpp; sourceTree = "<group>"; };
+		575EA21018224F7800ACFAED /* Context.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Context.h; path = src/Context.h; sourceTree = "<group>"; };
+		575EA21118224F7800ACFAED /* Debug.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Debug.cpp; path = src/Debug.cpp; sourceTree = "<group>"; };
+		575EA21218224F7800ACFAED /* Debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Debug.h; path = src/Debug.h; sourceTree = "<group>"; };
+		575EA21318224F7800ACFAED /* Engine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Engine.cpp; path = src/Engine.cpp; sourceTree = "<group>"; };
+		575EA21418224F7800ACFAED /* Engine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Engine.h; path = src/Engine.h; sourceTree = "<group>"; };
+		575EA21518224F7800ACFAED /* Exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Exception.cpp; path = src/Exception.cpp; sourceTree = "<group>"; };
+		575EA21618224F7800ACFAED /* Exception.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Exception.h; path = src/Exception.h; sourceTree = "<group>"; };
+		575EA21718224F7800ACFAED /* Locker.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Locker.cpp; path = src/Locker.cpp; sourceTree = "<group>"; };
+		575EA21818224F7800ACFAED /* Locker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Locker.h; path = src/Locker.h; sourceTree = "<group>"; };
+		575EA21918224F7800ACFAED /* PrettyPrinter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PrettyPrinter.cpp; path = src/PrettyPrinter.cpp; sourceTree = "<group>"; };
+		575EA21A18224F7800ACFAED /* PrettyPrinter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PrettyPrinter.h; path = src/PrettyPrinter.h; sourceTree = "<group>"; };
+		575EA21B18224F7800ACFAED /* probes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = probes.h; path = src/probes.h; sourceTree = "<group>"; };
+		575EA21C18224F7800ACFAED /* PyV8.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PyV8.cpp; path = src/PyV8.cpp; sourceTree = "<group>"; };
+		575EA21D18224F7800ACFAED /* utf8.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = utf8.h; path = src/utf8.h; sourceTree = "<group>"; };
+		575EA21E18224F7800ACFAED /* Utils.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Utils.cpp; path = src/Utils.cpp; sourceTree = "<group>"; };
+		575EA21F18224F7800ACFAED /* Utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Utils.h; path = src/Utils.h; sourceTree = "<group>"; };
+		575EA22018224F7800ACFAED /* V8Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = V8Internal.h; path = src/V8Internal.h; sourceTree = "<group>"; };
+		575EA22118224F7800ACFAED /* Wrapper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Wrapper.cpp; path = src/Wrapper.cpp; sourceTree = "<group>"; };
+		575EA22218224F7800ACFAED /* Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Wrapper.h; path = src/Wrapper.h; sourceTree = "<group>"; };
+		575EA23C18224F9E00ACFAED /* checked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = checked.h; path = src/utf8/checked.h; sourceTree = "<group>"; };
+		575EA23D18224F9E00ACFAED /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core.h; path = src/utf8/core.h; sourceTree = "<group>"; };
+		575EA23E18224F9E00ACFAED /* unchecked.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = unchecked.h; path = src/utf8/unchecked.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		5727C700162B0E8200D1F488 /* Frameworks */ = {
+		575EA20218224F3200ACFAED /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				57DF9137178D778C005B8221 /* libv8_base.x64.a in Frameworks */,
-				57DF9138178D778C005B8221 /* libv8_nosnapshot.x64.a in Frameworks */,
-				5727C752162B17CB00D1F488 /* Python in Frameworks */,
-				5727C750162B179000D1F488 /* libboost_python-mt.a in Frameworks */,
-				57EA044C16BE67FC003754B8 /* libboost_thread-mt.a in Frameworks */,
-				57EA044E16BE6818003754B8 /* libboost_system-mt.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		5727C6F8162B0E8200D1F488 = {
+		575EA1FC18224F3200ACFAED = {
 			isa = PBXGroup;
 			children = (
-				57DF9135178D778C005B8221 /* libv8_base.x64.a */,
-				57DF9136178D778C005B8221 /* libv8_nosnapshot.x64.a */,
-				57DF9133178D7776005B8221 /* libv8_snapshot.a */,
-				5766CB88162BB45100037C7C /* Libraries */,
-				5766CB89162BB45C00037C7C /* Frameworks */,
-				5727C717162B0EF500D1F488 /* src */,
-				5727C704162B0E8200D1F488 /* Products */,
+				575EA23A18224F8A00ACFAED /* src */,
+				575EA20618224F3200ACFAED /* Products */,
 			);
-			indentWidth = 2;
 			sourceTree = "<group>";
-			tabWidth = 2;
 		};
-		5727C704162B0E8200D1F488 /* Products */ = {
+		575EA20618224F3200ACFAED /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5727C703162B0E8200D1F488 /* pyv8.dylib */,
+				575EA20518224F3200ACFAED /* libpyv8.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		5727C717162B0EF500D1F488 /* src */ = {
+		575EA23A18224F8A00ACFAED /* src */ = {
 			isa = PBXGroup;
 			children = (
-				5727C718162B0EF500D1F488 /* AST.cpp */,
-				5727C719162B0EF500D1F488 /* AST.h */,
-				5727C71A162B0EF500D1F488 /* Config.h */,
-				5727C71B162B0EF500D1F488 /* Context.cpp */,
-				5727C71C162B0EF500D1F488 /* Context.h */,
-				5727C71D162B0EF500D1F488 /* Debug.cpp */,
-				5727C71E162B0EF500D1F488 /* Debug.h */,
-				5727C71F162B0EF500D1F488 /* Engine.cpp */,
-				5727C720162B0EF500D1F488 /* Engine.h */,
-				5727C721162B0EF500D1F488 /* Exception.cpp */,
-				5727C722162B0EF500D1F488 /* Exception.h */,
-				5727C723162B0EF500D1F488 /* Locker.cpp */,
-				5727C724162B0EF500D1F488 /* Locker.h */,
-				5727C725162B0EF500D1F488 /* PrettyPrinter.cpp */,
-				5727C726162B0EF500D1F488 /* PrettyPrinter.h */,
-				5727C727162B0EF500D1F488 /* PyV8.cpp */,
-				5727C728162B0EF500D1F488 /* PyV8.vcproj */,
-				5727C729162B0EF500D1F488 /* PyV8.vs2010.vcxproj */,
-				5727C72A162B0EF500D1F488 /* utf8 */,
-				5727C72E162B0EF500D1F488 /* utf8.h */,
-				5727C72F162B0EF500D1F488 /* Utils.cpp */,
-				5727C730162B0EF500D1F488 /* Utils.h */,
-				5727C731162B0EF500D1F488 /* V8Internal.h */,
-				5727C732162B0EF500D1F488 /* Wrapper.cpp */,
-				5727C733162B0EF500D1F488 /* Wrapper.h */,
+				575EA23B18224F9100ACFAED /* utf8 */,
+				575EA20C18224F7800ACFAED /* AST.cpp */,
+				575EA20D18224F7800ACFAED /* AST.h */,
+				575EA20E18224F7800ACFAED /* Config.h */,
+				575EA20F18224F7800ACFAED /* Context.cpp */,
+				575EA21018224F7800ACFAED /* Context.h */,
+				575EA21118224F7800ACFAED /* Debug.cpp */,
+				575EA21218224F7800ACFAED /* Debug.h */,
+				575EA21318224F7800ACFAED /* Engine.cpp */,
+				575EA21418224F7800ACFAED /* Engine.h */,
+				575EA21518224F7800ACFAED /* Exception.cpp */,
+				575EA21618224F7800ACFAED /* Exception.h */,
+				575EA21718224F7800ACFAED /* Locker.cpp */,
+				575EA21818224F7800ACFAED /* Locker.h */,
+				575EA21918224F7800ACFAED /* PrettyPrinter.cpp */,
+				575EA21A18224F7800ACFAED /* PrettyPrinter.h */,
+				575EA21B18224F7800ACFAED /* probes.h */,
+				575EA21C18224F7800ACFAED /* PyV8.cpp */,
+				575EA21D18224F7800ACFAED /* utf8.h */,
+				575EA21E18224F7800ACFAED /* Utils.cpp */,
+				575EA21F18224F7800ACFAED /* Utils.h */,
+				575EA22018224F7800ACFAED /* V8Internal.h */,
+				575EA22118224F7800ACFAED /* Wrapper.cpp */,
+				575EA22218224F7800ACFAED /* Wrapper.h */,
 			);
-			path = src;
+			name = src;
 			sourceTree = "<group>";
 		};
-		5727C72A162B0EF500D1F488 /* utf8 */ = {
+		575EA23B18224F9100ACFAED /* utf8 */ = {
 			isa = PBXGroup;
 			children = (
-				5727C72B162B0EF500D1F488 /* checked.h */,
-				5727C72C162B0EF500D1F488 /* core.h */,
-				5727C72D162B0EF500D1F488 /* unchecked.h */,
+				575EA23C18224F9E00ACFAED /* checked.h */,
+				575EA23D18224F9E00ACFAED /* core.h */,
+				575EA23E18224F9E00ACFAED /* unchecked.h */,
 			);
-			path = utf8;
-			sourceTree = "<group>";
-		};
-		5766CB88162BB45100037C7C /* Libraries */ = {
-			isa = PBXGroup;
-			children = (
-				575D8872171F9CE00075AAF1 /* libv8_base.x64.a */,
-				575D8873171F9CE00075AAF1 /* libv8_nosnapshot.x64.a */,
-				5727C751162B17CB00D1F488 /* Python */,
-				57DAC0661664650500E6DDE9 /* libv8_snapshot.a */,
-				5727C74F162B179000D1F488 /* libboost_python-mt.a */,
-				57EA044A16BE67D7003754B8 /* libboost_thread-mt.a */,
-				57EA044D16BE6818003754B8 /* libboost_system-mt.a */,
-			);
-			name = Libraries;
-			sourceTree = "<group>";
-		};
-		5766CB89162BB45C00037C7C /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				5727C74D162B175800D1F488 /* Python.framework */,
-			);
-			name = Frameworks;
+			name = utf8;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		5727C701162B0E8200D1F488 /* Headers */ = {
+		575EA20318224F3200ACFAED /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5727C735162B0EF500D1F488 /* AST.h in Headers */,
-				5727C736162B0EF500D1F488 /* Config.h in Headers */,
-				5727C738162B0EF500D1F488 /* Context.h in Headers */,
-				5727C73A162B0EF500D1F488 /* Debug.h in Headers */,
-				5727C73C162B0EF500D1F488 /* Engine.h in Headers */,
-				5727C73E162B0EF500D1F488 /* Exception.h in Headers */,
-				5727C740162B0EF500D1F488 /* Locker.h in Headers */,
-				5727C742162B0EF500D1F488 /* PrettyPrinter.h in Headers */,
-				5727C744162B0EF500D1F488 /* checked.h in Headers */,
-				5727C745162B0EF500D1F488 /* core.h in Headers */,
-				5727C746162B0EF500D1F488 /* unchecked.h in Headers */,
-				5727C747162B0EF500D1F488 /* utf8.h in Headers */,
-				5727C749162B0EF500D1F488 /* Utils.h in Headers */,
-				5727C74A162B0EF500D1F488 /* V8Internal.h in Headers */,
-				5727C74C162B0EF500D1F488 /* Wrapper.h in Headers */,
+				575EA24018224F9E00ACFAED /* core.h in Headers */,
+				575EA22F18224F7800ACFAED /* Locker.h in Headers */,
+				575EA23718224F7800ACFAED /* V8Internal.h in Headers */,
+				575EA23218224F7800ACFAED /* probes.h in Headers */,
+				575EA23118224F7800ACFAED /* PrettyPrinter.h in Headers */,
+				575EA22918224F7800ACFAED /* Debug.h in Headers */,
+				575EA22518224F7800ACFAED /* Config.h in Headers */,
+				575EA23618224F7800ACFAED /* Utils.h in Headers */,
+				575EA23418224F7800ACFAED /* utf8.h in Headers */,
+				575EA22718224F7800ACFAED /* Context.h in Headers */,
+				575EA23918224F7800ACFAED /* Wrapper.h in Headers */,
+				575EA24118224F9E00ACFAED /* unchecked.h in Headers */,
+				575EA22418224F7800ACFAED /* AST.h in Headers */,
+				575EA22D18224F7800ACFAED /* Exception.h in Headers */,
+				575EA23F18224F9E00ACFAED /* checked.h in Headers */,
+				575EA22B18224F7800ACFAED /* Engine.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		5727C702162B0E8200D1F488 /* pyv8 */ = {
+		575EA20418224F3200ACFAED /* pyv8 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 5727C710162B0E8200D1F488 /* Build configuration list for PBXNativeTarget "pyv8" */;
+			buildConfigurationList = 575EA20918224F3200ACFAED /* Build configuration list for PBXNativeTarget "pyv8" */;
 			buildPhases = (
-				5727C6FF162B0E8200D1F488 /* Sources */,
-				5727C700162B0E8200D1F488 /* Frameworks */,
-				5727C701162B0E8200D1F488 /* Headers */,
+				575EA20118224F3200ACFAED /* Sources */,
+				575EA20218224F3200ACFAED /* Frameworks */,
+				575EA20318224F3200ACFAED /* Headers */,
 			);
 			buildRules = (
 			);
@@ -228,179 +176,150 @@
 			);
 			name = pyv8;
 			productName = pyv8;
-			productReference = 5727C703162B0E8200D1F488 /* pyv8.dylib */;
+			productReference = 575EA20518224F3200ACFAED /* libpyv8.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		5727C6FA162B0E8200D1F488 /* Project object */ = {
+		575EA1FD18224F3200ACFAED /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0450;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = "Flier Lu";
 			};
-			buildConfigurationList = 5727C6FD162B0E8200D1F488 /* Build configuration list for PBXProject "pyv8" */;
+			buildConfigurationList = 575EA20018224F3200ACFAED /* Build configuration list for PBXProject "pyv8" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 			);
-			mainGroup = 5727C6F8162B0E8200D1F488;
-			productRefGroup = 5727C704162B0E8200D1F488 /* Products */;
+			mainGroup = 575EA1FC18224F3200ACFAED;
+			productRefGroup = 575EA20618224F3200ACFAED /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				5727C702162B0E8200D1F488 /* pyv8 */,
+				575EA20418224F3200ACFAED /* pyv8 */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		5727C6FF162B0E8200D1F488 /* Sources */ = {
+		575EA20118224F3200ACFAED /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5727C734162B0EF500D1F488 /* AST.cpp in Sources */,
-				5727C737162B0EF500D1F488 /* Context.cpp in Sources */,
-				5727C739162B0EF500D1F488 /* Debug.cpp in Sources */,
-				5727C73B162B0EF500D1F488 /* Engine.cpp in Sources */,
-				5727C73D162B0EF500D1F488 /* Exception.cpp in Sources */,
-				5727C73F162B0EF500D1F488 /* Locker.cpp in Sources */,
-				5727C741162B0EF500D1F488 /* PrettyPrinter.cpp in Sources */,
-				5727C743162B0EF500D1F488 /* PyV8.cpp in Sources */,
-				5727C748162B0EF500D1F488 /* Utils.cpp in Sources */,
-				5727C74B162B0EF500D1F488 /* Wrapper.cpp in Sources */,
+				575EA23318224F7800ACFAED /* PyV8.cpp in Sources */,
+				575EA22318224F7800ACFAED /* AST.cpp in Sources */,
+				575EA22E18224F7800ACFAED /* Locker.cpp in Sources */,
+				575EA22A18224F7800ACFAED /* Engine.cpp in Sources */,
+				575EA23518224F7800ACFAED /* Utils.cpp in Sources */,
+				575EA23818224F7800ACFAED /* Wrapper.cpp in Sources */,
+				575EA22618224F7800ACFAED /* Context.cpp in Sources */,
+				575EA23018224F7800ACFAED /* PrettyPrinter.cpp in Sources */,
+				575EA22C18224F7800ACFAED /* Exception.cpp in Sources */,
+				575EA22818224F7800ACFAED /* Debug.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		5727C70E162B0E8200D1F488 /* Debug */ = {
+		575EA20718224F3200ACFAED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_LINK_OBJC_RUNTIME = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					V8_TARGET_ARCH_X64,
-					V8_FAST_TLS,
-					V8_NATIVE_REGEXP,
-					ENABLE_VMSTATE_TRACKING,
-					ENABLE_LOGGING_AND_PROFILING,
-					ENABLE_DEBUGGER_SUPPORT,
+					"DEBUG=1",
+					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				GCC_VERSION = "";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					"~/Development/v8/**",
-					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(V8_HOME)/include",
+					"$(V8_HOME)",
+					"$(BOOST_HOME)",
+					"$(PYTHON_HOME)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_CFLAGS = "";
-				OTHER_CPLUSPLUSFLAGS = "";
-				SDKROOT = "";
-				VALID_ARCHS = x86_64;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
-		5727C70F162B0E8200D1F488 /* Release */ = {
+		575EA20818224F3200ACFAED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_LINK_OBJC_RUNTIME = NO;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_ENABLE_OBJC_EXCEPTIONS = NO;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					V8_TARGET_ARCH_X64,
-					V8_FAST_TLS,
-					V8_NATIVE_REGEXP,
-					ENABLE_VMSTATE_TRACKING,
-					ENABLE_LOGGING_AND_PROFILING,
-					ENABLE_DEBUGGER_SUPPORT,
-				);
-				GCC_VERSION = "";
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = (
-					"~/Development/v8/**",
-					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(V8_HOME)/include",
+					"$(V8_HOME)",
+					"$(BOOST_HOME)",
+					"$(PYTHON_HOME)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = "";
-				OTHER_CFLAGS = "";
-				OTHER_CPLUSPLUSFLAGS = "";
-				SDKROOT = "";
-				VALID_ARCHS = x86_64;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
-		5727C711162B0E8200D1F488 /* Debug */ = {
+		575EA20A18224F3200ACFAED /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				HEADER_SEARCH_PATHS = (
-					"~/Development/v8/**",
-					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					/opt/local/lib,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current,
-					"\"$(SRCROOT)/../../Development/v8\"",
-					"\"$(SRCROOT)/../../Development/v8/out/x64.debug\"",
-				);
-				OTHER_CFLAGS = "";
-				OTHER_CPLUSPLUSFLAGS = "";
+				EXECUTABLE_PREFIX = lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
-		5727C712162B0E8200D1F488 /* Release */ = {
+		575EA20B18224F3200ACFAED /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				HEADER_SEARCH_PATHS = (
-					"~/Development/v8/**",
-					/opt/local/include,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current/Headers,
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					/opt/local/lib,
-					/opt/local/Library/Frameworks/Python.framework/Versions/Current,
-					"\"$(SRCROOT)/../../Development/v8\"",
-					"\"$(SRCROOT)/../../Development/v8/out/x64.release\"",
-				);
-				OTHER_CFLAGS = "";
-				OTHER_CPLUSPLUSFLAGS = "";
+				EXECUTABLE_PREFIX = lib;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -408,25 +327,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		5727C6FD162B0E8200D1F488 /* Build configuration list for PBXProject "pyv8" */ = {
+		575EA20018224F3200ACFAED /* Build configuration list for PBXProject "pyv8" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				5727C70E162B0E8200D1F488 /* Debug */,
-				5727C70F162B0E8200D1F488 /* Release */,
+				575EA20718224F3200ACFAED /* Debug */,
+				575EA20818224F3200ACFAED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		5727C710162B0E8200D1F488 /* Build configuration list for PBXNativeTarget "pyv8" */ = {
+		575EA20918224F3200ACFAED /* Build configuration list for PBXNativeTarget "pyv8" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				5727C711162B0E8200D1F488 /* Debug */,
-				5727C712162B0E8200D1F488 /* Release */,
+				575EA20A18224F3200ACFAED /* Debug */,
+				575EA20B18224F3200ACFAED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 5727C6FA162B0E8200D1F488 /* Project object */;
+	rootObject = 575EA1FD18224F3200ACFAED /* Project object */;
 }

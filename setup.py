@@ -495,9 +495,19 @@ def build_v8():
 
 
 def generate_probes():
+    build_path = os.path.join(PYV8_HOME, "build")
+
+    if not os.path.exists(build_path):
+        print("INFO: automatic make the build folder: %s" % build_path)
+
+        try:
+            os.makedirs(build_path, 0755)
+        except os.error as ex:
+            print("WARN: fail to create the build folder, %s" % ex)
+
     probes_d = os.path.join(PYV8_HOME, "src/probes.d")
     probes_h = os.path.join(PYV8_HOME, "src/probes.h")
-    probes_o = os.path.join(PYV8_HOME, "build/probes.o")
+    probes_o = os.path.join(build_path, "probes.o")
 
     if is_osx and exec_cmd("dtrace -h -xnolibs -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
         pass
