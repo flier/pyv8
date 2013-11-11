@@ -261,8 +261,6 @@ void CAstNode::Expose(void)
 
   py::class_<CAstMaterializedLiteral, py::bases<CAstExpression> >("AstMaterializedLiteral", py::no_init)
     .add_property("index", &CAstMaterializedLiteral::GetIndex)
-    .add_property("isSimple", &CAstMaterializedLiteral::IsSimple)
-    .add_property("depth", &CAstMaterializedLiteral::GetDepth)
     ;
 
   py::enum_<v8i::ObjectLiteral::Property::Kind>("AstPropertyKind")

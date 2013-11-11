@@ -529,8 +529,6 @@ protected:
   CAstMaterializedLiteral(v8i::MaterializedLiteral *lit) : CAstExpression(lit) {}
 public:
   int GetIndex(void) const { return as<v8i::MaterializedLiteral>()->literal_index(); }
-  bool IsSimple(void) const { return as<v8i::MaterializedLiteral>()->is_simple(); }
-  int GetDepth(void) const { return as<v8i::MaterializedLiteral>()->depth(); }
 };
 
 class CAstObjectProperty
