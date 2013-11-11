@@ -26,6 +26,8 @@
 
 #else
 
+# if !defined(__GNUC__) || (__GNUC__ <= 4 && __GNUC_MINOR__ < 7)
+
 #include <cmath>
 using std::isnan;
 
@@ -34,6 +36,9 @@ using std::isnan;
 namespace std {
   inline bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
 }
+
+# endif
+
 #endif
 
 #include <strings.h>
@@ -53,6 +58,10 @@ namespace std {
 #undef tolower
 #undef toupper
 #endif
+
+# if BOOST_VERSION / 100 % 1000 < 50
+#  undef TIME_UTC
+# endif
 
 #include <boost/python.hpp>
 namespace py = boost::python;
