@@ -107,11 +107,6 @@ const std::string EncodeUtf8(const std::wstring& str)
 
 CPythonGIL::CPythonGIL()
 {
-  while (CLocker::IsPreemption() && PyThreadState_GET() && ::PyGILState_GetThisThreadState() != PyThreadState_GET())
-  {
-    v8::internal::Thread::YieldCPU();
-  }
-
   m_state = ::PyGILState_Ensure();
 }
 

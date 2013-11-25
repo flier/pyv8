@@ -26,19 +26,6 @@ bool CLocker::IsLocked()
   return v8::Locker::IsLocked(v8i::Isolate::GetDefaultIsolateForLocking());
 }
 
-void CLocker::StartPreemption(int every_n_ms)
-{
-  v8::Locker::StartPreemption(v8::Isolate::GetCurrent(), every_n_ms);
-
-  s_preemption = true;
-}
-void CLocker::StopPreemption(void)
-{
-  v8::Locker::StopPreemption(v8::Isolate::GetCurrent());
-
-  s_preemption = false;
-}
-
 void CLocker::Expose(void)
 {
   py::class_<CLocker, boost::noncopyable>("JSLocker", py::no_init)
@@ -50,14 +37,6 @@ void CLocker::Expose(void)
 
     .add_static_property("locked", &CLocker::IsLocked,
                          "whether or not the locker is locked by the current thread.")
-
-    .add_static_property("isPreemption", &CLocker::IsPreemption)
-
-    .def("startPreemption", &CLocker::StartPreemption, (py::arg("every_n_ms")=100))
-    .staticmethod("startPreemption")
-
-    .def("stopPreemption", &CLocker::StopPreemption)
-    .staticmethod("stopPreemption")
 
     .def("entered", &CLocker::entered)
 

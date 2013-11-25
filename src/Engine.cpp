@@ -354,7 +354,7 @@ bool CEngine::SetMemoryLimit(int max_young_space_size, int max_old_space_size, i
   limit.set_max_old_space_size(max_old_space_size);
   limit.set_max_executable_size(max_executable_size);
 
-  return v8::SetResourceConstraints(&limit);
+  return v8::SetResourceConstraints(v8::Isolate::GetCurrent(), &limit);
 }
 
 py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)

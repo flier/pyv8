@@ -1967,41 +1967,6 @@ class TestMultithread(unittest.TestCase):
 
         self.assertEqual(20, len(g.result))
 
-    def _testPreemptionJavascriptThreads(self):
-        import time, threading
-
-        class Global:
-            result = []
-
-            def add(self, value):
-                # we use preemption scheduler to switch between threads
-                # so, just comment the JSUnlocker
-                #
-                # with JSUnlocker() as unlocker:
-                time.sleep(0.1)
-
-                self.result.append(value)
-
-        g = Global()
-
-        def run():
-            with JSContext(g) as ctxt:
-                ctxt.eval("""
-                    for (i=0; i<10; i++)
-                        add(i);
-                """)
-
-        threads = [threading.Thread(target=run), threading.Thread(target=run)]
-
-        with JSLocker() as locker:
-            JSLocker.startPreemption(100)
-
-            for t in threads: t.start()
-
-        for t in threads: t.join()
-
-        self.assertEqual(20, len(g.result))
-
 class TestEngine(unittest.TestCase):
     def testClassProperties(self):
         with JSContext() as ctxt:

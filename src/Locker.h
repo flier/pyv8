@@ -22,9 +22,6 @@ public:
   void leave(void);
 
   static bool IsLocked();
-  static bool IsPreemption(void) { return s_preemption; }
-  static void StartPreemption(int every_n_ms);
-  static void StopPreemption(void);
 
   static void Expose(void);
 };
