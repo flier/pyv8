@@ -252,7 +252,7 @@ elif is_osx: # contribute by progrium and alec
 
     if BOOST_HOME:
         include_dirs += [BOOST_HOME]
-        library_dirs += [os.path.join(BOOST_HOME, 'stage/lib')]
+        library_dirs += [os.path.join(BOOST_HOME, 'stage/lib'), os.path.join(BOOST_HOME, 'lib')]
     else:
         include_dirs += [
             "/opt/local/include", # MacPorts$ sudo port install boost
@@ -284,7 +284,7 @@ elif is_osx: # contribute by progrium and alec
     else:
         extra_compile_args += ['-g', '-O3']
 
-    extra_compile_args += ["-Wdeprecated-writable-strings"]
+    extra_compile_args += ["-Wdeprecated-writable-strings", "-stdlib=libc++"]
 
 else:
     print("ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform))
