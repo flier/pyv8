@@ -1258,7 +1258,7 @@ void JsonAstBuilder::VisitBlock(Block* stmt) {
 void JsonAstBuilder::VisitModuleStatement(ModuleStatement* node) {
   TagScope tag(this, "ModuleStatement");
   SmartArrayPointer<char> name = node->proxy()->name()->ToCString();
-  AddAttributePrefix(*name);
+  AddAttributePrefix(name.get());
   Visit(node->body());
 }
 

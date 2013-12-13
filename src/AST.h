@@ -70,7 +70,7 @@ T _to_string(v8i::Handle<v8i::String> str)
     int len = 0;
     v8i::SmartArrayPointer<char> buf = str->ToCString(v8i::DISALLOW_NULLS, v8i::FAST_STRING_TRAVERSAL, &len);
 
-    return T(*buf, len);
+    return T(buf.get(), len);
   }
 }
 
