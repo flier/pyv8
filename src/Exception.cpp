@@ -86,7 +86,7 @@ CJavascriptStackTracePtr CJavascriptStackTrace::GetCurrentStackTrace(
 
   v8::TryCatch try_catch;
 
-  v8::Handle<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(frame_limit, options);
+  v8::Handle<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(v8::Isolate::GetCurrent(), frame_limit, options);
 
   if (st.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
@@ -166,7 +166,7 @@ const std::string CJavascriptException::GetName(void)
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::New("name"))));
+  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "name"))));
 
   return std::string(*msg, msg.length());
 }
@@ -178,7 +178,7 @@ const std::string CJavascriptException::GetMessage(void)
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::New("message"))));
+  v8::String::Utf8Value msg(v8::Handle<v8::String>::Cast(Exception()->ToObject()->Get(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "message"))));
 
   return std::string(*msg, msg.length());
 }
@@ -332,7 +332,7 @@ void CJavascriptException::ThrowIf(v8::TryCatch& try_catch)
     if (obj->IsObject())
     {
       v8::Handle<v8::Object> exc = obj->ToObject();
-      v8::Handle<v8::String> name = v8::String::New("name");
+      v8::Handle<v8::String> name = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "name");
 
       if (exc->Has(name))
       {
@@ -368,8 +368,8 @@ void ExceptionTranslator::Translate(CJavascriptException const& ex)
     {
       v8::Handle<v8::Object> obj = ex.Exception()->ToObject();
 
-      v8::Handle<v8::Value> exc_type = obj->GetHiddenValue(v8::String::New("exc_type"));
-      v8::Handle<v8::Value> exc_value = obj->GetHiddenValue(v8::String::New("exc_value"));
+      v8::Handle<v8::Value> exc_type = obj->GetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_type"));
+      v8::Handle<v8::Value> exc_value = obj->GetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_value"));
 
       if (!exc_type.IsEmpty() && !exc_value.IsEmpty())
       {
@@ -438,5 +438,5 @@ void CJavascriptException::PrintCallStack(py::object file)
 
   int fd = ::PyObject_AsFileDescriptor(out);
 
-  Message()->PrintCurrentStackTrace(fdopen(fd, "w+"));
+  Message()->PrintCurrentStackTrace(v8::Isolate::GetCurrent(), fdopen(fd, "w+"));
 }

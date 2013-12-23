@@ -382,11 +382,6 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
                                                     int line, int col,
                                                     py::object precompiled)
 {
-  if (!v8::Context::InContext())
-  {
-    throw CJavascriptException("please enter a context first");
-  }
-
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
@@ -457,11 +452,6 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
   }
 #endif
 
-  if (!v8::Context::InContext())
-  {
-    throw CJavascriptException("please enter a context first");
-  }
-
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::TryCatch try_catch;
@@ -486,7 +476,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
       CJavascriptException::ThrowIf(try_catch);
     }
 
-    result = v8::Null();
+    result = v8::Null(v8::Isolate::GetCurrent());
   }
 
   return CJavascriptObject::Wrap(result);
@@ -583,7 +573,7 @@ class CPythonExtension : public v8::Extension
                           CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5]),
                           CJavascriptObject::Wrap(args[7]), CJavascriptObject::Wrap(args[8])); break;
     default:
-      v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("too many arguments")));
+      v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "too many arguments")));
       break;
     }
 
@@ -606,7 +596,7 @@ public:
 
   virtual v8::Handle<v8::FunctionTemplate> GetNativeFunction(v8::Handle<v8::String> name)
   {
-    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+    v8::EscapableHandleScope handle_scope(v8::Isolate::GetCurrent());
     CPythonGIL python_gil;
 
     py::object func;
@@ -628,14 +618,14 @@ public:
         return v8::Handle<v8::FunctionTemplate>();
       }
     }
-    catch (const std::exception& ex) { v8::ThrowException(v8::Exception::Error(v8::String::New(ex.what()))); }
+    catch (const std::exception& ex) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ex.what()))); }
     catch (const py::error_already_set&) { CPythonObject::ThrowIf(); }
-    catch (...) { v8::ThrowException(v8::Exception::Error(v8::String::NewSymbol("unknown exception"))); }
+    catch (...) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "unknown exception"))); }
 
-    v8::Handle<v8::External> func_data = v8::External::New(new py::object(func));
-    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(CallStub, func_data);
+    v8::Handle<v8::External> func_data = v8::External::New(v8::Isolate::GetCurrent(), new py::object(func));
+    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), CallStub, func_data);
 
-    return handle_scope.Close(func_tmpl);
+    return handle_scope.Escape(v8::Local<v8::FunctionTemplate>(func_tmpl));
   }
 };
 

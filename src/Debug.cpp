@@ -18,7 +18,7 @@ void CDebug::Init(void)
   v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_template);
 
   m_debug_context.Reset(v8::Isolate::GetCurrent(), context);
-  DebugContext()->SetSecurityToken(v8::Undefined());
+  DebugContext()->SetSecurityToken(v8::Undefined(v8::Isolate::GetCurrent()));
 
 #ifdef SUPPORT_DEBUGGER
   v8::Context::Scope context_scope(DebugContext());
@@ -29,7 +29,7 @@ void CDebug::Init(void)
   debug->Load();
 
   v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global_object());
-  DebugContext()->Global()->Set(v8::String::New("$debug"), v8::Utils::ToLocal(js_debug));
+  DebugContext()->Global()->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$debug"), v8::Utils::ToLocal(js_debug));
 
   // Set the security token of the debug context to allow access.
   debug->debug_context()->set_security_token(v8i::Isolate::Current()->heap()->undefined_value());
@@ -48,7 +48,7 @@ void CDebug::SetEnable(bool enable)
     {
       v8::HandleScope scope(v8::Isolate::GetCurrent());
 
-      v8::Handle<v8::External> data = v8::External::New(this);
+      v8::Handle<v8::External> data = v8::External::New(v8::Isolate::GetCurrent(), this);
 
       v8::Debug::SetDebugEventListener2(OnDebugEvent, data);
       v8::Debug::SetMessageHandler2(OnDebugMessage);

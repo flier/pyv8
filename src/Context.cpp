@@ -131,7 +131,7 @@ CContext::CContext(py::object global, py::list extensions)
 
   if (!global.is_none())
   {
-    Handle()->Global()->Set(v8::String::NewSymbol("__proto__"), CPythonObject::Wrap(global));
+    Handle()->Global()->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "__proto__"), CPythonObject::Wrap(global));
 
     Py_DECREF(global.ptr());
   }
@@ -167,7 +167,7 @@ void CContext::SetSecurityToken(py::str token)
   }
   else
   {
-    Handle()->SetSecurityToken(v8::String::New(py::extract<const char *>(token)()));
+    Handle()->SetSecurityToken(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), py::extract<const char *>(token)()));
   }
 }
 
@@ -175,27 +175,29 @@ py::object CContext::GetEntered(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::Handle<v8::Context> entered = v8::Context::GetEntered();
+  v8::Handle<v8::Context> entered = v8::Isolate::GetCurrent()->GetEnteredContext();
 
-  return (!v8::Context::InContext() || entered.IsEmpty()) ? py::object() :
+  return (!v8::Isolate::GetCurrent()->InContext() || entered.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(entered)))));
 }
+
 py::object CContext::GetCurrent(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   v8::Handle<v8::Context> current = v8::Isolate::GetCurrent()->GetCurrentContext();
 
-  return (!v8::Context::InContext() || current.IsEmpty()) ? py::object() :
+  return (current.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(current)))));
 }
+
 py::object CContext::GetCalling(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::Handle<v8::Context> calling = v8::Context::GetCalling();
+  v8::Handle<v8::Context> calling = v8::Isolate::GetCurrent()->GetCallingContext();
 
-  return (!v8::Context::InContext() || calling.IsEmpty()) ? py::object() :
+  return (!v8::Isolate::GetCurrent()->InContext() || calling.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(calling)))));
 }
 

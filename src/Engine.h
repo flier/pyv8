@@ -107,8 +107,8 @@ public:
 
   ~CScript()
   {
-    m_source.Dispose();
-    m_script.Dispose();
+    m_source.Reset();
+    m_script.Reset();
   }
 
   v8::Handle<v8::String> Source() const { return v8::Local<v8::String>::New(v8::Isolate::GetCurrent(), m_source); }

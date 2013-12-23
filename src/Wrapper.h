@@ -76,10 +76,10 @@ public:
 
   virtual ~CJavascriptObject()
   {
-    m_obj.Dispose();
+    m_obj.Reset();
   }
 
-  v8::Handle<v8::Object> Object(void) const { return v8::Local<v8::Object>::New(v8::Isolate::GetCurrent(), m_obj); }
+  v8::Local<v8::Object> Object(void) const { return v8::Local<v8::Object>::New(v8::Isolate::GetCurrent(), m_obj); }
 
   py::object GetAttr(const std::string& name);
   void SetAttr(const std::string& name, py::object value);
@@ -183,7 +183,7 @@ public:
 
   ~CJavascriptFunction()
   {
-    m_self.Dispose();
+    m_self.Reset();
   }
 
   v8::Handle<v8::Object> Self(void) const { return v8::Local<v8::Object>::New(v8::Isolate::GetCurrent(), m_self); }

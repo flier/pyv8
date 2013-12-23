@@ -44,7 +44,7 @@ public:
 
   ~CContext()
   {
-    m_context.Dispose();
+    m_context.Reset();
   }
 
   v8::Handle<v8::Context> Handle(void) const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_context); }
@@ -66,7 +66,7 @@ public:
   static py::object GetEntered(void);
   static py::object GetCurrent(void);
   static py::object GetCalling(void);
-  static bool InContext(void) { return v8::Context::InContext(); }
+  static bool InContext(void) { return v8::Isolate::GetCurrent()->InContext(); }
 
   static void Expose(void);
 };
