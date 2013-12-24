@@ -33,4 +33,4 @@
 //
 // Enable the dtrace or systemtap probes
 //
-#define SUPPORT_PROBES 1
+//#define SUPPORT_PROBES 1
