@@ -49,7 +49,7 @@ public:
   static py::object Unwrap(v8::Handle<v8::Object> obj);
   static void Dispose(v8::Handle<v8::Value> value);
 
-  static void ThrowIf(void);
+  static void ThrowIf(v8::Isolate* isolate);
 };
 
 struct ILazyObject

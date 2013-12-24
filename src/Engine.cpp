@@ -594,9 +594,9 @@ public:
 
   }
 
-  virtual v8::Handle<v8::FunctionTemplate> GetNativeFunction(v8::Handle<v8::String> name)
+  virtual v8::Handle<v8::FunctionTemplate> GetNativeFunctionTemplate(v8::Isolate* isolate, v8::Handle<v8::String> name)
   {
-    v8::EscapableHandleScope handle_scope(v8::Isolate::GetCurrent());
+    v8::EscapableHandleScope handle_scope(isolate);
     CPythonGIL python_gil;
 
     py::object func;
@@ -618,12 +618,12 @@ public:
         return v8::Handle<v8::FunctionTemplate>();
       }
     }
-    catch (const std::exception& ex) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ex.what()))); }
-    catch (const py::error_already_set&) { CPythonObject::ThrowIf(); }
-    catch (...) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "unknown exception"))); }
+    catch (const std::exception& ex) { isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, ex.what()))); }
+    catch (const py::error_already_set&) { CPythonObject::ThrowIf(isolate); }
+    catch (...) { isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "unknown exception"))); }
 
-    v8::Handle<v8::External> func_data = v8::External::New(v8::Isolate::GetCurrent(), new py::object(func));
-    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(v8::Isolate::GetCurrent(), CallStub, func_data);
+    v8::Handle<v8::External> func_data = v8::External::New(isolate, new py::object(func));
+    v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(isolate, CallStub, func_data);
 
     return handle_scope.Escape(v8::Local<v8::FunctionTemplate>(func_tmpl));
   }

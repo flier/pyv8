@@ -132,13 +132,13 @@ void CWrapper::Expose(void)
     py::objects::pointer_holder<boost::shared_ptr<CJavascriptObject>,CJavascriptObject> > >();
 }
 
-void CPythonObject::ThrowIf(void)
+void CPythonObject::ThrowIf(v8::Isolate* isolate)
 {
   CPythonGIL python_gil;
 
   assert(PyErr_OCCURRED());
 
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(isolate);
 
   PyObject *exc, *val, *trb;
 
@@ -197,23 +197,23 @@ void CPythonObject::ThrowIf(void)
 
   if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_IndexError))
   {
-    error = v8::Exception::RangeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg.c_str(), v8::String::kNormalString, msg.size()));
+    error = v8::Exception::RangeError(v8::String::NewFromUtf8(isolate, msg.c_str(), v8::String::kNormalString, msg.size()));
   }
   else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_AttributeError))
   {
-    error = v8::Exception::ReferenceError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg.c_str(), v8::String::kNormalString, msg.size()));
+    error = v8::Exception::ReferenceError(v8::String::NewFromUtf8(isolate, msg.c_str(), v8::String::kNormalString, msg.size()));
   }
   else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_SyntaxError))
   {
-    error = v8::Exception::SyntaxError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg.c_str(), v8::String::kNormalString, msg.size()));
+    error = v8::Exception::SyntaxError(v8::String::NewFromUtf8(isolate, msg.c_str(), v8::String::kNormalString, msg.size()));
   }
   else if (::PyErr_GivenExceptionMatches(type.ptr(), ::PyExc_TypeError))
   {
-    error = v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg.c_str(), v8::String::kNormalString, msg.size()));
+    error = v8::Exception::TypeError(v8::String::NewFromUtf8(isolate, msg.c_str(), v8::String::kNormalString, msg.size()));
   }
   else
   {
-    error = v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), msg.c_str(), v8::String::kNormalString, msg.size()));
+    error = v8::Exception::Error(v8::String::NewFromUtf8(isolate, msg.c_str(), v8::String::kNormalString, msg.size()));
   }
 
   if (error->IsObject())
@@ -221,19 +221,19 @@ void CPythonObject::ThrowIf(void)
     // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
 
   #ifdef SUPPORT_TRACE_EXCEPTION_LIFECYCLE
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_type"),
-                                      v8::External::New(v8::Isolate::GetCurrent(), ObjectTracer::Trace(error, new py::object(type)).Object()));
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_value"),
-                                      v8::External::New(v8::Isolate::GetCurrent(), ObjectTracer::Trace(error, new py::object(value)).Object()));
+    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_type"),
+                                      v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(type)).Object()));
+    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_value"),
+                                      v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(value)).Object()));
   #else
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_type"),
-                                      v8::External::New(v8::Isolate::GetCurrent(), new py::object(type)));
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "exc_value"),
-                                      v8::External::New(v8::Isolate::GetCurrent(), new py::object(value)));
+    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_type"),
+                                      v8::External::New(isolate, new py::object(type)));
+    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_value"),
+                                      v8::External::New(isolate, new py::object(value)));
   #endif
   }
 
-  v8::Isolate::GetCurrent()->ThrowException(error);
+  isolate->ThrowException(error);
 }
 
 #define _TERMINATE_CALLBACK_EXECUTION_CHECK(returnValue) \

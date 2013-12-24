@@ -12,7 +12,7 @@
 #define BEGIN_HANDLE_PYTHON_EXCEPTION try
 #define END_HANDLE_PYTHON_EXCEPTION \
   catch (const std::exception& ex) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ex.what()))); } \
-  catch (const py::error_already_set&) { CPythonObject::ThrowIf(); } \
+  catch (const py::error_already_set&) { CPythonObject::ThrowIf(v8::Isolate::GetCurrent()); } \
   catch (...) { v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "unknown exception"))); }
 
 #define BEGIN_HANDLE_JAVASCRIPT_EXCEPTION v8::TryCatch try_catch;
