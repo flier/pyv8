@@ -104,7 +104,12 @@ void CWrapper::Expose(void)
   py::class_<CJavascriptFunction, py::bases<CJavascriptObject>, boost::noncopyable>("JSFunction", py::no_init)
     .def("__call__", py::raw_function(&CJavascriptFunction::CallWithArgs))
 
-    .def("invoke", &CJavascriptFunction::Apply,
+    .def("apply", &CJavascriptFunction::ApplyJavascript,
+         (py::arg("self"),
+          py::arg("args") = py::list(),
+          py::arg("kwds") = py::dict()),
+          "Performs a function call using the parameters.")
+    .def("apply", &CJavascriptFunction::ApplyPython,
          (py::arg("self"),
           py::arg("args") = py::list(),
           py::arg("kwds") = py::dict()),
@@ -1277,7 +1282,7 @@ void CJavascriptArray::LazyConstructor(void)
     m_size = PyList_GET_SIZE(m_items.ptr());
     array = v8::Array::New(v8::Isolate::GetCurrent(), m_size);
 
-    for (Py_ssize_t i=0; i<m_size; i++)
+    for (Py_ssize_t i=0; i< (Py_ssize_t) m_size; i++)
     {
       array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(m_items.ptr(), i))))));
     }
@@ -1287,7 +1292,7 @@ void CJavascriptArray::LazyConstructor(void)
     m_size = PyTuple_GET_SIZE(m_items.ptr());
     array = v8::Array::New(v8::Isolate::GetCurrent(), m_size);
 
-    for (Py_ssize_t i=0; i<m_size; i++)
+    for (Py_ssize_t i=0; i< (Py_ssize_t) m_size; i++)
     {
       array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyTuple_GET_ITEM(m_items.ptr(), i))))));
     }
@@ -1649,13 +1654,22 @@ py::object CJavascriptFunction::CreateWithArgs(CJavascriptFunctionPtr proto, py:
   return CJavascriptObject::Wrap(result);
 }
 
-py::object CJavascriptFunction::Apply(CJavascriptObjectPtr self, py::list args, py::dict kwds)
+py::object CJavascriptFunction::ApplyJavascript(CJavascriptObjectPtr self, py::list args, py::dict kwds)
 {
   CHECK_V8_CONTEXT();
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return Call(self->Object(), args, kwds);
+}
+
+py::object CJavascriptFunction::ApplyPython(py::object self, py::list args, py::dict kwds)
+{
+  CHECK_V8_CONTEXT();
+
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
+  return Call(CPythonObject::Wrap(self)->ToObject(), args, kwds);
 }
 
 py::object CJavascriptFunction::Invoke(py::list args, py::dict kwds)

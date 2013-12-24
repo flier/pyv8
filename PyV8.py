@@ -156,17 +156,6 @@ class JSExtension(_PyV8.JSExtension):
         _PyV8.JSExtension.__init__(self, js_escape_unicode(name), js_escape_unicode(source), callback, dependencies, register)
 
 
-def func_apply(self, thisArg, argArray=[]):
-    if isinstance(thisArg, JSObject):
-        return self.invoke(thisArg, argArray)
-
-    this = JSContext.current.eval("(%s)" % json.dumps(thisArg))
-
-    return self.invoke(this, argArray)
-
-JSFunction.apply = func_apply
-
-
 class JSLocker(_PyV8.JSLocker):
     def __enter__(self):
         self.enter()
@@ -1211,7 +1200,7 @@ class TestWrapper(unittest.TestCase):
             self.assertEqual("hello flier from flier", hello('flier'))
 
             tester = ctxt.eval("({ 'name': 'tester' })")
-            self.assertEqual("hello flier from tester", hello.invoke(tester, ['flier']))
+            self.assertEqual("hello flier from tester", hello.apply(tester, ['flier']))
             self.assertEqual("hello flier from json", hello.apply({ 'name': 'json' }, ['flier']))
 
     def testConstructor(self):
