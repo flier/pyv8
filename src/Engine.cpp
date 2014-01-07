@@ -417,7 +417,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
   if (line >= 0 && col >= 0)
   {
-    v8::ScriptOrigin script_origin(name, v8::Integer::New(line), v8::Integer::New(col));
+    v8::ScriptOrigin script_origin(name, v8::Integer::New(v8::Isolate::GetCurrent(), line), v8::Integer::New(v8::Isolate::GetCurrent(), col));
 
     script = v8::Script::Compile(source, &script_origin, script_data.get());
   }

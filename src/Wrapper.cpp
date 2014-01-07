@@ -394,7 +394,7 @@ void CPythonObject::NamedQuery(v8::Local<v8::String> prop, const v8::PropertyCal
   bool exists = PyGen_Check(obj.ptr()) || ::PyObject_HasAttrString(obj.ptr(), *name) ||
                 (::PyMapping_Check(obj.ptr()) && ::PyMapping_HasKeyString(obj.ptr(), *name));
 
-  if (exists) CALLBACK_RETURN(v8::Integer::New(v8::None));
+  if (exists) CALLBACK_RETURN(v8::Integer::New(v8::Isolate::GetCurrent(), v8::None));
 
   END_HANDLE_EXCEPTION(v8::Handle<v8::Integer>())
 }
@@ -503,7 +503,7 @@ void CPythonObject::NamedEnumerator(const v8::PropertyCallbackInfo<v8::Array>& i
           continue;
       }
 
-      result->Set(v8::Uint32::New(i), Wrap(py::object(py::handle<>(py::borrowed(item)))));
+      result->Set(v8::Uint32::New(v8::Isolate::GetCurrent(), i), Wrap(py::object(py::handle<>(py::borrowed(item)))));
     }
 
     CALLBACK_RETURN(result);
@@ -595,13 +595,13 @@ void CPythonObject::IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<
 
   py::object obj = CJavascriptObject::Wrap(info.Holder());
 
-  if (PyGen_Check(obj.ptr())) CALLBACK_RETURN(v8::Integer::New(v8::ReadOnly));
+  if (PyGen_Check(obj.ptr())) CALLBACK_RETURN(v8::Integer::New(v8::Isolate::GetCurrent(), v8::ReadOnly));
 
   if (::PySequence_Check(obj.ptr()))
   {
     if ((Py_ssize_t) index < ::PySequence_Size(obj.ptr()))
     {
-      CALLBACK_RETURN(v8::Integer::New(v8::None));
+      CALLBACK_RETURN(v8::Integer::New(v8::Isolate::GetCurrent(), v8::None));
     }
   }
   else if (::PyMapping_Check(obj.ptr()))
@@ -613,7 +613,7 @@ void CPythonObject::IndexedQuery(uint32_t index, const v8::PropertyCallbackInfo<
     if (::PyMapping_HasKeyString(obj.ptr(), buf) ||
         ::PyMapping_HasKey(obj.ptr(), py::long_(index).ptr()))
     {
-      CALLBACK_RETURN(v8::Integer::New(v8::None));
+      CALLBACK_RETURN(v8::Integer::New(v8::Isolate::GetCurrent(), v8::None));
     }
   }
 
@@ -661,7 +661,7 @@ void CPythonObject::IndexedEnumerator(const v8::PropertyCallbackInfo<v8::Array>&
 
   for (Py_ssize_t i=0; i<len; i++)
   {
-    result->Set(v8::Uint32::New(i), v8::Int32::New(i)->ToString());
+    result->Set(v8::Uint32::New(v8::Isolate::GetCurrent(), i), v8::Int32::New(v8::Isolate::GetCurrent(), i)->ToString());
   }
 
   CALLBACK_RETURN(result);
@@ -846,13 +846,13 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 #if PY_MAJOR_VERSION < 3
   if (PyInt_CheckExact(obj.ptr()))
   {
-    result = v8::Integer::New(::PyInt_AsLong(obj.ptr()));
+    result = v8::Integer::New(v8::Isolate::GetCurrent(), ::PyInt_AsLong(obj.ptr()));
   }
   else
 #endif
   if (PyLong_CheckExact(obj.ptr()))
   {
-    result = v8::Integer::New(::PyLong_AsLong(obj.ptr()));
+    result = v8::Integer::New(v8::Isolate::GetCurrent(), ::PyLong_AsLong(obj.ptr()));
   }
   else if (PyBool_Check(obj.ptr()))
   {
@@ -865,7 +865,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   }
   else if (PyFloat_CheckExact(obj.ptr()))
   {
-    result = v8::Number::New(py::extract<double>(obj));
+    result = v8::Number::New(v8::Isolate::GetCurrent(), py::extract<double>(obj));
   }
   else if (PyDateTime_CheckExact(obj.ptr()) || PyDate_CheckExact(obj.ptr()))
   {
@@ -1047,7 +1047,7 @@ py::list CJavascriptObject::GetAttrList(void)
 
   for (size_t i=0; i<props->Length(); i++)
   {
-    attrs.append(CJavascriptObject::Wrap(props->Get(v8::Integer::New(i))));
+    attrs.append(CJavascriptObject::Wrap(props->Get(v8::Integer::New(v8::Isolate::GetCurrent(), i))));
   }
 
   if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
@@ -1284,7 +1284,7 @@ void CJavascriptArray::LazyConstructor(void)
 
     for (Py_ssize_t i=0; i< (Py_ssize_t) m_size; i++)
     {
-      array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(m_items.ptr(), i))))));
+      array->Set(v8::Uint32::New(v8::Isolate::GetCurrent(), i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyList_GET_ITEM(m_items.ptr(), i))))));
     }
   }
   else if (PyTuple_Check(m_items.ptr()))
@@ -1294,7 +1294,7 @@ void CJavascriptArray::LazyConstructor(void)
 
     for (Py_ssize_t i=0; i< (Py_ssize_t) m_size; i++)
     {
-      array->Set(v8::Uint32::New(i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyTuple_GET_ITEM(m_items.ptr(), i))))));
+      array->Set(v8::Uint32::New(v8::Isolate::GetCurrent(), i), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(PyTuple_GET_ITEM(m_items.ptr(), i))))));
     }
   }
   else if (PyGen_Check(m_items.ptr()))
@@ -1308,7 +1308,7 @@ void CJavascriptArray::LazyConstructor(void)
 
     while (NULL != (item = ::PyIter_Next(iter.ptr())))
     {
-      array->Set(v8::Uint32::New(m_size++), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(item)))));
+      array->Set(v8::Uint32::New(v8::Isolate::GetCurrent(), m_size++), CPythonObject::Wrap(py::object(py::handle<>(py::borrowed(item)))));
     }
   }
 
@@ -1351,7 +1351,7 @@ py::object CJavascriptArray::GetItem(py::object key)
 
       for (Py_ssize_t idx=start; idx<stop; idx+=step)
       {
-        v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New((uint32_t) idx));
+        v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New(v8::Isolate::GetCurrent(), (uint32_t) idx));
 
         if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
@@ -1367,7 +1367,7 @@ py::object CJavascriptArray::GetItem(py::object key)
 
     if (!Object()->Has(idx)) return py::object();
 
-    v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New(idx));
+    v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New(v8::Isolate::GetCurrent(), idx));
 
     if (value.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
 
@@ -1448,7 +1448,7 @@ py::object CJavascriptArray::SetItem(py::object key, py::object value)
   {
     uint32_t idx = PyInt_Check(key.ptr()) ? (uint32_t) ::PyInt_AsUnsignedLongMask(key.ptr()) : (uint32_t) ::PyLong_AsUnsignedLong(key.ptr());
 
-    if (!Object()->Set(v8::Integer::New(idx), CPythonObject::Wrap(value)))
+    if (!Object()->Set(v8::Integer::New(v8::Isolate::GetCurrent(), idx), CPythonObject::Wrap(value)))
       CJavascriptException::ThrowIf(try_catch);
   }
 
@@ -1501,7 +1501,7 @@ py::object CJavascriptArray::DelItem(py::object key)
     py::object value;
 
     if (Object()->Has(idx))
-      value = CJavascriptObject::Wrap(Object()->Get(v8::Integer::New(idx)), Object());
+      value = CJavascriptObject::Wrap(Object()->Get(v8::Integer::New(v8::Isolate::GetCurrent(), idx)), Object());
 
     if (!Object()->Delete(idx))
       CJavascriptException::ThrowIf(try_catch);
@@ -1526,7 +1526,7 @@ bool CJavascriptArray::Contains(py::object item)
   {
     if (Object()->Has(i))
     {
-      v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New(i));
+      v8::Handle<v8::Value> value = Object()->Get(v8::Integer::New(v8::Isolate::GetCurrent(), i));
 
       if (try_catch.HasCaught()) CJavascriptException::ThrowIf(try_catch);
 
