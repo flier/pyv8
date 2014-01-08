@@ -13,6 +13,8 @@ void CContext::Expose(void)
 
     .add_property("locked", &CIsolate::IsLocked)
 
+    .def("GetCurrentStackTrace", &CIsolate::GetCurrentStackTrace)
+
     .def("enter", &CIsolate::Enter,
          "Sets this isolate as the entered one for the current thread. "
          "Saves the previously entered one (if any), so that it can be "

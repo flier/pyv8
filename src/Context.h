@@ -24,6 +24,11 @@ public:
 
   v8::Isolate *GetIsolate(void) { return m_isolate; }
 
+  CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
+    v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview) {
+    return CJavascriptStackTrace::GetCurrentStackTrace(m_isolate, frame_limit, options);
+  }
+
   static py::object GetCurrent(void);
 
   void Enter(void) { m_isolate->Enter(); }

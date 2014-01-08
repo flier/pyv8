@@ -369,7 +369,7 @@ py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
 
   Py_END_ALLOW_THREADS
 
-  if (!precompiled.get()) CJavascriptException::ThrowIf(try_catch);
+  if (!precompiled.get()) CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
   if (precompiled->HasError()) throw CJavascriptException("fail to compile", ::PyExc_SyntaxError);
 
   py::object obj(py::handle<>(::PyByteArray_FromStringAndSize(precompiled->Data(), precompiled->Length())));
@@ -439,7 +439,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
   }
 #endif
 
-  if (script.IsEmpty()) CJavascriptException::ThrowIf(try_catch);
+  if (script.IsEmpty()) CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
 
   return boost::shared_ptr<CScript>(new CScript(*this, script_source, script));
 }
@@ -473,7 +473,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
         throw py::error_already_set();
       }
 
-      CJavascriptException::ThrowIf(try_catch);
+      CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
     }
 
     result = v8::Null(v8::Isolate::GetCurrent());

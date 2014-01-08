@@ -39,8 +39,8 @@ class CPythonObject : public CWrapper
   static void DisposeCallback(v8::Persistent<v8::Value> object, void* parameter);
 #endif
 protected:
-  static void SetupObjectTemplate(v8::Handle<v8::ObjectTemplate> clazz);
-  static v8::Handle<v8::ObjectTemplate> CreateObjectTemplate(void);
+  static void SetupObjectTemplate(v8::Isolate *isolate, v8::Handle<v8::ObjectTemplate> clazz);
+  static v8::Handle<v8::ObjectTemplate> CreateObjectTemplate(v8::Isolate *isolate);
 
   static v8::Handle<v8::Value> WrapInternal(py::object obj);
 public:

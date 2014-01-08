@@ -6,6 +6,7 @@ from __future__ import print_function
 import sys, os, re
 import logging
 import collections
+import functools
 
 is_py3k = sys.version_info[0] > 2
 
@@ -746,6 +747,7 @@ JSScript = _PyV8.JSScript
 
 JSStackTrace = _PyV8.JSStackTrace
 JSStackTrace.Options = _PyV8.JSStackTraceOptions
+JSStackTrace.GetCurrentStackTrace = staticmethod(lambda frame_limit, options: _PyV8.JSIsolate.current.GetCurrentStackTrace(frame_limit, options))
 JSStackFrame = _PyV8.JSStackFrame
 
 
