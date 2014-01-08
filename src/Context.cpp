@@ -208,7 +208,7 @@ py::object CContext::Evaluate(const std::string& src,
                               int line, int col,
                               py::object precompiled)
 {
-  CEngine engine;
+  CEngine engine(v8::Isolate::GetCurrent());
 
   CScriptPtr script = engine.Compile(src, name, line, col, precompiled);
 
@@ -220,7 +220,7 @@ py::object CContext::EvaluateW(const std::wstring& src,
                                int line, int col,
                                py::object precompiled)
 {
-  CEngine engine;
+  CEngine engine(v8::Isolate::GetCurrent());
 
   CScriptPtr script = engine.CompileW(src, name, line, col, precompiled);
 

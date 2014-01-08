@@ -369,7 +369,7 @@ py::object CEngine::InternalPreCompile(v8::Handle<v8::String> src)
 
   Py_END_ALLOW_THREADS
 
-  if (!precompiled.get()) CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
+  if (!precompiled.get()) CJavascriptException::ThrowIf(m_isolate, try_catch);
   if (precompiled->HasError()) throw CJavascriptException("fail to compile", ::PyExc_SyntaxError);
 
   py::object obj(py::handle<>(::PyByteArray_FromStringAndSize(precompiled->Data(), precompiled->Length())));
@@ -382,14 +382,14 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
                                                     int line, int col,
                                                     py::object precompiled)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   v8::TryCatch try_catch;
 
-  v8::Persistent<v8::String> script_source(v8::Isolate::GetCurrent(), src);
+  v8::Persistent<v8::String> script_source(m_isolate, src);
 
   v8::Handle<v8::Script> script;
-  v8::Handle<v8::String> source = v8::Local<v8::String>::New(v8::Isolate::GetCurrent(), script_source);
+  v8::Handle<v8::String> source = v8::Local<v8::String>::New(m_isolate, script_source);
   std::auto_ptr<v8::ScriptData> script_data;
 
   if (!precompiled.is_none())
@@ -417,7 +417,7 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
 
   if (line >= 0 && col >= 0)
   {
-    v8::ScriptOrigin script_origin(name, v8::Integer::New(v8::Isolate::GetCurrent(), line), v8::Integer::New(v8::Isolate::GetCurrent(), col));
+    v8::ScriptOrigin script_origin(name, v8::Integer::New(m_isolate, line), v8::Integer::New(m_isolate, col));
 
     script = v8::Script::Compile(source, &script_origin, script_data.get());
   }
@@ -439,9 +439,9 @@ boost::shared_ptr<CScript> CEngine::InternalCompile(v8::Handle<v8::String> src,
   }
 #endif
 
-  if (script.IsEmpty()) CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
+  if (script.IsEmpty()) CJavascriptException::ThrowIf(m_isolate, try_catch);
 
-  return boost::shared_ptr<CScript>(new CScript(*this, script_source, script));
+  return boost::shared_ptr<CScript>(new CScript(m_isolate, *this, script_source, script));
 }
 
 py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
@@ -452,7 +452,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
   }
 #endif
 
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   v8::TryCatch try_catch;
 
@@ -473,10 +473,10 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
         throw py::error_already_set();
       }
 
-      CJavascriptException::ThrowIf(v8::Isolate::GetCurrent(), try_catch);
+      CJavascriptException::ThrowIf(m_isolate, try_catch);
     }
 
-    result = v8::Null(v8::Isolate::GetCurrent());
+    result = v8::Null(m_isolate);
   }
 
   return CJavascriptObject::Wrap(result);
@@ -486,7 +486,7 @@ py::object CEngine::ExecuteScript(v8::Handle<v8::Script> script)
 
 void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   v8i::Handle<v8i::Object> obj = v8::Utils::OpenHandle(*Source());
 
@@ -521,7 +521,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
 
 const std::string CScript::GetSource(void) const
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   v8::String::Utf8Value source(Source());
 
@@ -530,7 +530,7 @@ const std::string CScript::GetSource(void) const
 
 py::object CScript::Run(void)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   return m_engine.ExecuteScript(Script());
 }
@@ -543,7 +543,7 @@ class CPythonExtension : public v8::Extension
 
   static void CallStub(const v8::FunctionCallbackInfo<v8::Value>& args)
   {
-    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+    v8::HandleScope handle_scope(args.GetIsolate());
     CPythonGIL python_gil;
     py::object func = *static_cast<py::object *>(v8::External::Cast(*args.Data())->Value());
 
@@ -573,7 +573,7 @@ class CPythonExtension : public v8::Extension
                           CJavascriptObject::Wrap(args[4]), CJavascriptObject::Wrap(args[5]),
                           CJavascriptObject::Wrap(args[7]), CJavascriptObject::Wrap(args[8])); break;
     default:
-      v8::Isolate::GetCurrent()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "too many arguments")));
+      args.GetIsolate()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), "too many arguments")));
       break;
     }
 
@@ -620,7 +620,7 @@ public:
     }
     catch (const std::exception& ex) { isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, ex.what()))); }
     catch (const py::error_already_set&) { CPythonObject::ThrowIf(isolate); }
-    catch (...) { isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "unknown exception"))); }
+    catch (...) { isolate->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(isolate, "unknown exception"))); }
 
     v8::Handle<v8::External> func_data = v8::External::New(isolate, new py::object(func));
     v8::Handle<v8::FunctionTemplate> func_tmpl = v8::FunctionTemplate::New(isolate, CallStub, func_data);
