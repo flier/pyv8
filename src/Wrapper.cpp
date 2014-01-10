@@ -799,7 +799,7 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
 v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 {
-  assert(v8::Context::InContext());
+  assert(v8::Isolate::GetCurrent()->InContext());
 
   v8::EscapableHandleScope handle_scope(v8::Isolate::GetCurrent());
 
@@ -945,7 +945,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
 
 void CJavascriptObject::CheckAttr(v8::Handle<v8::String> name) const
 {
-  assert(v8::Context::InContext());
+  assert(v8::Isolate::GetCurrent()->InContext());
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
@@ -1167,7 +1167,7 @@ CJavascriptObject::operator bool() const
 
 py::object CJavascriptObject::Wrap(v8::Handle<v8::Value> value, v8::Handle<v8::Object> self)
 {
-  assert(v8::Context::InContext());
+  assert(v8::Isolate::GetCurrent()->InContext());
 
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 

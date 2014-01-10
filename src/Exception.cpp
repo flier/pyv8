@@ -159,7 +159,7 @@ const std::string CJavascriptException::GetName(void)
 {
   if (m_exc.IsEmpty()) return std::string();
 
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -171,7 +171,7 @@ const std::string CJavascriptException::GetMessage(void)
 {
   if (m_exc.IsEmpty()) return std::string();
 
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -181,7 +181,7 @@ const std::string CJavascriptException::GetMessage(void)
 }
 const std::string CJavascriptException::GetScriptName(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -197,7 +197,7 @@ const std::string CJavascriptException::GetScriptName(void)
 }
 int CJavascriptException::GetLineNumber(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -205,7 +205,7 @@ int CJavascriptException::GetLineNumber(void)
 }
 int CJavascriptException::GetStartPosition(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -213,7 +213,7 @@ int CJavascriptException::GetStartPosition(void)
 }
 int CJavascriptException::GetEndPosition(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -221,7 +221,7 @@ int CJavascriptException::GetEndPosition(void)
 }
 int CJavascriptException::GetStartColumn(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -229,7 +229,7 @@ int CJavascriptException::GetStartColumn(void)
 }
 int CJavascriptException::GetEndColumn(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -237,7 +237,7 @@ int CJavascriptException::GetEndColumn(void)
 }
 const std::string CJavascriptException::GetSourceLine(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -253,7 +253,7 @@ const std::string CJavascriptException::GetSourceLine(void)
 }
 const std::string CJavascriptException::GetStackTrace(void)
 {
-  assert(v8::Context::InContext());
+  assert(m_isolate->InContext());
 
   v8::HandleScope handle_scope(m_isolate);
 
@@ -268,7 +268,7 @@ const std::string CJavascriptException::GetStackTrace(void)
 }
 const std::string CJavascriptException::Extract(v8::Isolate *isolate, v8::TryCatch& try_catch)
 {
-  assert(v8::Context::InContext());
+  assert(isolate->InContext());
 
   v8::HandleScope handle_scope(isolate);
 
