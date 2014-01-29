@@ -1,5 +1,7 @@
 #include "Engine.h"
 
+#include <iostream>
+
 #include <boost/preprocessor.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
