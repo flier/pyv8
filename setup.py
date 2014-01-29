@@ -3,7 +3,12 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import sys, os, os.path, math, platform
+import sys
+import os
+import os.path
+import math
+import platform
+import re
 import subprocess
 import traceback
 
@@ -318,7 +323,7 @@ if V8_I18N:
     extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
 
 
-def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None):
+def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None, output=False):
     print("-" * 20)
     print("INFO: %s ..." % msg)
     print("DEBUG: > %s" % cmdline_or_args)
@@ -333,7 +338,7 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None):
         print("ERROR: %s failed: code=%d" % (msg or "Execute command", proc.returncode))
         print("DEBUG: %s" % err)
 
-    return succeeded
+    return succeeded, out, err if output else succeeded
 
 
 def checkout_v8():
@@ -360,6 +365,10 @@ def checkout_v8():
 
         if r:
             print("%s Google V8 code (r%d) from SVN to %s" % ("Update" if update_code else "Checkout", r[-1].number, V8_HOME))
+
+            with open(v8_svn_rev_file, 'w') as f:
+                f.write(str(r[-1].number))
+
             return
 
         print("ERROR: Failed to export from V8 svn repository")
@@ -379,9 +388,12 @@ def checkout_v8():
     if V8_SVN_REVISION:
         args += ['-r', str(V8_SVN_REVISION)]
 
-    cmdline = ' '.join(args)
+    if exec_cmd(args, "checkout or update Google V8 code from SVN"):
+        ok, out, err = exec_cmd(["svn", "info", V8_HOME], output=True)
 
-    exec_cmd(cmdline, "checkout or update Google V8 code from SVN")
+        if ok:
+            with open(v8_svn_rev_file, 'w') as f:
+                f.write(re.search(r'Revision:\s(?P<rev>\d+)', out, re.MULTILINE)['rev'])
 
 
 def prepare_gyp():
