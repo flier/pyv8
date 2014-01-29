@@ -37,7 +37,7 @@ __version__ = '1.0'
 
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSObject", "JSNull", "JSUndefined", "JSArray", "JSFunction",
-           "JSClass", "JSEngine", "JSContext",
+           "JSClass", "JSEngine", "JSContext", "JSIsolate",
            "JSObjectSpace", "JSAllocationAction",
            "JSStackTrace", "JSStackFrame", "profiler",
            "JSExtension", "JSLocker", "JSUnlocker", "AST"]
@@ -992,6 +992,7 @@ class TestContext(unittest.TestCase):
 
             # Check that env1.prop still exists.
             self.assertEqual(3, int(env1.locals.prop))
+
 
 class TestWrapper(unittest.TestCase):
     def testObject(self):
@@ -2221,6 +2222,37 @@ class TestEngine(unittest.TestCase):
             self.assertTrue((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
         JSEngine.setMemoryAllocationCallback(None)
+
+    def testOutOfMemory(self):
+        with JSIsolate():
+            JSEngine.setMemoryLimit(max_young_space_size=16 * 1024, max_old_space_size=4 * 1024 * 1024)
+
+            with JSContext() as ctxt:
+                JSEngine.ignoreOutOfMemoryException()
+
+                ctxt.eval("var a = new Array(); while(true) a.push(a);")
+
+                self.assertTrue(ctxt.hasOutOfMemoryException)
+
+                JSEngine.setMemoryLimit()
+
+                JSEngine.collect()
+
+    def testStackLimit(self):
+        with JSIsolate():
+            JSEngine.setStackLimit(256 * 1024)
+
+            with JSContext() as ctxt:
+                oldStackSize = ctxt.eval("var maxStackSize = function(i){try{(function m(){++i&&m()}())}catch(e){return i}}(0); maxStackSize")
+
+        with JSIsolate():
+            JSEngine.setStackLimit(512 * 1024)
+
+            with JSContext() as ctxt:
+                newStackSize = ctxt.eval("var maxStackSize = function(i){try{(function m(){++i&&m()}())}catch(e){return i}}(0); maxStackSize")
+
+        self.assertTrue(newStackSize > oldStackSize * 2)
+
 
 class TestDebug(unittest.TestCase):
     def setUp(self):

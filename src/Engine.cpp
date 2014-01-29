@@ -160,12 +160,21 @@ void CEngine::Expose(void)
     .staticmethod("lowMemory")
 
     .def("setMemoryLimit", &CEngine::SetMemoryLimit, (py::arg("max_young_space_size") = 0,
-                                                py::arg("max_old_space_size") = 0,
-                                                py::arg("max_executable_size") = 0),
+                                                      py::arg("max_old_space_size") = 0,
+                                                      py::arg("max_executable_size") = 0),
          "Specifies the limits of the runtime's memory use."
          "You must set the heap size before initializing the VM"
          "the size cannot be adjusted after the VM is initialized.")
     .staticmethod("setMemoryLimit")
+
+    .def("ignoreOutOfMemoryException", &v8::V8::IgnoreOutOfMemoryException,
+         "Ignore out-of-memory exceptions.")
+    .staticmethod("ignoreOutOfMemoryException")
+
+    .def("setStackLimit", &CEngine::SetStackLimit, (py::arg("stack_limit_size") = 0),
+         "Uses the address of a local variable to determine the stack top now."
+         "Given a size, returns an address that is that far from the current top of stack.")
+    .staticmethod("setStackLimit")
 
     .def("setMemoryAllocationCallback", &MemoryAllocationManager::SetCallback,
                                         (py::arg("callback"),
@@ -326,11 +335,7 @@ void CEngine::TerminateAllThreads(void)
 
 void CEngine::ReportFatalError(const char* location, const char* message)
 {
-  std::ostringstream oss;
-
-  oss << "<" << location << "> " << message;
-
-  throw CJavascriptException(oss.str());
+  std::cerr << "<" << location << "> " << message << std::endl;
 }
 
 void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data)
@@ -339,20 +344,41 @@ void CEngine::ReportMessage(v8::Handle<v8::Message> message, v8::Handle<v8::Valu
   int lineno = message->GetLineNumber();
   v8::String::Utf8Value sourceline(message->GetSourceLine());
 
-  std::ostringstream oss;
-
-  oss << *filename << ":" << lineno << " -> " << *sourceline;
-
-  throw CJavascriptException(oss.str());
+  std::cerr << *filename << ":" << lineno << " -> " << *sourceline << std::endl;
 }
 
 bool CEngine::SetMemoryLimit(int max_young_space_size, int max_old_space_size, int max_executable_size)
 {
   v8::ResourceConstraints limit;
 
-  limit.set_max_young_space_size(max_young_space_size);
-  limit.set_max_old_space_size(max_old_space_size);
-  limit.set_max_executable_size(max_executable_size);
+  if (max_young_space_size) limit.set_max_young_space_size(max_young_space_size);
+  if (max_old_space_size) limit.set_max_old_space_size(max_old_space_size);
+  if (max_executable_size) limit.set_max_executable_size(max_executable_size);
+
+  return v8::SetResourceConstraints(v8::Isolate::GetCurrent(), &limit);
+}
+
+// Uses the address of a local variable to determine the stack top now.
+// Given a size, returns an address that is that far from the current
+// top of stack.
+uint32_t *CEngine::CalcStackLimitSize(uint32_t size)
+{
+  uint32_t* answer = &size - (size / sizeof(size));
+
+  // If the size is very large and the stack is very near the bottom of
+  // memory then the calculation above may wrap around and give an address
+  // that is above the (downwards-growing) stack.  In that case we return
+  // a very low address.
+  if (answer > &size) return reinterpret_cast<uint32_t*>(sizeof(size));
+
+  return answer;
+}
+
+bool CEngine::SetStackLimit(uint32_t stack_limit_size)
+{
+  v8::ResourceConstraints limit;
+
+  limit.set_stack_limit(CalcStackLimitSize(stack_limit_size));
 
   return v8::SetResourceConstraints(v8::Isolate::GetCurrent(), &limit);
 }

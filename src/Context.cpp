@@ -25,10 +25,6 @@ void CContext::Expose(void)
          "The isolate may still stay the same, if it was entered more than once.")
     ;
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CIsolate>,
-    py::objects::make_ptr_instance<CIsolate,
-    py::objects::pointer_holder<boost::shared_ptr<CIsolate>,CIsolate> > >();
-
   py::class_<CContext, boost::noncopyable>("JSContext", "JSContext is an execution context.", py::no_init)
     .def(py::init<const CContext&>("create a new context base on a exists context"))
     .def(py::init<py::object, py::list>((py::arg("global") = py::object(),
@@ -47,6 +43,8 @@ void CContext::Expose(void)
                          "The context of the calling JavaScript code.")
     .add_static_property("inContext", &CContext::InContext,
                          "Returns true if V8 has a current context.")
+
+    .add_property("hasOutOfMemoryException", &CContext::HasOutOfMemoryException)
 
     .def("eval", &CContext::Evaluate, (py::arg("source"),
                                        py::arg("name") = std::string(),
@@ -68,6 +66,10 @@ void CContext::Expose(void)
 
     .def("__nonzero__", &CContext::IsEntered, "the context has been entered.")
     ;
+
+  py::objects::class_value_wrapper<boost::shared_ptr<CIsolate>,
+    py::objects::make_ptr_instance<CIsolate,
+    py::objects::pointer_holder<boost::shared_ptr<CIsolate>,CIsolate> > >();
 
   py::objects::class_value_wrapper<boost::shared_ptr<CContext>,
     py::objects::make_ptr_instance<CContext,
