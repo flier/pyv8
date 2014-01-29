@@ -328,7 +328,7 @@ def exec_cmd(cmdline_or_args, msg, shell=True, cwd=V8_HOME, env=None, output=Fal
     print("INFO: %s ..." % msg)
     print("DEBUG: > %s" % cmdline_or_args)
 
-    proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, env=env, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmdline_or_args, shell=shell, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     out, err = proc.communicate()
 
@@ -388,12 +388,16 @@ def checkout_v8():
     if V8_SVN_REVISION:
         args += ['-r', str(V8_SVN_REVISION)]
 
-    if exec_cmd(args, "checkout or update Google V8 code from SVN"):
-        ok, out, err = exec_cmd(["svn", "info", V8_HOME], output=True)
+    if exec_cmd(' '.join(args), "checkout or update Google V8 code from SVN"):
+        if not V8_SVN_REVISION:
+            ok, out, err = exec_cmd(' '.join(["svn", "info", V8_HOME]),
+                                    "save the current V8 SVN revision to REVISION file", output=True)
 
-        if ok:
-            with open(v8_svn_rev_file, 'w') as f:
-                f.write(re.search(r'Revision:\s(?P<rev>\d+)', out, re.MULTILINE)['rev'])
+            if ok:
+                with open(v8_svn_rev_file, 'w') as f:
+                    f.write(re.search(r'Revision:\s(?P<rev>\d+)', out, re.MULTILINE).groupdict()['rev'])
+            else:
+                print("ERROR: fail to fetch SVN info, %s", err)
 
 
 def prepare_gyp():
