@@ -7,7 +7,7 @@ namespace v8 {
 
 class PrettyPrinter: public AstVisitor {
 public:
-  PrettyPrinter();
+  PrettyPrinter(Zone* zone);
   virtual ~PrettyPrinter();
 
   // The following routines print a node into a string.
@@ -19,7 +19,7 @@ public:
   void Print(const char* format, ...);
 
   // Print a node to stdout.
-  static void PrintOut(AstNode* node);
+  static void PrintOut(Zone *zone, AstNode* node);
 
   // Individual nodes
 #define DECLARE_VISIT(type) virtual void Visit##type(type* node);
@@ -51,7 +51,7 @@ protected:
 // Prints the AST structure
 class AstPrinter: public PrettyPrinter {
 public:
-  AstPrinter();
+  AstPrinter(Zone* zone);
   virtual ~AstPrinter();
 
   const char* PrintProgram(FunctionLiteral* program);
@@ -92,8 +92,8 @@ class AttributesScope;
 // AST. The representation is based on JsonML (www.jsonml.org).
 class JsonAstBuilder: public PrettyPrinter {
 public:
-  JsonAstBuilder()
-    : indent_(0), top_tag_scope_(NULL), attributes_scope_(NULL) {
+  JsonAstBuilder(Zone* zone)
+    : PrettyPrinter(zone), indent_(0), top_tag_scope_(NULL), attributes_scope_(NULL) {
   }
   virtual ~JsonAstBuilder() {}
 

@@ -511,7 +511,7 @@ void CScript::visit(py::object handler, v8i::LanguageMode mode) const
     if (parser.Parse()) {
       if (::PyObject_HasAttrString(handler.ptr(), "onProgram"))
       {
-        handler.attr("onProgram")(CAstFunctionLiteral(info.function()));
+        handler.attr("onProgram")(CAstFunctionLiteral(info.zone(), info.function()));
       }
     }
   }

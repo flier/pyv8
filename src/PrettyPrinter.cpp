@@ -33,12 +33,12 @@
 namespace v8 {
   namespace internal {
 
-PrettyPrinter::PrettyPrinter() {
+PrettyPrinter::PrettyPrinter(Zone* zone) {
   output_ = NULL;
   size_ = 0;
   pos_ = 0;
 
-  InitializeAstVisitor(v8i::Isolate::Current());
+  InitializeAstVisitor(zone);
 }
 
 
@@ -487,8 +487,8 @@ const char* PrettyPrinter::PrintProgram(FunctionLiteral* program) {
 }
 
 
-void PrettyPrinter::PrintOut(AstNode* node) {
-  PrettyPrinter printer;
+void PrettyPrinter::PrintOut(Zone* zone, AstNode* node) {
+  PrettyPrinter printer(zone);
   PrintF("%s", printer.Print(node));
 }
 
@@ -651,7 +651,7 @@ class IndentedScope BASE_EMBEDDED {
 //-----------------------------------------------------------------------------
 
 
-AstPrinter::AstPrinter() : indent_(0) {
+AstPrinter::AstPrinter(Zone *zone) : PrettyPrinter(zone), indent_(0) {
 }
 
 

@@ -12,7 +12,15 @@ void CAstNode::Expose(void)
   py::class_<CAstScope>("AstScope", py::no_init)
     .add_property("isEval", &CAstScope::IsEval)
     .add_property("isFunc", &CAstScope::IsFunction)
+    .add_property("isModule", &CAstScope::IsModule)
     .add_property("isGlobal", &CAstScope::IsGlobal)
+    .add_property("isCatch", &CAstScope::IsCatch)
+    .add_property("isBlock", &CAstScope::IsBlock)
+    .add_property("isWith", &CAstScope::IsWith)
+    .add_property("isDeclaration", &CAstScope::IsDeclaration)
+    .add_property("isStrictOrExtendedEval", &CAstScope::IsStrictOrExtendedEval)
+    .add_property("isClassicMode", &CAstScope::IsClassicMode)
+    .add_property("isExtendedMode", &CAstScope::IsExtendedMode)
 
     .add_property("callsEval", &CAstScope::CallsEval)
     .add_property("outerScopeCallsEval", &CAstScope::OuterScopeCallsEval)
@@ -24,6 +32,7 @@ void CAstNode::Expose(void)
 
     .add_property("declarations", &CAstScope::GetDeclarations)
 
+    .add_property("function", &CAstScope::GetFunction)
     .add_property("num_parameters", &CAstScope::GetParametersNumer)
     .def("parameter", &CAstScope::GetParameter, (py::args("index")))
     ;
