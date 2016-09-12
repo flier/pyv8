@@ -11,14 +11,14 @@
 
 void CDebug::Init(void)
 {
-  v8::HandleScope scope(v8::Isolate::GetCurrent());
+  v8::HandleScope scope(m_isolate);
 
   v8::Handle<v8::ObjectTemplate> global_template = v8::ObjectTemplate::New();
 
-  v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), NULL, global_template);
+  v8::Handle<v8::Context> context = v8::Context::New(m_isolate, NULL, global_template);
 
-  m_debug_context.Reset(v8::Isolate::GetCurrent(), context);
-  DebugContext()->SetSecurityToken(v8::Undefined(v8::Isolate::GetCurrent()));
+  m_debug_context.Reset(m_isolate, context);
+  DebugContext()->SetSecurityToken(v8::Undefined(m_isolate));
 
 #ifdef SUPPORT_DEBUGGER
   v8::Context::Scope context_scope(DebugContext());
@@ -29,7 +29,7 @@ void CDebug::Init(void)
   debug->Load();
 
   v8i::Handle<v8i::JSObject> js_debug(debug->debug_context()->global_object());
-  DebugContext()->Global()->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "$debug"), v8::Utils::ToLocal(js_debug));
+  DebugContext()->Global()->Set(v8::String::NewFromUtf8(m_isolate, "$debug"), v8::Utils::ToLocal(js_debug));
 
   // Set the security token of the debug context to allow access.
   debug->debug_context()->set_security_token(v8i::Isolate::Current()->heap()->undefined_value());
@@ -46,13 +46,12 @@ void CDebug::SetEnable(bool enable)
   {
     BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
     {
-      v8::HandleScope scope(v8::Isolate::GetCurrent());
+      v8::HandleScope scope(m_isolate);
 
-      v8::Handle<v8::External> data = v8::External::New(v8::Isolate::GetCurrent(), this);
+      v8::Handle<v8::External> data = v8::External::New(m_isolate, this);
 
-      v8::Debug::SetDebugEventListener2(OnDebugEvent, data);
-      v8::Debug::SetMessageHandler2(OnDebugMessage);
-      v8::Debug::SetDebugMessageDispatchHandler(OnDispatchDebugMessages);
+      v8::Debug::SetDebugEventListener(m_isolate, OnDebugEvent, data);
+      v8::Debug::SetMessageHandler(m_isolate, OnDebugMessage);
     }
     END_HANDLE_JAVASCRIPT_EXCEPTION
   }
@@ -60,19 +59,10 @@ void CDebug::SetEnable(bool enable)
 
 py::object CDebug::GetDebugContext(void)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(m_isolate);
 
   return py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(
     CContextPtr(new CContext(DebugContext())))));
-}
-
-void CDebug::Listen(const std::string& name, int port, bool wait_for_connection)
-{
-  BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
-  {
-    v8::Debug::EnableAgent(name.c_str(), port, wait_for_connection);
-  }
-  END_HANDLE_JAVASCRIPT_EXCEPTION
 }
 
 void CDebug::SendCommand(const std::string& cmd)
@@ -88,7 +78,7 @@ void CDebug::SendCommand(const std::string& cmd)
 
   BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
   {
-    v8::Debug::SendCommand(&buf[0], buf.size()-1);
+    v8::Debug::SendCommand(m_isolate, &buf[0], buf.size()-1);
   }
   END_HANDLE_JAVASCRIPT_EXCEPTION
 }
@@ -152,30 +142,6 @@ void CDebug::OnDebugMessage(const v8::Debug::Message& message)
   END_HANDLE_PYTHON_EXCEPTION
 }
 
-void CDebug::OnDispatchDebugMessages(void)
-{
-  v8::HandleScope scope(v8::Isolate::GetCurrent());
-
-  BEGIN_HANDLE_PYTHON_EXCEPTION
-  {
-    if (GetInstance().m_onDispatchDebugMessages.is_none() ||
-      py::call<bool>(GetInstance().m_onDispatchDebugMessages.ptr()))
-    {
-      v8::Debug::ProcessDebugMessages();
-    }
-  }
-  END_HANDLE_PYTHON_EXCEPTION
-}
-
-void CDebug::DebugBreakForCommand(py::object data)
-{
-  BEGIN_HANDLE_JAVASCRIPT_EXCEPTION
-  {
-    v8::Debug::DebugBreakForCommand(data.is_none() ? NULL : new DebugClientData(data));
-  }
-  END_HANDLE_JAVASCRIPT_EXCEPTION
-}
-
 void CDebug::Expose(void)
 {
   py::class_<CDebug, boost::noncopyable>("JSDebug", py::no_init)
@@ -183,19 +149,14 @@ void CDebug::Expose(void)
     .add_property("context", &CDebug::GetDebugContext)
 
     .def("debugBreak", &CDebug::DebugBreak)
-    .def("debugBreakForCommand", &CDebug::DebugBreakForCommand)
     .def("cancelDebugBreak", &CDebug::CancelDebugBreak)
     .def("processDebugMessages", &CDebug::ProcessDebugMessages)
 
     .def("sendCommand", &CDebug::SendCommand, (py::arg("command")))
     .def("loop", &CDebug::ProcessDebugMessages)
-    .def("listen", &CDebug::Listen, (py::arg("name"),
-                                     py::arg("port"),
-                                     py::arg("wait_for_connection") = false))
 
     .def_readwrite("onDebugEvent", &CDebug::m_onDebugEvent)
     .def_readwrite("onDebugMessage", &CDebug::m_onDebugMessage)
-    .def_readwrite("onDispatchDebugMessages", &CDebug::m_onDispatchDebugMessages)
     ;
 
   py::enum_<v8::DebugEvent>("JSDebugEvent")

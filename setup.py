@@ -10,6 +10,7 @@ import logging
 import urllib
 import zipfile
 from datetime import datetime
+import multiprocessing
 
 import ez_setup
 ez_setup.use_setuptools()
@@ -213,19 +214,19 @@ def build_v8():
 
         kwargs = ["%s=%s" % (k, v) for k, v in options.items()]
 
-        exec_cmd(MAKE, '-j', '8', target, *kwargs, cwd=V8_HOME, msg="build v8 from SVN")
+        exec_cmd(MAKE, '-j', str(multiprocessing.cpu_count()), target, *kwargs, cwd=V8_HOME, msg="build v8 from SVN")
 
 
 def generate_probes():
     build_path = os.path.join(PYV8_HOME, "build")
 
     if not os.path.exists(build_path):
-        print("INFO: automatic make the build folder: %s" % build_path)
+        log.info("automatic make the build folder: %s", build_path)
 
         try:
             os.makedirs(build_path, 0755)
         except os.error as ex:
-            print("WARN: fail to create the build folder, %s" % ex)
+            log.warn("fail to create the build folder, %s", ex)
 
     probes_d = os.path.join(PYV8_HOME, "src/probes.d")
     probes_h = os.path.join(PYV8_HOME, "src/probes.h")
@@ -238,7 +239,7 @@ def generate_probes():
           exec_cmd("dtrace -G -C -s %s -o %s" % (probes_d, probes_o), "generate DTrace probes.o")):
         extra_objects.append(probes_o)
     else:
-        print("INFO: dtrace or systemtap doesn't works, force to disable probes")
+        log.info("dtrace or systemtap doesn't works, force to disable probes")
 
         config_file = os.path.join(PYV8_HOME, "src/Config.h")
 
@@ -259,17 +260,19 @@ def generate_probes():
 
 def prepare_v8():
     try:
-        if 'SKIP_CHECKOUT' not in os.environ:
-            install_depot()
-            sync_v8()
-            checkout_v8()
+        check_env()
+
+        install_depot()
+        sync_v8()
+        checkout_v8()
 
         patch_gyp()
         build_v8()
+
         generate_probes()
     except Exception as e:
-        print("ERROR: fail to checkout and build v8, %s" % e)
-        traceback.print_exc()
+        log.error("fail to checkout and build v8, %s", e)
+        log.debug(traceback.format_exc())
 
 
 class build(_build):
@@ -290,10 +293,11 @@ if __name__ == '__main__':
                         level=logging.DEBUG if V8_DEBUG else logging.INFO,
                         stream=sys.stderr)
 
-    check_env()
-
     source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
-                    "Debug.cpp", "Locker.cpp", "AST.cpp", "PrettyPrinter.cpp", "PyV8.cpp"]
+                    "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
+
+    if V8_AST:
+        source_files += ["AST.cpp", "PrettyPrinter.cpp"]
 
     sources = [os.path.join("src", file) for file in source_files]
 
@@ -339,7 +343,7 @@ if __name__ == '__main__':
     """
 
     setup(name='PyV8',
-        version='2016.9.5.5.122',
+        version='2016.9.' + V8_GIT_TAG,
         description='Python Wrapper for Google V8 Engine',
         long_description=description,
         classifiers=classifiers,
@@ -354,5 +358,5 @@ if __name__ == '__main__':
         py_modules=['PyV8'],
         ext_modules=[pyv8],
         test_suite='PyV8',
-        cmdclass=dict(build=build, v8build=_build, develop=develop),
+        cmdclass=dict(compile=compile, build=build, v8build=_build, develop=develop),
         **extra)

@@ -23,11 +23,12 @@ is_arm = False
 PYV8_HOME = os.path.abspath(os.path.dirname(__file__))
 BOOST_HOME = None
 BOOST_MT = is_osx
+BOOST_DEBUG = False
 BOOST_STATIC_LINK = False
 PYTHON_HOME = None
 V8_HOME = None
 V8_GIT_URL = "https://chromium.googlesource.com/v8/v8.git"
-V8_GIT_TAG = "5.5.122"
+V8_GIT_TAG = "5.5.132"
 DEPOT_HOME = None
 DEPOT_GIT_URL = "https://chromium.googlesource.com/chromium/tools/depot_tools.git"
 DEPOT_DOWNLOAD_URL = "https://storage.googleapis.com/chrome-infra/depot_tools.zip"
@@ -38,22 +39,23 @@ V8_DEBUG = False
 
 MAKE = 'gmake' if is_freebsd else 'make'
 
-V8_SNAPSHOT_ENABLED = not V8_DEBUG # build using snapshots for faster start-up
-V8_NATIVE_REGEXP = True         # Whether to use native or interpreted regexp implementation
-V8_OBJECT_PRINT = V8_DEBUG         # enable object printing
-V8_EXTRA_CHECKS = V8_DEBUG         # enable extra checks
-V8_VERIFY_HEAP = V8_DEBUG          # enable verify heap
-V8_TRACE_MAPS = V8_DEBUG           # enable trace maps
-V8_GDB_JIT = V8_DEBUG              # enable GDB jit
-V8_VTUNE_JIT = V8_DEBUG
-V8_DISASSEMBLEER = V8_DEBUG        # enable the disassembler to inspect generated code
-V8_DEBUGGER_SUPPORT = True      # enable debugging of JavaScript code
-V8_DEBUG_SYMBOLS = True         # enable debug symbols
-V8_LIVE_OBJECT_LIST = V8_DEBUG     # enable live object list features in the debugger
-V8_WERROR = False               # ignore compile warnings
-V8_STRICTALIASING = True        # enable strict aliasing
+V8_SNAPSHOT_ENABLED = not V8_DEBUG  # build using snapshots for faster start-up
+V8_NATIVE_REGEXP = True             # Whether to use native or interpreted regexp implementation
+V8_OBJECT_PRINT = V8_DEBUG          # enable object printing
+V8_EXTRA_CHECKS = V8_DEBUG          # enable extra checks
+V8_VERIFY_HEAP = V8_DEBUG           # enable verify heap
+V8_TRACE_MAPS = V8_DEBUG            # enable trace maps
+V8_GDB_JIT = V8_DEBUG               # enable GDB JIT supports
+V8_VTUNE_JIT = V8_DEBUG             # enable VTune JIT supports
+V8_DISASSEMBLEER = V8_DEBUG         # enable the disassembler to inspect generated code
+V8_DEBUGGER_SUPPORT = True          # enable debugging of JavaScript code
+V8_DEBUG_SYMBOLS = True             # enable debug symbols
+V8_LIVE_OBJECT_LIST = V8_DEBUG      # enable live object list features in the debugger
+V8_WERROR = False                   # ignore compile warnings
+V8_STRICTALIASING = True            # enable strict aliasing
 V8_BACKTRACE = True
-V8_I18N = False                 # enable i18n support
+V8_I18N = False                     # enable i18n supports
+V8_AST = False                      # enable AST supports
 
 # load defaults from config file
 try:
@@ -110,7 +112,7 @@ boost_libs = ['boost_python', 'boost_thread', 'boost_system']
 if BOOST_MT:
     boost_libs = [lib + '-mt' for lib in boost_libs]
 
-if V8_DEBUG:
+if BOOST_DEBUG:
     boost_libs = [lib + '-d' for lib in boost_libs]
 
 include_dirs = [
@@ -120,9 +122,12 @@ include_dirs = [
 ]
 library_dirs = []
 libraries = []
-extra_compile_args = []
+extra_compile_args = ['-std=c++11']
 extra_link_args = []
 extra_objects = []
+
+if V8_AST:
+    extra_compile_args = ['-DSUPPORT_AST=1']
 
 if INCLUDE:
     include_dirs += [p for p in INCLUDE.split(os.path.pathsep) if p]

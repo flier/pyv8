@@ -21,8 +21,7 @@ class CEngine
 
   static uint32_t *CalcStackLimitSize(uint32_t size);
 protected:
-  py::object InternalPreCompile(v8::Handle<v8::String> src);
-  CScriptPtr InternalCompile(v8::Handle<v8::String> src, v8::Handle<v8::Value> name, int line, int col, py::object precompiled);
+  CScriptPtr InternalCompile(v8::Handle<v8::String> src, v8::Handle<v8::Value> name, int line, int col);
 
 #ifdef SUPPORT_SERIALIZE
 
@@ -40,32 +39,17 @@ protected:
 public:
   CEngine(v8::Isolate *isolate = NULL) : m_isolate(isolate ? isolate : v8::Isolate::GetCurrent()) {}
 
-  py::object PreCompile(const std::string& src)
+  CScriptPtr Compile(const std::string& src, const std::string name = std::string(), int line = -1, int col = -1)
   {
     v8::HandleScope scope(m_isolate);
 
-    return InternalPreCompile(ToString(src));
+    return InternalCompile(ToString(src), ToString(name), line, col);
   }
-  py::object PreCompileW(const std::wstring& src)
+  CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(), int line = -1, int col = -1)
   {
     v8::HandleScope scope(m_isolate);
 
-    return InternalPreCompile(ToString(src));
-  }
-
-  CScriptPtr Compile(const std::string& src, const std::string name = std::string(),
-                     int line = -1, int col = -1, py::object precompiled = py::object())
-  {
-    v8::HandleScope scope(m_isolate);
-
-    return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
-  }
-  CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(),
-                      int line = -1, int col = -1, py::object precompiled = py::object())
-  {
-    v8::HandleScope scope(m_isolate);
-
-    return InternalCompile(ToString(src), ToString(name), line, col, precompiled);
+    return InternalCompile(ToString(src), ToString(name), line, col);
   }
 
   void RaiseError(v8::TryCatch& try_catch);
@@ -73,7 +57,7 @@ public:
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
-  static bool SetMemoryLimit(int max_young_space_size, int max_old_space_size, int max_executable_size);
+  static bool SetMemoryLimit(int max_semi_space_size, int max_old_space_size, int max_executable_size, int code_range_size);
   static bool SetStackLimit(uint32_t stack_limit_size);
 
   py::object ExecuteScript(v8::Handle<v8::Script> script);
@@ -95,7 +79,7 @@ class CScript
   v8::Persistent<v8::String> m_source;
   v8::Persistent<v8::Script> m_script;
 public:
-  CScript(v8::Isolate *isolate, CEngine& engine, v8::Persistent<v8::String>& source, v8::Handle<v8::Script> script)
+  CScript(v8::Isolate *isolate, CEngine& engine, v8::Handle<v8::String> source, v8::Handle<v8::Script> script)
     : m_isolate(isolate), m_engine(engine), m_source(m_isolate, source), m_script(m_isolate, script)
   {
 
@@ -120,7 +104,7 @@ public:
   v8::Handle<v8::Script> Script() const { return v8::Local<v8::Script>::New(m_isolate, m_script); }
 
 #ifdef SUPPORT_AST
-  void visit(py::object handler, v8i::LanguageMode mode=v8i::CLASSIC_MODE) const;
+  void visit(py::object handler, v8i::LanguageMode mode=v8i::SLOPPY) const;
 #endif
 
   const std::string GetSource(void) const;

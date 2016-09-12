@@ -9,6 +9,7 @@
 
 class CDebug
 {
+  v8::Isolate *m_isolate;
   bool m_enabled;
 
   py::object m_onDebugEvent;
@@ -23,23 +24,21 @@ class CDebug
 
   void Init(void);
 public:
-  CDebug() : m_enabled(false)
+  CDebug(v8::Isolate *isolate = NULL) : m_isolate(isolate ? isolate : v8::Isolate::GetCurrent()), m_enabled(false)
   {
     Init();
   }
 
-  v8::Handle<v8::Context> DebugContext() const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_debug_context); }
-  v8::Handle<v8::Context> EvalContext() const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_eval_context); }
+  v8::Handle<v8::Context> DebugContext() const { return v8::Local<v8::Context>::New(m_isolate, m_debug_context); }
+  v8::Handle<v8::Context> EvalContext() const { return v8::Local<v8::Context>::New(m_isolate, m_eval_context); }
 
   bool IsEnabled(void) { return m_enabled; }
   void SetEnable(bool enable);
 
-  void DebugBreak(void) { v8::Debug::DebugBreak(); }
-  void DebugBreakForCommand(py::object data);
-  void CancelDebugBreak(void) { v8::Debug::CancelDebugBreak(); }
-  void ProcessDebugMessages(void) { v8::Debug::ProcessDebugMessages(); }
+  void DebugBreak(void) { v8::Debug::DebugBreak(m_isolate); }
+  void CancelDebugBreak(void) { v8::Debug::CancelDebugBreak(m_isolate); }
+  void ProcessDebugMessages(void) { v8::Debug::ProcessDebugMessages(m_isolate); }
 
-  void Listen(const std::string& name, int port, bool wait_for_connection);
   void SendCommand(const std::string& cmd);
 
   py::object GetDebugContext(void);

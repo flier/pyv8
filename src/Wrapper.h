@@ -223,9 +223,9 @@ class ObjectTracer
 
   void Trace(void);
 
-  static void WeakCallback(const v8::WeakCallbackData<v8::Value, ObjectTracer>& data);
+  static void WeakCallback(const v8::WeakCallbackInfo<ObjectTracer>& data);
 
-  static LivingMap *GetLivingMapping(void);
+  static LivingMap *GetLivingMapping(v8::Isolate *isolate = NULL);
 public:
   ObjectTracer(v8::Handle<v8::Value> handle, py::object *object);
   ~ObjectTracer(void);
@@ -247,7 +247,7 @@ class ContextTracer
 
   void Trace(void);
 
-  static void WeakCallback(const v8::WeakCallbackData<v8::Context, ContextTracer>& data);
+  static void WeakCallback(const v8::WeakCallbackInfo<ContextTracer>& data);
 public:
   ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living);
   ~ContextTracer(void);

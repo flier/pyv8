@@ -226,15 +226,19 @@ void CPythonObject::ThrowIf(v8::Isolate* isolate)
     // FIXME How to trace the lifecycle of exception? and when to delete those object in the hidden value?
 
   #ifdef SUPPORT_TRACE_EXCEPTION_LIFECYCLE
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_type"),
-                                      v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(type)).Object()));
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_value"),
-                                      v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(value)).Object()));
+    error->ToObject()->SetPrivate(isolate->GetCurrentContext(),
+                                  v8::Private::New(isolate, v8::String::NewFromUtf8(isolate, "exc_type")),
+                                  v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(type)).Object()));
+    error->ToObject()->SetPrivate(isolate->GetCurrentContext(),
+                                  v8::Private::New(isolate, v8::String::NewFromUtf8(isolate, "exc_value")),
+                                  v8::External::New(isolate, ObjectTracer::Trace(error, new py::object(value)).Object()));
   #else
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_type"),
-                                      v8::External::New(isolate, new py::object(type)));
-    error->ToObject()->SetHiddenValue(v8::String::NewFromUtf8(isolate, "exc_value"),
-                                      v8::External::New(isolate, new py::object(value)));
+    error->ToObject()->SetPrivate(isolate->GetCurrentContext(),
+                                  v8::Private::New(isolate, v8::String::NewFromUtf8(isolate, "exc_type")),
+                                  v8::External::New(isolate, new py::object(type)));
+    error->ToObject()->SetPrivate(isolate->GetCurrentContext(),
+                                  v8::Private::New(isolate, v8::String::NewFromUtf8(isolate, "exc_value")),
+                                  v8::External::New(isolate, new py::object(value)));
   #endif
   }
 
@@ -1411,7 +1415,8 @@ py::object CJavascriptArray::SetItem(py::object key, py::object value)
       {
         if (itemSize != sliceLen)
         {
-          v8i::Handle<v8i::JSArray> array = v8::Utils::OpenHandle(*Object());
+          v8i::Handle<v8i::JSReceiver> object = v8::Utils::OpenHandle(*Object());
+          v8i::Handle<v8i::JSArray> array = v8i::Handle<v8i::JSArray>::cast(object);
 
           array->set_length(v8i::Smi::FromInt(arrayLen - sliceLen + itemSize));
 
@@ -1489,7 +1494,8 @@ py::object CJavascriptArray::DelItem(py::object key)
         Object()->Delete((uint32_t)idx);
       }
 
-      v8i::Handle<v8i::JSArray> array = v8::Utils::OpenHandle(*Object());
+      v8i::Handle<v8i::JSReceiver> object = v8::Utils::OpenHandle(*Object());
+      v8i::Handle<v8i::JSArray> array = v8i::Handle<v8i::JSArray>::cast(object);
 
       array->set_length(v8i::Smi::FromInt(arrayLen - sliceLen));
     }
@@ -1817,36 +1823,37 @@ ObjectTracer& ObjectTracer::Trace(v8::Handle<v8::Value> handle, py::object *obje
 
 void ObjectTracer::Trace(void)
 {
-  m_handle.SetWeak(this, WeakCallback);
+  m_handle.SetWeak(this, WeakCallback, v8::WeakCallbackType::kFinalizer);
 
   m_living->insert(std::make_pair(m_object->ptr(), this));
 }
 
-void ObjectTracer::WeakCallback(const v8::WeakCallbackData<v8::Value, ObjectTracer>& data)
+void ObjectTracer::WeakCallback(const v8::WeakCallbackInfo<ObjectTracer>& data)
 {
   std::auto_ptr<ObjectTracer> tracer(data.GetParameter());
-
-  assert(data.GetValue() == tracer->m_handle);
 }
 
-LivingMap * ObjectTracer::GetLivingMapping(void)
+LivingMap * ObjectTracer::GetLivingMapping(v8::Isolate *isolate)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  if (!isolate) isolate = v8::Isolate::GetCurrent();
 
-  v8::Handle<v8::Context> ctxt = v8::Isolate::GetCurrent()->GetCurrentContext();
+  v8::HandleScope handle_scope(isolate);
 
-  v8::Handle<v8::Value> value = ctxt->Global()->GetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "__living__"));
+  v8::Handle<v8::Context> ctxt = isolate->GetCurrentContext();
+  v8::Handle<v8::Private> key = v8::Private::New(isolate, v8::String::NewFromUtf8(isolate, "__living__"));
+
+  v8::MaybeLocal<v8::Value> value = ctxt->Global()->GetPrivate(ctxt, key);
 
   if (!value.IsEmpty())
   {
-    LivingMap *living = (LivingMap *) v8::External::Cast(*value)->Value();
+    LivingMap *living = (LivingMap *) v8::External::Cast(*value.ToLocalChecked())->Value();
 
     if (living) return living;
   }
 
   std::auto_ptr<LivingMap> living(new LivingMap());
 
-  ctxt->Global()->SetHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "__living__"), v8::External::New(v8::Isolate::GetCurrent(), living.get()));
+  ctxt->Global()->SetPrivate(ctxt, key, v8::External::New(isolate, living.get()));
 
   ContextTracer::Trace(ctxt, living.get());
 
@@ -1877,7 +1884,11 @@ ContextTracer::ContextTracer(v8::Handle<v8::Context> ctxt, LivingMap *living)
 
 ContextTracer::~ContextTracer(void)
 {
-  Context()->Global()->DeleteHiddenValue(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "__living__"));
+  v8::Local<v8::Context> ctxt = m_ctxt.Get(v8::Isolate::GetCurrent());
+
+  v8::Handle<v8::Private> key = v8::Private::New(ctxt->GetIsolate(), v8::String::NewFromUtf8(ctxt->GetIsolate(), "__living__"));
+
+  ctxt->Global()->DeletePrivate(ctxt, key);
 
   for (LivingMap::const_iterator it = m_living->begin(); it != m_living->end(); it++)
   {
@@ -1887,11 +1898,6 @@ ContextTracer::~ContextTracer(void)
   }
 }
 
-void ContextTracer::WeakCallback(const v8::WeakCallbackData<v8::Context, ContextTracer>& data)
-{
-  delete data.GetParameter();
-}
-
 void ContextTracer::Trace(v8::Handle<v8::Context> ctxt, LivingMap *living)
 {
   ContextTracer *tracer = new ContextTracer(ctxt, living);
@@ -1899,9 +1905,14 @@ void ContextTracer::Trace(v8::Handle<v8::Context> ctxt, LivingMap *living)
   tracer->Trace();
 }
 
+void ContextTracer::WeakCallback(const v8::WeakCallbackInfo<ContextTracer>& data)
+{
+  delete data.GetParameter();
+}
+
 void ContextTracer::Trace(void)
 {
-  m_ctxt.SetWeak(this, WeakCallback);
+  m_ctxt.SetWeak(this, WeakCallback, v8::WeakCallbackType::kFinalizer);
 }
 
 #endif // SUPPORT_TRACE_LIFECYCLE

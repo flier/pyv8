@@ -8,7 +8,7 @@ void CLocker::enter(void)
 {
     Py_BEGIN_ALLOW_THREADS
 
-    m_locker.reset(new v8::Locker(m_isolate.get() ? m_isolate->GetIsolate() : v8i::Isolate::GetDefaultIsolateForLocking()));
+    m_locker.reset(new v8::Locker(m_isolate->GetIsolate()));
 
     Py_END_ALLOW_THREADS
 }
@@ -23,7 +23,7 @@ void CLocker::leave(void)
 
 bool CLocker::IsLocked()
 {
-  return v8::Locker::IsLocked(v8i::Isolate::GetDefaultIsolateForLocking());
+  return v8::Locker::IsLocked(m_isolate->GetIsolate());
 }
 
 void CLocker::Expose(void)

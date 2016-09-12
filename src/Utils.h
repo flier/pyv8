@@ -63,8 +63,11 @@ namespace std {
 #  undef TIME_UTC
 # endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #include <boost/python.hpp>
 namespace py = boost::python;
+#pragma GCC diagnostic pop
 
 #ifdef _WIN32
   #undef FP_NAN

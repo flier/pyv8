@@ -18,7 +18,11 @@ class CIsolate
   v8::Isolate *m_isolate;
   bool m_owner;
 public:
-  CIsolate(bool owner=false) : m_owner(owner) { m_isolate = v8::Isolate::New(); }
+  CIsolate(bool owner=false) : m_owner(owner) {
+    v8::Isolate::CreateParams params;
+
+    m_isolate = v8::Isolate::New(params);
+  }
   CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owner(false) {}
   ~CIsolate(void) { if (m_owner) m_isolate->Dispose(); }
 
@@ -63,12 +67,8 @@ public:
   void Enter(void) { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); Handle()->Enter(); }
   void Leave(void) { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); Handle()->Exit(); }
 
-  bool HasOutOfMemoryException(void) { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); return Handle()->HasOutOfMemoryException(); }
-
-  py::object Evaluate(const std::string& src, const std::string name = std::string(),
-                      int line = -1, int col = -1, py::object precompiled = py::object());
-  py::object EvaluateW(const std::wstring& src, const std::wstring name = std::wstring(),
-                       int line = -1, int col = -1, py::object precompiled = py::object());
+  py::object Evaluate(const std::string& src, const std::string name = std::string(), int line = -1, int col = -1);
+  py::object EvaluateW(const std::wstring& src, const std::wstring name = std::wstring(), int line = -1, int col = -1);
 
   static py::object GetEntered(void);
   static py::object GetCurrent(void);

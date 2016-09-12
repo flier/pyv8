@@ -21,7 +21,7 @@ public:
   void enter(void);
   void leave(void);
 
-  static bool IsLocked();
+  bool IsLocked();
 
   static void Expose(void);
 };
