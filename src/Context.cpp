@@ -49,7 +49,7 @@ void CContext::Expose(void)
                                        py::arg("line") = -1,
                                        py::arg("col") = -1))
     .def("eval", &CContext::EvaluateW, (py::arg("source"),
-                                        py::arg("name") = std::wstring(),
+                                        py::arg("name") = std::string(),
                                         py::arg("line") = -1,
                                         py::arg("col") = -1))
 
@@ -106,7 +106,6 @@ CContext::CContext(const CContext& context)
 }
 
 CContext::CContext(py::object global, py::list extensions)
-  : m_global(global)
 {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   v8::HandleScope handle_scope(isolate);
@@ -144,7 +143,9 @@ CContext::CContext(py::object global, py::list extensions)
 
   if (!global.is_none())
   {
-    Context()->Global()->Set(v8::String::NewFromUtf8(isolate, "__proto__"), CPythonObject::Wrap(global));
+    Context()->Global()->Set(Context(), v8::String::NewFromUtf8(isolate, "__proto__"), CPythonObject::Wrap(global));
+
+    m_global = global;
 
     Py_DECREF(global.ptr());
   }
@@ -226,20 +227,20 @@ py::object CContext::Evaluate(const std::string& src,
 
   CScriptPtr script = engine.Compile(src, name, line, col);
 
-  BOOST_LOG_SEV(m_logger, trace) << "eval script (" << name << "@" << line << ":" << col << "): " << src;
+  BOOST_LOG_SEV(m_logger, trace) << "eval script: " << src;
 
   return script->Run();
 }
 
 py::object CContext::EvaluateW(const std::wstring& src,
-                               const std::wstring name,
+                               const std::string name,
                                int line, int col)
 {
   CEngine engine(v8::Isolate::GetCurrent());
 
   CScriptPtr script = engine.CompileW(src, name, line, col);
 
-  BOOST_LOG_SEV(m_logger, trace) << "eval script (" << name << "@" << line << ":" << col << "): " << src;
+  BOOST_LOG_SEV(m_logger, trace) << "eval script: " << src;
 
   return script->Run();
 }

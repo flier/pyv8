@@ -2099,7 +2099,11 @@ class TestEngine(unittest.TestCase):
         with JSContext() as ctxt:
             self.assertRaises(ReferenceError, ctxt.eval, "hello('flier')")
 
-        extUnicodeSrc = u"""function helloW(name) { return "hello " + name + " from javascript"; }"""
+        extUnicodeSrc = u"""
+            function helloW(name) {
+                return "hello " + name + " from javascript";
+            }
+        """
         extUnicodeJs = JSExtension(u"helloW/javascript", extUnicodeSrc)
 
         self.assertTrue(extUnicodeJs)

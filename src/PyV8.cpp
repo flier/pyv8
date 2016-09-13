@@ -43,9 +43,13 @@ namespace sinks = boost::log::sinks;
 
 severity_level g_logging_level = error;
 
-BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level);
-BOOST_LOG_ATTRIBUTE_KEYWORD(isolate, "Isolate", const v8::Isolate *);
-BOOST_LOG_ATTRIBUTE_KEYWORD(context, "Context", const v8::Context *);
+BOOST_LOG_ATTRIBUTE_KEYWORD(severity, SEVERITY_ATTR, severity_level);
+BOOST_LOG_ATTRIBUTE_KEYWORD(process_name, PROCESS_NAME_ATTR, std::string);
+BOOST_LOG_ATTRIBUTE_KEYWORD(isolate, ISOLATE_ATTR, const v8::Isolate *);
+BOOST_LOG_ATTRIBUTE_KEYWORD(context, CONTEXT_ATTR, const v8::Context *);
+BOOST_LOG_ATTRIBUTE_KEYWORD(script_name, SCRIPT_NAME_ATTR, std::string);
+BOOST_LOG_ATTRIBUTE_KEYWORD(script_line_no, SCRIPT_LINE_NO_ATTR, int);
+BOOST_LOG_ATTRIBUTE_KEYWORD(script_column_no, SCRIPT_COLUMN_NO_ATTR, int);
 
 typedef sinks::synchronous_sink< sinks::text_ostream_backend > text_sink;
 
@@ -91,8 +95,8 @@ static void initialize_logging() {
     std::istringstream(pyv8_log) >> g_logging_level;
   }
 
-  logging::register_simple_formatter_factory< severity_level, char >("Severity");
-  logging::register_simple_filter_factory< severity_level >("Severity");
+  logging::register_simple_formatter_factory< severity_level, char >(SEVERITY_ATTR);
+  logging::register_simple_filter_factory< severity_level >(SEVERITY_ATTR);
 
   boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
 
@@ -104,14 +108,22 @@ static void initialize_logging() {
 
   logging::add_common_attributes();
 
+  logging::core::get()->add_global_attribute(PROCESS_NAME_ATTR, attrs::current_process_name());
+  logging::core::get()->add_global_attribute(SCOPE_ATTR, attrs::named_scope());
+
   sink->set_formatter(
     expr::stream <<
-      expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d %H:%M:%S") <<
-      expr::if_(g_logging_level >= debug && expr::has_attr(isolate))
+      expr::format_date_time< boost::posix_time::ptime >(TIMESTAMP_ATTR, "%Y-%m-%d %H:%M:%S") <<
+      " [" << std::dec << expr::attr<logging::process_id>(PROCESS_ID_ATTR) << ":" << expr::attr<logging::thread_id>(THREAD_ID_ATTR) << "]" <<
+      expr::if_(g_logging_level <= debug && expr::has_attr(isolate))
       [
-        expr::stream << " [" << isolate << ":" << context << "]"
+        expr::stream << " <" << isolate << ":" << context << ">"
       ] <<
-      " <" << severity << "> " << expr::message
+      expr::if_(expr::has_attr(SCRIPT_NAME_ATTR))
+      [
+        expr::stream << " {" << script_name << "@" << script_line_no << ":" << script_column_no << "}"
+      ] <<
+      " " << severity << " " << expr::message
     );
 
   sink->set_filter(

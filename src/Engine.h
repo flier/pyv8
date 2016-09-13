@@ -45,7 +45,8 @@ public:
 
     return InternalCompile(ToString(src), ToString(name), line, col);
   }
-  CScriptPtr CompileW(const std::wstring& src, const std::wstring name = std::wstring(), int line = -1, int col = -1)
+
+  CScriptPtr CompileW(const std::wstring& src, const std::string name = std::string(), int line = -1, int col = -1)
   {
     v8::HandleScope scope(m_isolate);
 
