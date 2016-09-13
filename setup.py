@@ -24,23 +24,9 @@ from settings import *
 log = logging.getLogger()
 
 def check_env():
-    global V8_HOME
-    global DEPOT_HOME
-
     if is_cygwin or is_mingw:
         log.error("Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
         sys.exit(-1)
-
-    if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
-        log.info("V8_HOME doesn't exists or point to a wrong folder, try to fetch from GIT repo.")
-
-        V8_HOME = os.path.join(PYV8_HOME, 'build', 'v8-' + V8_GIT_TAG)
-
-    if DEPOT_HOME is None:
-        log.debug("DEPOT_HOME set to PYV8_HOME/depot_tools by default")
-
-        DEPOT_HOME = os.path.join(PYV8_HOME, 'depot_tools')
-
 
 def exec_cmd(cmdline, *args, **kwargs):
     msg = kwargs.get('msg')
@@ -52,7 +38,9 @@ def exec_cmd(cmdline, *args, **kwargs):
 
     cmdline = ' '.join([cmdline] + list(args))
 
-    log.debug("exec %s$ %s", os.path.relpath(cwd), cmdline)
+    rel_path = os.path.relpath(cwd)
+
+    log.debug("exec %s$ %s", rel_path if rel_path != '.' else '', cmdline)
 
     proc = subprocess.Popen(cmdline,
                             shell=kwargs.get('shell', True),
@@ -117,8 +105,12 @@ def install_depot():
                 z.extractall(DEPOT_HOME)
         finally:
             os.remove(tmpfile)
+    elif os.path.isdir(os.path.join(DEPOT_HOME, '.git')):
+        exec_cmd("git pull", os.path.basename(DEPOT_HOME), cwd=os.path.dirname(DEPOT_HOME), msg="Cloning depot tools ...")
+    elif not os.path.exists(DEPOT_HOME):
+        exec_cmd("git clone", DEPOT_GIT_URL, DEPOT_HOME, cwd=os.path.dirname(DEPOT_HOME), msg="Cloning depot tools ...")
     else:
-        exec_cmd("git clone", DEPOT_GIT_URL, msg="Cloning depot tools ...")
+        log.info("Skip depot_tools folder without .git")
 
 
 def sync_v8():
@@ -141,7 +133,8 @@ def checkout_v8():
 
     https://www.chromium.org/developers/how-tos/get-the-code/working-with-release-branches
     """
-    exec_cmd('git fetch --tags', cwd=V8_HOME, msg='Fetch the release tag information')
+    if not OFFLINE_MODE:
+        exec_cmd('git fetch --tags', cwd=V8_HOME, msg='Fetch the release tag information')
 
     exec_cmd('git checkout', V8_GIT_TAG, cwd=V8_HOME, msg='Checkout Google V8 v' + V8_GIT_TAG)
 
@@ -262,8 +255,10 @@ def prepare_v8():
     try:
         check_env()
 
-        install_depot()
-        sync_v8()
+        if not OFFLINE_MODE:
+            install_depot()
+            sync_v8()
+        
         checkout_v8()
 
         patch_gyp()
@@ -290,7 +285,7 @@ class develop(_develop):
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s [%(process)d] %(levelname)s %(message)s',
-                        level=logging.DEBUG if V8_DEBUG else logging.INFO,
+                        level=logging.DEBUG if PYV8_DEBUG else logging.INFO,
                         stream=sys.stderr)
 
     source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",

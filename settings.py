@@ -35,22 +35,23 @@ DEPOT_DOWNLOAD_URL = "https://storage.googleapis.com/chrome-infra/depot_tools.zi
 
 INCLUDE = None
 LIB = None
-V8_DEBUG = False
+OFFLINE_MODE = False
+PYV8_DEBUG = False
 
 MAKE = 'gmake' if is_freebsd else 'make'
 
-V8_SNAPSHOT_ENABLED = not V8_DEBUG  # build using snapshots for faster start-up
+V8_SNAPSHOT_ENABLED = not PYV8_DEBUG  # build using snapshots for faster start-up
 V8_NATIVE_REGEXP = True             # Whether to use native or interpreted regexp implementation
-V8_OBJECT_PRINT = V8_DEBUG          # enable object printing
-V8_EXTRA_CHECKS = V8_DEBUG          # enable extra checks
-V8_VERIFY_HEAP = V8_DEBUG           # enable verify heap
-V8_TRACE_MAPS = V8_DEBUG            # enable trace maps
-V8_GDB_JIT = V8_DEBUG               # enable GDB JIT supports
-V8_VTUNE_JIT = V8_DEBUG             # enable VTune JIT supports
-V8_DISASSEMBLEER = V8_DEBUG         # enable the disassembler to inspect generated code
+V8_OBJECT_PRINT = PYV8_DEBUG          # enable object printing
+V8_EXTRA_CHECKS = PYV8_DEBUG          # enable extra checks
+V8_VERIFY_HEAP = PYV8_DEBUG           # enable verify heap
+V8_TRACE_MAPS = PYV8_DEBUG            # enable trace maps
+V8_GDB_JIT = PYV8_DEBUG               # enable GDB JIT supports
+V8_VTUNE_JIT = PYV8_DEBUG             # enable VTune JIT supports
+V8_DISASSEMBLEER = PYV8_DEBUG         # enable the disassembler to inspect generated code
 V8_DEBUGGER_SUPPORT = True          # enable debugging of JavaScript code
 V8_DEBUG_SYMBOLS = True             # enable debug symbols
-V8_LIVE_OBJECT_LIST = V8_DEBUG      # enable live object list features in the debugger
+V8_LIVE_OBJECT_LIST = PYV8_DEBUG      # enable live object list features in the debugger
 V8_WERROR = False                   # ignore compile warnings
 V8_STRICTALIASING = True            # enable strict aliasing
 V8_BACKTRACE = True
@@ -73,17 +74,24 @@ V8_GIT_URL = os.environ.get('V8_GIT_URL', V8_GIT_URL)
 DEPOT_HOME = os.environ.get('DEPOT_HOME', DEPOT_HOME)
 INCLUDE = os.environ.get('INCLUDE', INCLUDE)
 LIB = os.environ.get('LIB', LIB)
-V8_DEBUG = os.environ.get('V8_DEBUG', V8_DEBUG)
+OFFLINE_MODE = strtobool(os.environ.get('OFFLINE_MODE', str(OFFLINE_MODE)))
+PYV8_DEBUG =strtobool(os.environ.get('PYV8_DEBUG', str(PYV8_DEBUG)))
 MAKE = os.environ.get('MAKE', MAKE)
 
-if type(V8_DEBUG) == str:
-    V8_DEBUG = strtobool(V8_DEBUG)
+if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
+    V8_HOME = os.path.join(PYV8_HOME, 'build', 'v8-' + V8_GIT_TAG)
+
+if DEPOT_HOME is None:
+    DEPOT_HOME = os.path.join(PYV8_HOME, 'depot_tools')
+
+if type(PYV8_DEBUG) == str:
+    PYV8_DEBUG = strtobool(PYV8_DEBUG)
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
 ]
 
-if V8_DEBUG:
+if PYV8_DEBUG:
     macros += [
         ("V8_ENABLE_CHECKS", None),
     ]
@@ -186,15 +194,15 @@ if is_winnt:
 
     libraries += ["winmm", "ws2_32"]
 
-    if V8_DEBUG:
+    if PYV8_DEBUG:
         extra_compile_args += ["/Od", "/MTd", "/EHsc", "/Gy", "/Zi"]
     else:
         extra_compile_args += ["/O2", "/GL", "/MT", "/EHsc", "/Gy", "/Zi"]
 
     extra_link_args += ["/DLL", "/OPT:REF", "/OPT:ICF", "/MACHINE:X64" if is_64bit else "/MACHINE:X86"]
 
-    if V8_DEBUG:
-        extra_link_args += ["/V8_DEBUG"]
+    if PYV8_DEBUG:
+        extra_link_args += ["/PYV8_DEBUG"]
 
     os.putenv('MSSdk', 'true')
     os.putenv('DISTUTILS_USE_SDK', 'true')
@@ -226,7 +234,7 @@ elif is_linux or is_freebsd:
     if is_linux:
         extra_link_args += ["-lrt"] # make ubuntu happy
 
-    if V8_DEBUG:
+    if PYV8_DEBUG:
         extra_compile_args += ['-g', '-O0', '-fno-inline']
     else:
         extra_compile_args += ['-g', '-O3']
@@ -247,7 +255,7 @@ elif is_osx: # contribute by progrium and alec
         os.environ['ARCHFLAGS'] = '-arch i386'
         macros += [("V8_TARGET_ARCH_IA32", None)]
 
-    if V8_DEBUG:
+    if PYV8_DEBUG:
         extra_compile_args += ['-g', '-O0', '-fno-inline']
     else:
         extra_compile_args += ['-g', '-O3']
@@ -258,7 +266,7 @@ else:
     print("ERROR: unsupported OS (%s) and platform (%s)" % (os.name, sys.platform))
 
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
-mode = 'debug' if V8_DEBUG else 'release'
+mode = 'debug' if PYV8_DEBUG else 'release'
 
 libraries += [
     'v8_base',
