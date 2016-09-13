@@ -40,24 +40,6 @@ PYV8_DEBUG = False
 
 MAKE = 'gmake' if is_freebsd else 'make'
 
-V8_SNAPSHOT_ENABLED = not PYV8_DEBUG  # build using snapshots for faster start-up
-V8_NATIVE_REGEXP = True             # Whether to use native or interpreted regexp implementation
-V8_OBJECT_PRINT = PYV8_DEBUG          # enable object printing
-V8_EXTRA_CHECKS = PYV8_DEBUG          # enable extra checks
-V8_VERIFY_HEAP = PYV8_DEBUG           # enable verify heap
-V8_TRACE_MAPS = PYV8_DEBUG            # enable trace maps
-V8_GDB_JIT = PYV8_DEBUG               # enable GDB JIT supports
-V8_VTUNE_JIT = PYV8_DEBUG             # enable VTune JIT supports
-V8_DISASSEMBLEER = PYV8_DEBUG         # enable the disassembler to inspect generated code
-V8_DEBUGGER_SUPPORT = True          # enable debugging of JavaScript code
-V8_DEBUG_SYMBOLS = True             # enable debug symbols
-V8_LIVE_OBJECT_LIST = PYV8_DEBUG      # enable live object list features in the debugger
-V8_WERROR = False                   # ignore compile warnings
-V8_STRICTALIASING = True            # enable strict aliasing
-V8_BACKTRACE = True
-V8_I18N = False                     # enable i18n supports
-V8_AST = False                      # enable AST supports
-
 # load defaults from config file
 try:
     from buildconf import *
@@ -86,6 +68,24 @@ if DEPOT_HOME is None:
 
 if type(PYV8_DEBUG) == str:
     PYV8_DEBUG = strtobool(PYV8_DEBUG)
+
+V8_SNAPSHOT_ENABLED = not PYV8_DEBUG  # build using snapshots for faster start-up
+V8_NATIVE_REGEXP = True             # Whether to use native or interpreted regexp implementation
+V8_OBJECT_PRINT = PYV8_DEBUG          # enable object printing
+V8_EXTRA_CHECKS = PYV8_DEBUG          # enable extra checks
+V8_VERIFY_HEAP = PYV8_DEBUG           # enable verify heap
+V8_TRACE_MAPS = PYV8_DEBUG            # enable trace maps
+V8_GDB_JIT = PYV8_DEBUG               # enable GDB JIT supports
+V8_VTUNE_JIT = PYV8_DEBUG             # enable VTune JIT supports
+V8_DISASSEMBLEER = PYV8_DEBUG         # enable the disassembler to inspect generated code
+V8_DEBUGGER_SUPPORT = True          # enable debugging of JavaScript code
+V8_DEBUG_SYMBOLS = True             # enable debug symbols
+V8_LIVE_OBJECT_LIST = PYV8_DEBUG      # enable live object list features in the debugger
+V8_WERROR = False                   # ignore compile warnings
+V8_STRICTALIASING = True            # enable strict aliasing
+V8_BACKTRACE = True
+V8_I18N = False                     # enable i18n supports
+V8_AST = False                      # enable AST supports
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
