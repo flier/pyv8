@@ -24,11 +24,11 @@ PYV8_HOME = os.path.abspath(os.path.dirname(__file__))
 BOOST_HOME = None
 BOOST_MT = is_osx
 BOOST_DEBUG = False
-BOOST_STATIC_LINK = False
+BOOST_STATIC_LINK = True
 PYTHON_HOME = None
 V8_HOME = None
 V8_GIT_URL = "https://chromium.googlesource.com/v8/v8.git"
-V8_GIT_TAG = "5.5.132"
+V8_GIT_TAG = "5.4.500.21" # https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/5.4
 DEPOT_HOME = None
 DEPOT_GIT_URL = "https://chromium.googlesource.com/chromium/tools/depot_tools.git"
 DEPOT_DOWNLOAD_URL = "https://storage.googleapis.com/chrome-infra/depot_tools.zip"
@@ -107,7 +107,16 @@ if V8_OBJECT_PRINT:
 if V8_DEBUGGER_SUPPORT:
     macros += [("ENABLE_DEBUGGER_SUPPORT", None)]
 
-boost_libs = ['boost_python', 'boost_thread', 'boost_system']
+boost_libs = [
+    'boost_date_time',
+    'boost_filesystem',
+    'boost_log',
+    'boost_log_setup',
+    'boost_python',
+    'boost_regex',
+    'boost_system',
+    'boost_thread',
+]
 
 if BOOST_MT:
     boost_libs = [lib + '-mt' for lib in boost_libs]
@@ -120,6 +129,7 @@ include_dirs = [
     V8_HOME,
     os.path.join(V8_HOME, 'src'),
 ]
+
 library_dirs = []
 libraries = []
 extra_compile_args = ['-std=c++11']
@@ -133,6 +143,27 @@ if INCLUDE:
     include_dirs += [p for p in INCLUDE.split(os.path.pathsep) if p]
 if LIB:
     library_dirs += [p for p in LIB.split(os.path.pathsep) if p]
+
+if not is_winnt:
+    include_dirs += ['/usr/local/include']
+    library_dirs += ['/usr/local/lib']
+
+    if os.path.isdir('/opt/local/'):
+        include_dirs += ['/opt/local/include']
+        library_dirs += ['/opt/local/lib']
+
+    if BOOST_HOME:
+        boost_lib_dir = os.path.join(BOOST_HOME, 'stage/lib')
+
+        include_dirs += [BOOST_HOME]
+        library_dirs += [boost_lib_dir]
+    else:
+        boost_lib_dir = '/usr/local/lib'
+
+    if BOOST_STATIC_LINK:
+        extra_link_args += [os.path.join(boost_lib_dir, "lib%s.a") % lib for lib in boost_libs]
+    else:
+        libraries += boost_libs
 
 if is_winnt:
     include_dirs += [
@@ -168,28 +199,12 @@ if is_winnt:
     os.putenv('MSSdk', 'true')
     os.putenv('DISTUTILS_USE_SDK', 'true')
 elif is_linux or is_freebsd:
-    if BOOST_HOME:
-        boost_lib_dir = os.path.join(BOOST_HOME, 'stage/lib')
-        include_dirs += [BOOST_HOME]
-    else:
-        boost_lib_dir = '/usr/local/lib'
-        include_dirs += ['/usr/local/include']
-
-    library_dirs += [
-        boost_lib_dir,
-    ]
-
     if PYTHON_HOME:
         major, minor, _, _, _ = sys.version_info
         library_dirs += [os.path.join(PYTHON_HOME, 'lib/python%d.%d' % (major, minor))]
         include_dirs += [os.path.join(PYTHON_HOME, 'include')]
 
     extra_compile_args += ["-Wno-write-strings"]
-
-    if BOOST_STATIC_LINK:
-        extra_link_args += [os.path.join(boost_lib_dir, "lib%s.a") % lib for lib in boost_libs]
-    else:
-        libraries += boost_libs
 
     if is_freebsd:
         libraries += ["execinfo"]
@@ -217,34 +232,12 @@ elif is_linux or is_freebsd:
         extra_compile_args += ['-g', '-O3']
 
 elif is_mac: # contribute by Artur Ventura
-    include_dirs += [
-        BOOST_HOME,
-    ]
-    library_dirs += [os.path.join('/lib')]
-    libraries += boost_libs + ["c"]
+    library_dirs += ['/lib']
+    libraries += ["c"]
 
 elif is_osx: # contribute by progrium and alec
     # force x64 because Snow Leopard's native Python is 64-bit
     # scons arch=x64 library=static
-
-    if BOOST_HOME:
-        include_dirs += [BOOST_HOME]
-        library_dirs += [os.path.join(BOOST_HOME, 'stage/lib'), os.path.join(BOOST_HOME, 'lib')]
-    else:
-        include_dirs += [
-            "/opt/local/include", # MacPorts$ sudo port install boost
-            "/usr/local/include", # HomeBrew$ brew install boost
-        ]
-
-        # MacPorts$ sudo port install boost
-        if os.path.isdir("/opt/local/lib"):
-            library_dirs.append("/opt/local/lib")
-
-        # HomeBrew$ brew install boost
-        if os.path.isdir("/usr/local/lib"):
-            library_dirs.append("/usr/local/lib")
-
-    libraries += boost_libs
 
     if is_64bit:
         os.environ['ARCHFLAGS'] = '-arch x86_64'
@@ -267,21 +260,27 @@ else:
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if V8_DEBUG else 'release'
 
-libraries += ['v8_base.' + arch, 'v8_snapshot' if V8_SNAPSHOT_ENABLED else ('v8_nosnapshot.' + arch)]
+libraries += [
+    'v8_base',
+    'v8_libbase',
+    'v8_libplatform',
+    'v8_libsampler',
+    'v8_external_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot',
+]
 
 if is_winnt:
-    library_path = icu_path = "%s/build/%s/lib/" % (V8_HOME, mode)
+    v8_library_path = icu_path = "%s/build/%s/lib/" % (V8_HOME, mode)
 
 elif is_linux or is_freebsd:
-    library_path = "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)
+    v8_library_path = "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)
     icu_path = "%s/out/%s.%s/obj.target/third_party/icu/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/obj.target/tools/gyp/" % V8_HOME
 
 elif is_osx:
-    library_path = icu_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
+    v8_library_path = icu_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/" % V8_HOME
 
-library_dirs.append(library_path)
+library_dirs.append(v8_library_path)
 
 if os.path.isdir(native_path):
     library_dirs.append(native_path)

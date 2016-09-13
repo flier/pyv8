@@ -313,12 +313,11 @@ void CEngine::Deserialize(py::object snapshot)
 void CEngine::CollectAllGarbage(bool force_compaction)
 {
   v8i::HandleScope handle_scope(v8i::Isolate::Current());
-  v8i::GarbageCollectionReason reason = v8i::GarbageCollectionReason::kExternalMemoryPressure;
 
   if (force_compaction) {
-    v8i::Isolate::Current()->heap()->CollectAllAvailableGarbage(reason);
+    v8i::Isolate::Current()->heap()->CollectAllAvailableGarbage();
   } else {
-    v8i::Isolate::Current()->heap()->CollectAllGarbage(0, reason);
+    v8i::Isolate::Current()->heap()->CollectAllGarbage();
   }
 }
 

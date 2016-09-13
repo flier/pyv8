@@ -88,19 +88,28 @@ CContext::CContext(v8::Handle<v8::Context> context)
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   m_context.Reset(context->GetIsolate(), context);
+
+  initLogger();
+
+  BOOST_LOG_SEV(m_logger, trace) << "context wrapped";
 }
 
 CContext::CContext(const CContext& context)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  m_context.Reset(context.Handle()->GetIsolate(), context.Handle());
+  m_context.Reset(context.Context()->GetIsolate(), context.Context());
+
+  initLogger();
+
+  BOOST_LOG_SEV(m_logger, trace) << "context copied";
 }
 
 CContext::CContext(py::object global, py::list extensions)
   : m_global(global)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
 
   std::auto_ptr<v8::ExtensionConfiguration> cfg;
   std::vector<std::string> ext_names;
@@ -123,15 +132,19 @@ CContext::CContext(py::object global, py::list extensions)
 
   if (!ext_ptrs.empty()) cfg.reset(new v8::ExtensionConfiguration(ext_ptrs.size(), &ext_ptrs[0]));
 
-  v8::Handle<v8::Context> context = v8::Context::New(v8::Isolate::GetCurrent(), cfg.get());
+  v8::Handle<v8::Context> context = v8::Context::New(isolate, cfg.get());
 
-  m_context.Reset(v8::Isolate::GetCurrent(), context);
+  m_context.Reset(isolate, context);
 
-  v8::Context::Scope context_scope(Handle());
+  initLogger();
+
+  BOOST_LOG_SEV(m_logger, trace) << "context created";
+
+  v8::Context::Scope context_scope(Context());
 
   if (!global.is_none())
   {
-    Handle()->Global()->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "__proto__"), CPythonObject::Wrap(global));
+    Context()->Global()->Set(v8::String::NewFromUtf8(isolate, "__proto__"), CPythonObject::Wrap(global));
 
     Py_DECREF(global.ptr());
   }
@@ -141,14 +154,14 @@ py::object CContext::GetGlobal(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  return CJavascriptObject::Wrap(Handle()->Global());
+  return CJavascriptObject::Wrap(Context()->Global());
 }
 
 py::str CContext::GetSecurityToken(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::Handle<v8::Value> token = Handle()->GetSecurityToken();
+  v8::Handle<v8::Value> token = Context()->GetSecurityToken();
 
   if (token.IsEmpty()) return py::str();
 
@@ -163,11 +176,15 @@ void CContext::SetSecurityToken(py::str token)
 
   if (token.is_none())
   {
-    Handle()->UseDefaultSecurityToken();
+    BOOST_LOG_SEV(m_logger, trace) << "clear security token";
+
+    Context()->UseDefaultSecurityToken();
   }
   else
   {
-    Handle()->SetSecurityToken(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), py::extract<const char *>(token)()));
+    BOOST_LOG_SEV(m_logger, trace) << "set security token " << py::extract<const char *>(token);
+
+    Context()->SetSecurityToken(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), py::extract<const char *>(token)()));
   }
 }
 
@@ -209,6 +226,8 @@ py::object CContext::Evaluate(const std::string& src,
 
   CScriptPtr script = engine.Compile(src, name, line, col);
 
+  BOOST_LOG_SEV(m_logger, trace) << "eval script (" << name << "@" << line << ":" << col << "): " << src;
+
   return script->Run();
 }
 
@@ -219,6 +238,8 @@ py::object CContext::EvaluateW(const std::wstring& src,
   CEngine engine(v8::Isolate::GetCurrent());
 
   CScriptPtr script = engine.CompileW(src, name, line, col);
+
+  BOOST_LOG_SEV(m_logger, trace) << "eval script (" << name << "@" << line << ":" << col << "): " << src;
 
   return script->Run();
 }

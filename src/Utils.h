@@ -69,6 +69,30 @@ namespace std {
 namespace py = boost::python;
 #pragma GCC diagnostic pop
 
+#include <boost/log/common.hpp>
+namespace logging = boost::log;
+
+#include <boost/log/attributes.hpp>
+namespace attrs = boost::log::attributes;
+
+enum severity_level
+{
+    trace,
+    debug,
+    info,
+    warning,
+    error,
+    fatal
+};
+
+#if !defined(BOOST_LOG_NO_THREADS)
+typedef boost::log::sources::severity_logger_mt< severity_level > logger_t;
+#else
+typedef boost::log::sources::severity_logger< severity_level > logger_t;
+#endif
+
+extern severity_level logging_level;
+
 #ifdef _WIN32
   #undef FP_NAN
   #undef FP_INFINITE

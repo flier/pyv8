@@ -15,16 +15,29 @@ typedef boost::shared_ptr<CIsolate> CIsolatePtr;
 
 class CIsolate
 {
+  logger_t m_logger;
   v8::Isolate *m_isolate;
   bool m_owner;
 public:
   CIsolate(bool owner=false) : m_owner(owner) {
     v8::Isolate::CreateParams params;
 
+    params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+
     m_isolate = v8::Isolate::New(params);
+
+    m_logger.add_attribute("Isolate", attrs::constant< const v8::Isolate * >(m_isolate));
+
+    BOOST_LOG_SEV(m_logger, trace) << "isolated created";
   }
   CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owner(false) {}
-  ~CIsolate(void) { if (m_owner) m_isolate->Dispose(); }
+  ~CIsolate(void) {
+    if (m_owner) {
+      m_isolate->Dispose();
+
+      BOOST_LOG_SEV(m_logger, trace) << "isolated destroyed";
+    }
+  }
 
   v8::Isolate *GetIsolate(void) { return m_isolate; }
 
@@ -35,17 +48,30 @@ public:
 
   static py::object GetCurrent(void);
 
-  void Enter(void) { m_isolate->Enter(); }
-  void Leave(void) { m_isolate->Exit(); }
-  void Dispose(void) { m_isolate->Dispose(); }
+  void Enter(void) {
+    m_isolate->Enter();
+
+    BOOST_LOG_SEV(m_logger, trace) << "isolated entered";
+  }
+  void Leave(void) {
+    m_isolate->Exit();
+
+    BOOST_LOG_SEV(m_logger, trace) << "isolated exited";
+  }
+  void Dispose(void) {
+    m_isolate->Dispose();
+
+    BOOST_LOG_SEV(m_logger, trace) << "isolated disposed";
+  }
 
   bool IsLocked(void) { return v8::Locker::IsLocked(m_isolate); }
 };
 
 class CContext
 {
-  py::object m_global;
+  logger_t m_logger;
   v8::Persistent<v8::Context> m_context;
+  py::object m_global;
 public:
   CContext(v8::Handle<v8::Context> context);
   CContext(const CContext& context);
@@ -53,10 +79,21 @@ public:
 
   ~CContext()
   {
+    BOOST_LOG_SEV(m_logger, trace) << "context destroyed";
+
     m_context.Reset();
   }
 
-  v8::Handle<v8::Context> Handle(void) const { return v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), m_context); }
+  void initLogger() {
+    v8::Isolate *isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope handle_scope(isolate);
+    v8::Handle<v8::Context> context = m_context.Get(isolate);
+
+    m_logger.add_attribute("Isolate", attrs::constant< const v8::Isolate * >(context->GetIsolate()));
+    m_logger.add_attribute("Context", attrs::constant< const v8::Context * >(*context));
+  }
+
+  v8::Handle<v8::Context> Context(void) const { return m_context.Get(v8::Isolate::GetCurrent()); }
 
   py::object GetGlobal(void);
 
@@ -64,8 +101,21 @@ public:
   void SetSecurityToken(py::str token);
 
   bool IsEntered(void) { return !m_context.IsEmpty(); }
-  void Enter(void) { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); Handle()->Enter(); }
-  void Leave(void) { v8::HandleScope handle_scope(v8::Isolate::GetCurrent()); Handle()->Exit(); }
+
+  void Enter(void) {
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
+    Context()->Enter();
+
+    BOOST_LOG_SEV(m_logger, trace) << "context entered";
+  }
+  void Leave(void) {
+    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
+    Context()->Exit();
+
+    BOOST_LOG_SEV(m_logger, trace) << "context exited";
+  }
 
   py::object Evaluate(const std::string& src, const std::string name = std::string(), int line = -1, int col = -1);
   py::object EvaluateW(const std::wstring& src, const std::wstring name = std::wstring(), int line = -1, int col = -1);

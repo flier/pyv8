@@ -38,9 +38,19 @@ __version__ = '1.0'
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSObject", "JSNull", "JSUndefined", "JSArray", "JSFunction",
            "JSClass", "JSEngine", "JSContext", "JSIsolate",
-           "JSObjectSpace", "JSAllocationAction",
            "JSStackTrace", "JSStackFrame", "profiler",
-           "JSExtension", "JSLocker", "JSUnlocker", "AST"]
+           "JSExtension", "JSLocker", "JSUnlocker"]
+
+SUPPORT_AST = hasattr(_PyV8, 'AstScope')
+
+SUPPORT_MEMORY_ALLOCATOR = hasattr(_PyV8, 'JSObjectSpace')
+
+if SUPPORT_MEMORY_ALLOCATOR:
+    JSObjectSpace = _PyV8.JSObjectSpace
+    JSAllocationAction = _PyV8.JSAllocationAction
+
+    __all__ += ["JSObjectSpace", "JSAllocationAction"]
+
 
 class JSAttribute(object):
     def __init__(self, name):
@@ -728,11 +738,6 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
         """Perform a minimum step in the current function."""
         return self.debugContinue(action='out', steps=steps)
 
-
-JSObjectSpace = _PyV8.JSObjectSpace
-JSAllocationAction = _PyV8.JSAllocationAction
-
-
 class JSEngine(_PyV8.JSEngine):
     def __init__(self):
         _PyV8.JSEngine.__init__(self)
@@ -800,64 +805,67 @@ def convert(obj):
     return obj
 
 
-class AST:
-    Scope = _PyV8.AstScope
-    VarMode = _PyV8.AstVariableMode
-    Var = _PyV8.AstVariable
-    Label = _PyV8.AstLabel
-    NodeType = _PyV8.AstNodeType
-    Node = _PyV8.AstNode
-    Statement = _PyV8.AstStatement
-    Expression = _PyV8.AstExpression
-    Breakable = _PyV8.AstBreakableStatement
-    Block = _PyV8.AstBlock
-    Declaration = _PyV8.AstDeclaration
-    VariableDeclaration = _PyV8.AstVariableDeclaration
-    Module = _PyV8.AstModule
-    ModuleDeclaration = _PyV8.AstModuleDeclaration
-    ModuleLiteral = _PyV8.AstModuleLiteral
-    ModuleVariable = _PyV8.AstModuleVariable
-    ModulePath = _PyV8.AstModulePath
-    Iteration = _PyV8.AstIterationStatement
-    DoWhile = _PyV8.AstDoWhileStatement
-    While = _PyV8.AstWhileStatement
-    For = _PyV8.AstForStatement
-    ForIn = _PyV8.AstForInStatement
-    ExpressionStatement = _PyV8.AstExpressionStatement
-    Continue = _PyV8.AstContinueStatement
-    Break = _PyV8.AstBreakStatement
-    Return = _PyV8.AstReturnStatement
-    With = _PyV8.AstWithStatement
-    Case = _PyV8.AstCaseClause
-    Switch = _PyV8.AstSwitchStatement
-    Try = _PyV8.AstTryStatement
-    TryCatch = _PyV8.AstTryCatchStatement
-    TryFinally = _PyV8.AstTryFinallyStatement
-    Debugger = _PyV8.AstDebuggerStatement
-    Empty = _PyV8.AstEmptyStatement
-    Literal = _PyV8.AstLiteral
-    MaterializedLiteral = _PyV8.AstMaterializedLiteral
-    PropertyKind = _PyV8.AstPropertyKind
-    ObjectProperty = _PyV8.AstObjectProperty
-    Object = _PyV8.AstObjectLiteral
-    RegExp = _PyV8.AstRegExpLiteral
-    Array = _PyV8.AstArrayLiteral
-    VarProxy = _PyV8.AstVariableProxy
-    Property = _PyV8.AstProperty
-    Call = _PyV8.AstCall
-    CallNew = _PyV8.AstCallNew
-    CallRuntime = _PyV8.AstCallRuntime
-    Op = _PyV8.AstOperation
-    UnaryOp = _PyV8.AstUnaryOperation
-    BinOp = _PyV8.AstBinaryOperation
-    CountOp = _PyV8.AstCountOperation
-    CompOp = _PyV8.AstCompareOperation
-    Conditional = _PyV8.AstConditional
-    Assignment = _PyV8.AstAssignment
-    Throw = _PyV8.AstThrow
-    Function = _PyV8.AstFunctionLiteral
-    NativeFunction = _PyV8.AstNativeFunctionLiteral
-    This = _PyV8.AstThisFunction
+if SUPPORT_AST:
+    class AST:
+        Scope = _PyV8.AstScope
+        VarMode = _PyV8.AstVariableMode
+        Var = _PyV8.AstVariable
+        Label = _PyV8.AstLabel
+        NodeType = _PyV8.AstNodeType
+        Node = _PyV8.AstNode
+        Statement = _PyV8.AstStatement
+        Expression = _PyV8.AstExpression
+        Breakable = _PyV8.AstBreakableStatement
+        Block = _PyV8.AstBlock
+        Declaration = _PyV8.AstDeclaration
+        VariableDeclaration = _PyV8.AstVariableDeclaration
+        Module = _PyV8.AstModule
+        ModuleDeclaration = _PyV8.AstModuleDeclaration
+        ModuleLiteral = _PyV8.AstModuleLiteral
+        ModuleVariable = _PyV8.AstModuleVariable
+        ModulePath = _PyV8.AstModulePath
+        Iteration = _PyV8.AstIterationStatement
+        DoWhile = _PyV8.AstDoWhileStatement
+        While = _PyV8.AstWhileStatement
+        For = _PyV8.AstForStatement
+        ForIn = _PyV8.AstForInStatement
+        ExpressionStatement = _PyV8.AstExpressionStatement
+        Continue = _PyV8.AstContinueStatement
+        Break = _PyV8.AstBreakStatement
+        Return = _PyV8.AstReturnStatement
+        With = _PyV8.AstWithStatement
+        Case = _PyV8.AstCaseClause
+        Switch = _PyV8.AstSwitchStatement
+        Try = _PyV8.AstTryStatement
+        TryCatch = _PyV8.AstTryCatchStatement
+        TryFinally = _PyV8.AstTryFinallyStatement
+        Debugger = _PyV8.AstDebuggerStatement
+        Empty = _PyV8.AstEmptyStatement
+        Literal = _PyV8.AstLiteral
+        MaterializedLiteral = _PyV8.AstMaterializedLiteral
+        PropertyKind = _PyV8.AstPropertyKind
+        ObjectProperty = _PyV8.AstObjectProperty
+        Object = _PyV8.AstObjectLiteral
+        RegExp = _PyV8.AstRegExpLiteral
+        Array = _PyV8.AstArrayLiteral
+        VarProxy = _PyV8.AstVariableProxy
+        Property = _PyV8.AstProperty
+        Call = _PyV8.AstCall
+        CallNew = _PyV8.AstCallNew
+        CallRuntime = _PyV8.AstCallRuntime
+        Op = _PyV8.AstOperation
+        UnaryOp = _PyV8.AstUnaryOperation
+        BinOp = _PyV8.AstBinaryOperation
+        CountOp = _PyV8.AstCountOperation
+        CompOp = _PyV8.AstCompareOperation
+        Conditional = _PyV8.AstConditional
+        Assignment = _PyV8.AstAssignment
+        Throw = _PyV8.AstThrow
+        Function = _PyV8.AstFunctionLiteral
+        NativeFunction = _PyV8.AstNativeFunctionLiteral
+        This = _PyV8.AstThisFunction
+
+    __all__ += ['AST']
 
 from datetime import *
 import unittest
@@ -1960,9 +1968,18 @@ class TestMultithread(unittest.TestCase):
         self.assertEqual(20, len(g.result))
 
 class TestEngine(unittest.TestCase):
+    def setUp(self):
+        self.isolate = JSIsolate(True)
+        self.isolate.enter()
+
+    def tearDown(self):
+        self.isolate.leave()
+
+        del self.isolate
+
     def testClassProperties(self):
         with JSContext() as ctxt:
-            self.assertTrue(str(JSEngine.version).startswith("3."))
+            self.assertTrue(str(JSEngine.version).startswith("5."))
             self.assertFalse(JSEngine.dead)
 
     def testCompile(self):
@@ -2212,16 +2229,17 @@ class TestEngine(unittest.TestCase):
         def callback(space, action, size):
             alloc[(space, action)] = alloc.setdefault((space, action), 0) + size
 
-        JSEngine.setMemoryAllocationCallback(callback)
+        if hasattr(JSEngine, 'setMemoryAllocationCallback'):
+            JSEngine.setMemoryAllocationCallback(callback)
 
-        with JSContext() as ctxt:
-            self.assertFalse((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
+            with JSContext() as ctxt:
+                self.assertFalse((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
-            ctxt.eval("var o = new Array(1000);")
+                ctxt.eval("var o = new Array(1000);")
 
-            self.assertTrue((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
+                self.assertTrue((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
-        JSEngine.setMemoryAllocationCallback(None)
+            JSEngine.setMemoryAllocationCallback(None)
 
     def testOutOfMemory(self):
         with JSIsolate():
@@ -2297,447 +2315,448 @@ class TestDebug(unittest.TestCase):
         self.assertEqual(4, len(self.events))
 
 
-class TestAST(unittest.TestCase):
-
-    class Checker(object):
-        def __init__(self, testcase):
-            self.testcase = testcase
-            self.called = []
-
-        def __enter__(self):
-            self.ctxt = JSContext()
-            self.ctxt.enter()
-
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.ctxt.leave()
-
-        def __getattr__(self, name):
-            return getattr(self.testcase, name)
-
-        def test(self, script):
-            JSEngine().compile(script).visit(self)
-
-            return self.called
-
-        def onProgram(self, prog):
-            self.ast = prog.toAST()
-            self.json = json.loads(prog.toJSON())
-
-            for decl in prog.scope.declarations:
-                decl.visit(self)
-
-            for stmt in prog.body:
-                stmt.visit(self)
-
-        def onBlock(self, block):
-            for stmt in block.statements:
-                stmt.visit(self)
-
-        def onExpressionStatement(self, stmt):
-            stmt.expression.visit(self)
-
-            #print type(stmt.expression), stmt.expression
-
-    def testBlock(self):
-        class BlockChecker(TestAST.Checker):
-            def onBlock(self, stmt):
-                self.called.append('block')
-
-                self.assertEqual(AST.NodeType.Block, stmt.type)
-
-                self.assertTrue(stmt.initializerBlock)
-                self.assertFalse(stmt.anonymous)
+if SUPPORT_AST:
+    class TestAST(unittest.TestCase):
+
+        class Checker(object):
+            def __init__(self, testcase):
+                self.testcase = testcase
+                self.called = []
+
+            def __enter__(self):
+                self.ctxt = JSContext()
+                self.ctxt.enter()
+
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                self.ctxt.leave()
+
+            def __getattr__(self, name):
+                return getattr(self.testcase, name)
+
+            def test(self, script):
+                JSEngine().compile(script).visit(self)
+
+                return self.called
+
+            def onProgram(self, prog):
+                self.ast = prog.toAST()
+                self.json = json.loads(prog.toJSON())
+
+                for decl in prog.scope.declarations:
+                    decl.visit(self)
+
+                for stmt in prog.body:
+                    stmt.visit(self)
+
+            def onBlock(self, block):
+                for stmt in block.statements:
+                    stmt.visit(self)
+
+            def onExpressionStatement(self, stmt):
+                stmt.expression.visit(self)
+
+                #print type(stmt.expression), stmt.expression
+
+        def testBlock(self):
+            class BlockChecker(TestAST.Checker):
+                def onBlock(self, stmt):
+                    self.called.append('block')
+
+                    self.assertEqual(AST.NodeType.Block, stmt.type)
+
+                    self.assertTrue(stmt.initializerBlock)
+                    self.assertFalse(stmt.anonymous)
+
+                    target = stmt.breakTarget
+                    self.assertTrue(target)
+                    self.assertFalse(target.bound)
+                    self.assertTrue(target.unused)
+                    self.assertFalse(target.linked)
 
-                target = stmt.breakTarget
-                self.assertTrue(target)
-                self.assertFalse(target.bound)
-                self.assertTrue(target.unused)
-                self.assertFalse(target.linked)
+                    self.assertEqual(2, len(stmt.statements))
 
-                self.assertEqual(2, len(stmt.statements))
+                    self.assertEqual(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
 
-                self.assertEqual(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
+            with BlockChecker(self) as checker:
+                self.assertEqual(['block'], checker.test("var i, j;"))
+                self.assertEqual("""FUNC
+    . NAME ""
+    . INFERRED NAME ""
+    . DECLS
+    . . VAR "i"
+    . . VAR "j"
+    . BLOCK INIT
+    . . EXPRESSION STATEMENT
+    . . . CALL RUNTIME
+    . . . . NAME InitializeVarGlobal
+    . . . . LITERAL "i"
+    . . . . LITERAL 0
+    . . EXPRESSION STATEMENT
+    . . . CALL RUNTIME
+    . . . . NAME InitializeVarGlobal
+    . . . . LITERAL "j"
+    . . . . LITERAL 0
+    """, checker.ast)
 
-        with BlockChecker(self) as checker:
-            self.assertEqual(['block'], checker.test("var i, j;"))
-            self.assertEqual("""FUNC
-. NAME ""
-. INFERRED NAME ""
-. DECLS
-. . VAR "i"
-. . VAR "j"
-. BLOCK INIT
-. . EXPRESSION STATEMENT
-. . . CALL RUNTIME
-. . . . NAME InitializeVarGlobal
-. . . . LITERAL "i"
-. . . . LITERAL 0
-. . EXPRESSION STATEMENT
-. . . CALL RUNTIME
-. . . . NAME InitializeVarGlobal
-. . . . LITERAL "j"
-. . . . LITERAL 0
-""", checker.ast)
+                self.assertEqual([u'FunctionLiteral', {u'name': u''},
+                    [u'Declaration', {u'mode': u'VAR'},
+                        [u'Variable', {u'name': u'i'}]
+                    ], [u'Declaration', {u'mode':u'VAR'},
+                        [u'Variable', {u'name': u'j'}]
+                    ], [u'Block',
+                        [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                            [u'Literal', {u'handle':u'i'}],
+                            [u'Literal', {u'handle': 0}]]],
+                        [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                            [u'Literal', {u'handle': u'j'}],
+                            [u'Literal', {u'handle': 0}]]]
+                    ]
+                ], checker.json)
 
-            self.assertEqual([u'FunctionLiteral', {u'name': u''},
-                [u'Declaration', {u'mode': u'VAR'},
-                    [u'Variable', {u'name': u'i'}]
-                ], [u'Declaration', {u'mode':u'VAR'},
-                    [u'Variable', {u'name': u'j'}]
-                ], [u'Block',
-                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                        [u'Literal', {u'handle':u'i'}],
-                        [u'Literal', {u'handle': 0}]]],
-                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                        [u'Literal', {u'handle': u'j'}],
-                        [u'Literal', {u'handle': 0}]]]
-                ]
-            ], checker.json)
+        def testIfStatement(self):
+            class IfStatementChecker(TestAST.Checker):
+                def onIfStatement(self, stmt):
+                    self.called.append('if')
 
-    def testIfStatement(self):
-        class IfStatementChecker(TestAST.Checker):
-            def onIfStatement(self, stmt):
-                self.called.append('if')
+                    self.assertTrue(stmt)
+                    self.assertEqual(AST.NodeType.IfStatement, stmt.type)
 
-                self.assertTrue(stmt)
-                self.assertEqual(AST.NodeType.IfStatement, stmt.type)
+                    self.assertEqual(7, stmt.pos)
 
-                self.assertEqual(7, stmt.pos)
+                    self.assertTrue(stmt.hasThenStatement)
+                    self.assertTrue(stmt.hasElseStatement)
 
-                self.assertTrue(stmt.hasThenStatement)
-                self.assertTrue(stmt.hasElseStatement)
+                    self.assertEqual("((value % 2) == 0)", str(stmt.condition))
+                    self.assertEqual("{ s = \"even\"; }", str(stmt.thenStatement))
+                    self.assertEqual("{ s = \"odd\"; }", str(stmt.elseStatement))
 
-                self.assertEqual("((value % 2) == 0)", str(stmt.condition))
-                self.assertEqual("{ s = \"even\"; }", str(stmt.thenStatement))
-                self.assertEqual("{ s = \"odd\"; }", str(stmt.elseStatement))
+                    self.assertFalse(stmt.condition.isPropertyName)
 
-                self.assertFalse(stmt.condition.isPropertyName)
+            with IfStatementChecker(self) as checker:
+                self.assertEqual(['if'], checker.test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
 
-        with IfStatementChecker(self) as checker:
-            self.assertEqual(['if'], checker.test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
+        def testForStatement(self):
+            class ForStatementChecker(TestAST.Checker):
+                def onForStatement(self, stmt):
+                    self.called.append('for')
 
-    def testForStatement(self):
-        class ForStatementChecker(TestAST.Checker):
-            def onForStatement(self, stmt):
-                self.called.append('for')
+                    self.assertEqual("{ j += i; }", str(stmt.body))
 
-                self.assertEqual("{ j += i; }", str(stmt.body))
+                    self.assertEqual("i = 0;", str(stmt.init))
+                    self.assertEqual("(i < 10)", str(stmt.condition))
+                    self.assertEqual("(i++);", str(stmt.nextStmt))
 
-                self.assertEqual("i = 0;", str(stmt.init))
-                self.assertEqual("(i < 10)", str(stmt.condition))
-                self.assertEqual("(i++);", str(stmt.nextStmt))
+                    target = stmt.continueTarget
 
-                target = stmt.continueTarget
+                    self.assertTrue(target)
+                    self.assertFalse(target.bound)
+                    self.assertTrue(target.unused)
+                    self.assertFalse(target.linked)
+                    self.assertFalse(stmt.fastLoop)
 
-                self.assertTrue(target)
-                self.assertFalse(target.bound)
-                self.assertTrue(target.unused)
-                self.assertFalse(target.linked)
-                self.assertFalse(stmt.fastLoop)
+                def onForInStatement(self, stmt):
+                    self.called.append('forIn')
 
-            def onForInStatement(self, stmt):
-                self.called.append('forIn')
+                    self.assertEqual("{ out += name; }", str(stmt.body))
 
-                self.assertEqual("{ out += name; }", str(stmt.body))
+                    self.assertEqual("name", str(stmt.each))
+                    self.assertEqual("names", str(stmt.enumerable))
 
-                self.assertEqual("name", str(stmt.each))
-                self.assertEqual("names", str(stmt.enumerable))
+                def onWhileStatement(self, stmt):
+                    self.called.append('while')
 
-            def onWhileStatement(self, stmt):
-                self.called.append('while')
+                    self.assertEqual("{ i += 1; }", str(stmt.body))
 
-                self.assertEqual("{ i += 1; }", str(stmt.body))
+                    self.assertEqual("(i < 10)", str(stmt.condition))
 
-                self.assertEqual("(i < 10)", str(stmt.condition))
+                def onDoWhileStatement(self, stmt):
+                    self.called.append('doWhile')
 
-            def onDoWhileStatement(self, stmt):
-                self.called.append('doWhile')
+                    self.assertEqual("{ i += 1; }", str(stmt.body))
 
-                self.assertEqual("{ i += 1; }", str(stmt.body))
+                    self.assertEqual("(i < 10)", str(stmt.condition))
+                    self.assertEqual(283, stmt.condition.pos)
 
-                self.assertEqual("(i < 10)", str(stmt.condition))
-                self.assertEqual(283, stmt.condition.pos)
+            with ForStatementChecker(self) as checker:
+                self.assertEqual(['for', 'forIn', 'while', 'doWhile'], checker.test("""
+                    var i, j;
 
-        with ForStatementChecker(self) as checker:
-            self.assertEqual(['for', 'forIn', 'while', 'doWhile'], checker.test("""
-                var i, j;
+                    for (i=0; i<10; i++) { j+=i; }
 
-                for (i=0; i<10; i++) { j+=i; }
+                    var names = new Array();
+                    var out = '';
 
-                var names = new Array();
-                var out = '';
+                    for (name in names) { out += name; }
 
-                for (name in names) { out += name; }
+                    while (i<10) { i += 1; }
 
-                while (i<10) { i += 1; }
+                    do { i += 1; } while (i<10);
+                """))
 
-                do { i += 1; } while (i<10);
-            """))
+        def testCallStatements(self):
+            class CallStatementChecker(TestAST.Checker):
+                def onVariableDeclaration(self, decl):
+                    self.called.append('var')
 
-    def testCallStatements(self):
-        class CallStatementChecker(TestAST.Checker):
-            def onVariableDeclaration(self, decl):
-                self.called.append('var')
+                    var = decl.proxy
 
-                var = decl.proxy
+                    if var.name == 's':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
 
-                if var.name == 's':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
+                        self.assertTrue(var.isValidLeftHandSide)
+                        self.assertFalse(var.isArguments)
+                        self.assertFalse(var.isThis)
 
-                    self.assertTrue(var.isValidLeftHandSide)
-                    self.assertFalse(var.isArguments)
-                    self.assertFalse(var.isThis)
+                def onFunctionDeclaration(self, decl):
+                    self.called.append('func')
 
-            def onFunctionDeclaration(self, decl):
-                self.called.append('func')
+                    var = decl.proxy
 
-                var = decl.proxy
+                    if var.name == 'hello':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
+                        self.assertTrue(decl.function)
+                        self.assertEqual('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
+                    elif var.name == 'dog':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
+                        self.assertTrue(decl.function)
+                        self.assertEqual('(function dog(name) { (this).name = name; })', str(decl.function))
 
-                if var.name == 'hello':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
-                    self.assertTrue(decl.function)
-                    self.assertEqual('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
-                elif var.name == 'dog':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
-                    self.assertTrue(decl.function)
-                    self.assertEqual('(function dog(name) { (this).name = name; })', str(decl.function))
+                def onCall(self, expr):
+                    self.called.append('call')
 
-            def onCall(self, expr):
-                self.called.append('call')
+                    self.assertEqual("hello", str(expr.expression))
+                    self.assertEqual(['"flier"'], [str(arg) for arg in expr.args])
+                    self.assertEqual(159, expr.pos)
 
-                self.assertEqual("hello", str(expr.expression))
-                self.assertEqual(['"flier"'], [str(arg) for arg in expr.args])
-                self.assertEqual(159, expr.pos)
+                def onCallNew(self, expr):
+                    self.called.append('callNew')
 
-            def onCallNew(self, expr):
-                self.called.append('callNew')
+                    self.assertEqual("dog", str(expr.expression))
+                    self.assertEqual(['"cat"'], [str(arg) for arg in expr.args])
+                    self.assertEqual(191, expr.pos)
 
-                self.assertEqual("dog", str(expr.expression))
-                self.assertEqual(['"cat"'], [str(arg) for arg in expr.args])
-                self.assertEqual(191, expr.pos)
+                def onCallRuntime(self, expr):
+                    self.called.append('callRuntime')
 
-            def onCallRuntime(self, expr):
-                self.called.append('callRuntime')
+                    self.assertEqual("InitializeVarGlobal", expr.name)
+                    self.assertEqual(['"s"', '0'], [str(arg) for arg in expr.args])
+                    self.assertFalse(expr.isJsRuntime)
 
-                self.assertEqual("InitializeVarGlobal", expr.name)
-                self.assertEqual(['"s"', '0'], [str(arg) for arg in expr.args])
-                self.assertFalse(expr.isJsRuntime)
+            with CallStatementChecker(self) as checker:
+                self.assertEqual(['var', 'func', 'func', 'callRuntime', 'call', 'callNew'], checker.test("""
+                    var s;
+                    function hello(name) { s = "Hello " + name; }
+                    function dog(name) { this.name = name; }
+                    hello("flier");
+                    new dog("cat");
+                """))
 
-        with CallStatementChecker(self) as checker:
-            self.assertEqual(['var', 'func', 'func', 'callRuntime', 'call', 'callNew'], checker.test("""
-                var s;
-                function hello(name) { s = "Hello " + name; }
-                function dog(name) { this.name = name; }
-                hello("flier");
-                new dog("cat");
-            """))
+        def testTryStatements(self):
+            class TryStatementsChecker(TestAST.Checker):
+                def onThrow(self, expr):
+                    self.called.append('try')
 
-    def testTryStatements(self):
-        class TryStatementsChecker(TestAST.Checker):
-            def onThrow(self, expr):
-                self.called.append('try')
+                    self.assertEqual('"abc"', str(expr.exception))
+                    self.assertEqual(66, expr.pos)
 
-                self.assertEqual('"abc"', str(expr.exception))
-                self.assertEqual(66, expr.pos)
+                def onTryCatchStatement(self, stmt):
+                    self.called.append('catch')
 
-            def onTryCatchStatement(self, stmt):
-                self.called.append('catch')
+                    self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
+                    #FIXME self.assertEqual([], stmt.targets)
 
-                self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
-                #FIXME self.assertEqual([], stmt.targets)
+                    stmt.tryBlock.visit(self)
 
-                stmt.tryBlock.visit(self)
+                    self.assertEqual("err", str(stmt.variable.name))
+                    self.assertEqual("{ s = err; }", str(stmt.catchBlock))
 
-                self.assertEqual("err", str(stmt.variable.name))
-                self.assertEqual("{ s = err; }", str(stmt.catchBlock))
+                def onTryFinallyStatement(self, stmt):
+                    self.called.append('finally')
 
-            def onTryFinallyStatement(self, stmt):
-                self.called.append('finally')
+                    self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
+                    #FIXME self.assertEqual([], stmt.targets)
 
-                self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
-                #FIXME self.assertEqual([], stmt.targets)
+                    self.assertEqual("{ s += \".\"; }", str(stmt.finallyBlock))
 
-                self.assertEqual("{ s += \".\"; }", str(stmt.finallyBlock))
+            with TryStatementsChecker(self) as checker:
+                self.assertEqual(['catch', 'try', 'finally'], checker.test("""
+                    var s;
+                    try {
+                        throw "abc";
+                    }
+                    catch (err) {
+                        s = err;
+                    };
 
-        with TryStatementsChecker(self) as checker:
-            self.assertEqual(['catch', 'try', 'finally'], checker.test("""
-                var s;
-                try {
-                    throw "abc";
-                }
-                catch (err) {
-                    s = err;
-                };
+                    try {
+                        throw "abc";
+                    }
+                    finally {
+                        s += ".";
+                    }
+                """))
 
-                try {
-                    throw "abc";
-                }
-                finally {
-                    s += ".";
-                }
-            """))
+        def testLiterals(self):
+            class LiteralChecker(TestAST.Checker):
+                def onCallRuntime(self, expr):
+                    expr.args[1].visit(self)
 
-    def testLiterals(self):
-        class LiteralChecker(TestAST.Checker):
-            def onCallRuntime(self, expr):
-                expr.args[1].visit(self)
+                def onLiteral(self, litr):
+                    self.called.append('literal')
 
-            def onLiteral(self, litr):
-                self.called.append('literal')
+                    self.assertFalse(litr.isPropertyName)
+                    self.assertFalse(litr.isNull)
+                    self.assertFalse(litr.isTrue)
 
-                self.assertFalse(litr.isPropertyName)
-                self.assertFalse(litr.isNull)
-                self.assertFalse(litr.isTrue)
+                def onRegExpLiteral(self, litr):
+                    self.called.append('regex')
 
-            def onRegExpLiteral(self, litr):
-                self.called.append('regex')
+                    self.assertEqual("test", litr.pattern)
+                    self.assertEqual("g", litr.flags)
 
-                self.assertEqual("test", litr.pattern)
-                self.assertEqual("g", litr.flags)
+                def onObjectLiteral(self, litr):
+                    self.called.append('object')
 
-            def onObjectLiteral(self, litr):
-                self.called.append('object')
+                    self.assertEqual('constant:"name"="flier",constant:"sex"=true',
+                                      ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
 
-                self.assertEqual('constant:"name"="flier",constant:"sex"=true',
-                                  ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
+                def onArrayLiteral(self, litr):
+                    self.called.append('array')
 
-            def onArrayLiteral(self, litr):
-                self.called.append('array')
+                    self.assertEqual('"hello","world",42',
+                                      ",".join([str(value) for value in litr.values]))
+            with LiteralChecker(self) as checker:
+                self.assertEqual(['literal', 'regex', 'literal', 'literal'], checker.test("""
+                    false;
+                    /test/g;
+                    var o = { name: 'flier', sex: true };
+                    var a = ['hello', 'world', 42];
+                """))
 
-                self.assertEqual('"hello","world",42',
-                                  ",".join([str(value) for value in litr.values]))
-        with LiteralChecker(self) as checker:
-            self.assertEqual(['literal', 'regex', 'literal', 'literal'], checker.test("""
-                false;
-                /test/g;
-                var o = { name: 'flier', sex: true };
-                var a = ['hello', 'world', 42];
-            """))
+        def testOperations(self):
+            class OperationChecker(TestAST.Checker):
+                def onUnaryOperation(self, expr):
+                    self.called.append('unaryOp')
 
-    def testOperations(self):
-        class OperationChecker(TestAST.Checker):
-            def onUnaryOperation(self, expr):
-                self.called.append('unaryOp')
+                    self.assertEqual(AST.Op.BIT_NOT, expr.op)
+                    self.assertEqual("i", expr.expression.name)
 
-                self.assertEqual(AST.Op.BIT_NOT, expr.op)
-                self.assertEqual("i", expr.expression.name)
+                    #print "unary", expr
 
-                #print "unary", expr
+                def onIncrementOperation(self, expr):
+                    self.fail()
 
-            def onIncrementOperation(self, expr):
-                self.fail()
+                def onBinaryOperation(self, expr):
+                    self.called.append('binOp')
 
-            def onBinaryOperation(self, expr):
-                self.called.append('binOp')
+                    if expr.op == AST.Op.BIT_XOR:
+                        self.assertEqual("i", str(expr.left))
+                        self.assertEqual("-1", str(expr.right))
+                        self.assertEqual(124, expr.pos)
+                    else:
+                        self.assertEqual("i", str(expr.left))
+                        self.assertEqual("j", str(expr.right))
+                        self.assertEqual(36, expr.pos)
 
-                if expr.op == AST.Op.BIT_XOR:
-                    self.assertEqual("i", str(expr.left))
-                    self.assertEqual("-1", str(expr.right))
-                    self.assertEqual(124, expr.pos)
-                else:
+                def onAssignment(self, expr):
+                    self.called.append('assign')
+
+                    self.assertEqual(AST.Op.ASSIGN_ADD, expr.op)
+                    self.assertEqual(AST.Op.ADD, expr.binop)
+
+                    self.assertEqual("i", str(expr.target))
+                    self.assertEqual("1", str(expr.value))
+                    self.assertEqual(53, expr.pos)
+
+                    self.assertEqual("(i + 1)", str(expr.binOperation))
+
+                    self.assertTrue(expr.compound)
+
+                def onCountOperation(self, expr):
+                    self.called.append('countOp')
+
+                    self.assertFalse(expr.prefix)
+                    self.assertTrue(expr.postfix)
+
+                    self.assertEqual(AST.Op.INC, expr.op)
+                    self.assertEqual(AST.Op.ADD, expr.binop)
+                    self.assertEqual(71, expr.pos)
+                    self.assertEqual("i", expr.expression.name)
+
+                    #print "count", expr
+
+                def onCompareOperation(self, expr):
+                    self.called.append('compOp')
+
+                    if len(self.called) == 4:
+                        self.assertEqual(AST.Op.EQ, expr.op)
+                        self.assertEqual(88, expr.pos) # i==j
+                    else:
+                        self.assertEqual(AST.Op.EQ_STRICT, expr.op)
+                        self.assertEqual(106, expr.pos) # i===j
+
                     self.assertEqual("i", str(expr.left))
                     self.assertEqual("j", str(expr.right))
-                    self.assertEqual(36, expr.pos)
 
-            def onAssignment(self, expr):
-                self.called.append('assign')
+                    #print "comp", expr
 
-                self.assertEqual(AST.Op.ASSIGN_ADD, expr.op)
-                self.assertEqual(AST.Op.ADD, expr.binop)
+                def onConditional(self, expr):
+                    self.called.append('conditional')
 
-                self.assertEqual("i", str(expr.target))
-                self.assertEqual("1", str(expr.value))
-                self.assertEqual(53, expr.pos)
+                    self.assertEqual("(i > j)", str(expr.condition))
+                    self.assertEqual("i", str(expr.thenExpr))
+                    self.assertEqual("j", str(expr.elseExpr))
 
-                self.assertEqual("(i + 1)", str(expr.binOperation))
+                    self.assertEqual(144, expr.thenExpr.pos)
+                    self.assertEqual(146, expr.elseExpr.pos)
 
-                self.assertTrue(expr.compound)
+            with OperationChecker(self) as checker:
+                self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'binOp', 'conditional'], checker.test("""
+                var i, j;
+                i+j;
+                i+=1;
+                i++;
+                i==j;
+                i===j;
+                ~i;
+                i>j?i:j;
+                """))
 
-            def onCountOperation(self, expr):
-                self.called.append('countOp')
+        def testSwitchStatement(self):
+            class SwitchStatementChecker(TestAST.Checker):
+                def onSwitchStatement(self, stmt):
+                    self.called.append('switch')
 
-                self.assertFalse(expr.prefix)
-                self.assertTrue(expr.postfix)
+                    self.assertEqual('expr', stmt.tag.name)
+                    self.assertEqual(2, len(stmt.cases))
 
-                self.assertEqual(AST.Op.INC, expr.op)
-                self.assertEqual(AST.Op.ADD, expr.binop)
-                self.assertEqual(71, expr.pos)
-                self.assertEqual("i", expr.expression.name)
+                    case = stmt.cases[0]
 
-                #print "count", expr
+                    self.assertFalse(case.isDefault)
+                    self.assertTrue(case.label.isString)
+                    self.assertEqual(0, case.bodyTarget.pos)
+                    self.assertEqual(57, case.pos)
+                    self.assertEqual(1, len(case.statements))
 
-            def onCompareOperation(self, expr):
-                self.called.append('compOp')
+                    case = stmt.cases[1]
 
-                if len(self.called) == 4:
-                    self.assertEqual(AST.Op.EQ, expr.op)
-                    self.assertEqual(88, expr.pos) # i==j
-                else:
-                    self.assertEqual(AST.Op.EQ_STRICT, expr.op)
-                    self.assertEqual(106, expr.pos) # i===j
+                    self.assertTrue(case.isDefault)
+                    self.assertEqual(None, case.label)
+                    self.assertEqual(0, case.bodyTarget.pos)
+                    self.assertEqual(109, case.pos)
+                    self.assertEqual(1, len(case.statements))
 
-                self.assertEqual("i", str(expr.left))
-                self.assertEqual("j", str(expr.right))
-
-                #print "comp", expr
-
-            def onConditional(self, expr):
-                self.called.append('conditional')
-
-                self.assertEqual("(i > j)", str(expr.condition))
-                self.assertEqual("i", str(expr.thenExpr))
-                self.assertEqual("j", str(expr.elseExpr))
-
-                self.assertEqual(144, expr.thenExpr.pos)
-                self.assertEqual(146, expr.elseExpr.pos)
-
-        with OperationChecker(self) as checker:
-            self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'binOp', 'conditional'], checker.test("""
-            var i, j;
-            i+j;
-            i+=1;
-            i++;
-            i==j;
-            i===j;
-            ~i;
-            i>j?i:j;
-            """))
-
-    def testSwitchStatement(self):
-        class SwitchStatementChecker(TestAST.Checker):
-            def onSwitchStatement(self, stmt):
-                self.called.append('switch')
-
-                self.assertEqual('expr', stmt.tag.name)
-                self.assertEqual(2, len(stmt.cases))
-
-                case = stmt.cases[0]
-
-                self.assertFalse(case.isDefault)
-                self.assertTrue(case.label.isString)
-                self.assertEqual(0, case.bodyTarget.pos)
-                self.assertEqual(57, case.pos)
-                self.assertEqual(1, len(case.statements))
-
-                case = stmt.cases[1]
-
-                self.assertTrue(case.isDefault)
-                self.assertEqual(None, case.label)
-                self.assertEqual(0, case.bodyTarget.pos)
-                self.assertEqual(109, case.pos)
-                self.assertEqual(1, len(case.statements))
-
-        with SwitchStatementChecker(self) as checker:
-            self.assertEqual(['switch'], checker.test("""
-            switch (expr) {
-                case 'flier':
-                    break;
-                default:
-                    break;
-            }
-            """))
+            with SwitchStatementChecker(self) as checker:
+                self.assertEqual(['switch'], checker.test("""
+                switch (expr) {
+                    case 'flier':
+                        break;
+                    default:
+                        break;
+                }
+                """))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:

@@ -214,7 +214,7 @@ def build_v8():
 
         kwargs = ["%s=%s" % (k, v) for k, v in options.items()]
 
-        exec_cmd(MAKE, '-j', str(multiprocessing.cpu_count()), target, *kwargs, cwd=V8_HOME, msg="build v8 from SVN")
+        exec_cmd(MAKE, '-j', str(multiprocessing.cpu_count()), target, *kwargs, cwd=V8_HOME, msg="build v8 from GIT " + V8_GIT_TAG)
 
 
 def generate_probes():
@@ -269,7 +269,7 @@ def prepare_v8():
         patch_gyp()
         build_v8()
 
-        generate_probes()
+        #generate_probes()
     except Exception as e:
         log.error("fail to checkout and build v8, %s", e)
         log.debug(traceback.format_exc())
@@ -357,6 +357,13 @@ if __name__ == '__main__':
         install_requires=['setuptools'],
         py_modules=['PyV8'],
         ext_modules=[pyv8],
+        packages=[''],
+        package_dir={
+            '': v8_library_path,
+        },
+        package_data={
+            '': ['*.bin', '*.dat'],
+        },
         test_suite='PyV8',
         cmdclass=dict(compile=compile, build=build, v8build=_build, develop=develop),
         **extra)

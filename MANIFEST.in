@@ -1,1 +1,1 @@
-recursive-include src *.h *.vcproj
+recursive-include src *.h *.vcproj *.vcxproj
