@@ -1,4 +1,5 @@
 build
+.vscode
 *.egg-info
 
 *.pyc
