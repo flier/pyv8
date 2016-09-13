@@ -86,6 +86,7 @@ V8_STRICTALIASING = True            # enable strict aliasing
 V8_BACKTRACE = True
 V8_I18N = False                     # enable i18n supports
 V8_AST = False                      # enable AST supports
+V8_STATIC_LINK = True
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
@@ -268,7 +269,7 @@ else:
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if PYV8_DEBUG else 'release'
 
-libraries += [
+v8_libs = [
     'v8_base',
     'v8_libbase',
     'v8_libplatform',
@@ -288,10 +289,14 @@ elif is_osx:
     v8_library_path = icu_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
     native_path = "%s/out/native/" % V8_HOME
 
-library_dirs.append(v8_library_path)
+if V8_STATIC_LINK and not is_winnt:
+    extra_link_args += [os.path.join(v8_library_path, "lib%s.a" % lib) for lib in v8_libs]
+else:
+    libraries += v8_libs
+    library_dirs.append(v8_library_path)
 
 if os.path.isdir(native_path):
     library_dirs.append(native_path)
 
 if V8_I18N:
-    extra_objects += ["%slib%s.a" % (icu_path, name) for name in ['icui18n', 'icuuc', 'icudata']]
+    extra_objects += [os.path.join(icu_path, "lib%s.a" % name) for name in ['icui18n', 'icuuc', 'icudata']]
