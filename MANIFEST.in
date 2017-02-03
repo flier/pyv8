@@ -1,2 +1,3 @@
+include README
 include *.py
 recursive-include src *.h *.vcproj *.vcxproj

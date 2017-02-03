@@ -9,11 +9,9 @@ import traceback
 import logging
 import urllib
 import zipfile
+import json
+from functools import partial
 from datetime import datetime
-import multiprocessing
-
-import ez_setup
-ez_setup.use_setuptools()
 
 from distutils.command.build import build as _build
 from setuptools import setup, Extension
@@ -23,10 +21,13 @@ from settings import *
 
 log = logging.getLogger()
 
+
 def check_env():
     if is_cygwin or is_mingw:
-        log.error("Cygwin or MingGW is not official support, please try to use Visual Studio 2010 Express or later.")
+        log.error("Cygwin or MingGW is not official support, " +
+                  "please try to use Visual Studio 2010 Express or later.")
         sys.exit(-1)
+
 
 def exec_cmd(cmdline, *args, **kwargs):
     msg = kwargs.get('msg')
@@ -40,7 +41,7 @@ def exec_cmd(cmdline, *args, **kwargs):
 
     rel_path = os.path.relpath(cwd)
 
-    log.debug("exec %s$ %s", rel_path if rel_path != '.' else '', cmdline)
+    log.debug("exec @ `%s` $ %s", rel_path if rel_path != '.' else '', cmdline)
 
     proc = subprocess.Popen(cmdline,
                             shell=kwargs.get('shell', True),
@@ -54,7 +55,8 @@ def exec_cmd(cmdline, *args, **kwargs):
     succeeded = proc.returncode == 0
 
     if not succeeded:
-        log.error("%s failed: code=%d", msg or "Execute command", proc.returncode)
+        log.error("%s failed: code=%d",
+                  msg or "Execute command", proc.returncode)
 
         if output:
             log.debug(stderr)
@@ -62,6 +64,7 @@ def exec_cmd(cmdline, *args, **kwargs):
     return succeeded, stdout, stderr if output else succeeded
 
 download_steps = 0
+
 
 def download_progress(blocks, block_size, total_size):
     global download_steps
@@ -71,7 +74,9 @@ def download_progress(blocks, block_size, total_size):
 
     if int(downloaded_percent*10) > download_steps:
         download_steps += 1
-        log.info("< %%%d %d of %d bytes", downloaded_percent*100, downloaded_bytes, total_size)
+        log.info("< %%%d %d of %d bytes",
+                 downloaded_percent*100, downloaded_bytes, total_size)
+
 
 def install_depot():
     """
@@ -80,12 +85,11 @@ def install_depot():
     http://dev.chromium.org/developers/how-tos/install-depot-tools
     """
     if os.path.isfile(os.path.join(DEPOT_HOME, 'gclient')):
-        _, stdout, _ = exec_cmd("./gclient --version", cwd=DEPOT_HOME, output=True)
+        _, stdout, _ = exec_cmd("./gclient --version",
+                                cwd=DEPOT_HOME,
+                                output=True)
 
         log.info("found depot tools with %s", stdout.strip())
-
-        if os.path.exists(os.path.join(DEPOT_HOME, '.git')):
-            exec_cmd("git pull", cwd=DEPOT_HOME)
     elif is_winnt:
         log.info("Downloading depot tools ...")
 
@@ -106,11 +110,19 @@ def install_depot():
         finally:
             os.remove(tmpfile)
     elif os.path.isdir(os.path.join(DEPOT_HOME, '.git')):
-        exec_cmd("git pull", os.path.basename(DEPOT_HOME), cwd=os.path.dirname(DEPOT_HOME), msg="Cloning depot tools ...")
+        log.info("Updating depot tools ...")
+
+        exec_cmd("git pull", os.path.basename(DEPOT_HOME),
+                 cwd=os.path.dirname(DEPOT_HOME),
+                 msg="Cloning depot tools ...")
     elif not os.path.exists(DEPOT_HOME):
-        exec_cmd("git clone", DEPOT_GIT_URL, DEPOT_HOME, cwd=os.path.dirname(DEPOT_HOME), msg="Cloning depot tools ...")
+        log.info("Cloning depot tools ...")
+
+        exec_cmd("git clone", DEPOT_GIT_URL, DEPOT_HOME,
+                 cwd=os.path.dirname(DEPOT_HOME),
+                 msg="Cloning depot tools ...")
     else:
-        log.info("Skip depot_tools folder without .git")
+        log.info("Use depot tools folder without .git")
 
 
 def sync_v8():
@@ -120,11 +132,15 @@ def sync_v8():
     https://github.com/v8/v8/wiki/Using%20Git
     """
     if os.path.isdir(V8_HOME):
-        exec_cmd(os.path.join(DEPOT_HOME, 'gclient'), 'sync', cwd=V8_HOME, msg="Sync Google V8 code...")
+        exec_cmd(os.path.join(DEPOT_HOME, 'gclient'), 'sync',
+                 cwd=V8_HOME,
+                 msg="Sync Google V8 code...")
     else:
         os.makedirs(V8_HOME)
 
-        exec_cmd(os.path.join(DEPOT_HOME, 'fetch'), 'v8', cwd=os.path.dirname(V8_HOME), msg="Fetch Google V8 code...")
+        exec_cmd(os.path.join(DEPOT_HOME, 'fetch'), 'v8',
+                 cwd=os.path.dirname(V8_HOME),
+                 msg="Fetch Google V8 code...")
 
 
 def checkout_v8():
@@ -134,43 +150,13 @@ def checkout_v8():
     https://www.chromium.org/developers/how-tos/get-the-code/working-with-release-branches
     """
     if not OFFLINE_MODE:
-        exec_cmd('git fetch --tags', cwd=V8_HOME, msg='Fetch the release tag information')
+        exec_cmd('git fetch --tags',
+                 cwd=V8_HOME,
+                 msg='Fetch the release tag information')
 
-    exec_cmd('git checkout', V8_GIT_TAG, cwd=V8_HOME, msg='Checkout Google V8 v' + V8_GIT_TAG)
-
-def patch_gyp():
-    """
-    Patch build/common.gypi to enable RTTI and C++ exceptions
-    """
-    log.info("Patching the GYP scripts")
-
-    # Next up, we have to patch the SConstruct file from the v8 source to remove -no-rtti and -no-exceptions
-    gypi = os.path.join(V8_HOME, "build/common.gypi")
-
-    # Check if we need to patch by searching for rtti flag in the data
-    with open(gypi, 'r') as f:
-        build_script = f.read()
-
-    patched_build_script = build_script.replace("'-fno-rtti'", "") \
-                                       .replace("'-fno-exceptions'", "") \
-                                       .replace("'-Werror'", "") \
-                                       .replace("'RuntimeTypeInfo': 'false',", "'RuntimeTypeInfo': 'true',") \
-                                       .replace("'ExceptionHandling': '0',", "'ExceptionHandling': '1',") \
-                                       .replace("'GCC_ENABLE_CPP_EXCEPTIONS': 'NO'", "'GCC_ENABLE_CPP_EXCEPTIONS': 'YES'") \
-                                       .replace("'GCC_ENABLE_CPP_RTTI': 'NO'", "'GCC_ENABLE_CPP_RTTI': 'YES'")
-
-    if build_script == patched_build_script:
-        log.info("skip patched build/common.gypi file ")
-    else:
-        log.info("patch build/common.gypi file to enable RTTI and C++ exceptions")
-
-        if os.path.exists(gypi + '.bak'):
-            os.remove(gypi + '.bak')
-
-        os.rename(gypi, gypi + '.bak')
-
-        with open(gypi, 'w') as f:
-            f.write(patched_build_script)
+    exec_cmd('git checkout', V8_GIT_TAG,
+             cwd=V8_HOME,
+             msg='Checkout Google V8 v' + V8_GIT_TAG)
 
 
 def build_v8():
@@ -180,34 +166,42 @@ def build_v8():
     https://github.com/v8/v8/wiki/Building%20with%20Gyp
     """
     options = {
-        'disassembler': 'on' if V8_DISASSEMBLEER else 'off',
-        'objectprint': 'on' if V8_OBJECT_PRINT else 'off',
-        'verifyheap': 'on' if V8_VERIFY_HEAP else 'off',
-        'snapshot': 'on' if V8_SNAPSHOT_ENABLED else 'off',
-        'extrachecks': 'on' if V8_EXTRA_CHECKS else 'off',
-        'gdbjit': 'on' if V8_GDB_JIT else 'off',
-        'vtunejit': 'on' if V8_VTUNE_JIT else 'off',
-        'liveobjectlist': 'on' if V8_LIVE_OBJECT_LIST else 'off',
-        'debuggersupport': 'on' if V8_DEBUGGER_SUPPORT else 'off',
-        'regexp': 'native' if V8_NATIVE_REGEXP else 'interpreted',
-        'strictaliasing': 'on' if V8_STRICTALIASING else 'off',
-        'werror': 'yes' if V8_WERROR else 'no',
-        'backtrace': 'on' if V8_BACKTRACE else 'off',
-        'i18nsupport': 'on' if V8_I18N else 'off',
-        'visibility': 'on',
-        'library': 'shared',
+        'enable_profiling': PYV8_DEBUG,
+        'is_debug': PYV8_DEBUG,
+        'symbol_level': 2 if V8_DEBUG_SYMBOLS else 1,
+        'v8_enable_backtrace': V8_BACKTRACE,
+        'v8_enable_disassembler': V8_DISASSEMBLER,
+        'v8_enable_gdbjit': V8_GDB_JIT,
+        'v8_enable_handle_zapping': V8_HANDLE_ZAPPING,
+        'v8_enable_i18n_support': V8_I18N,
+        'v8_enable_inspector': V8_INSPECTOR,
+        'v8_enable_object_print': V8_OBJECT_PRINT,
+        'v8_enable_slow_dchecks': V8_SLOW_DCHECKS,
+        'v8_enable_trace_maps': V8_TRACE_MAPS,
+        'v8_enable_v8_checks': V8_EXTRA_CHECKS,
+        'v8_enable_verify_csa': V8_VERIFY_CSA,
+        'v8_enable_verify_heap': V8_VERIFY_HEAP,
+        'v8_enable_verify_predictable': V8_VERIFY_PREDICTABLE,
+        'v8_interpreted_regexp': not V8_NATIVE_REGEXP,
+        'v8_no_inline': V8_NO_INLINE,
+        'v8_use_snapshot': V8_USE_SNAPSHOT,
     }
 
     if is_winnt:
         log.error("Windows build is not support now, coming soon")
     else:
-        target = '%s.%s' % (arch, mode)
+        log.info("Building Google v8 with GN for %s target", target)
 
-        log.info("Building Google v8 with GYP for %s target", target)
+        encoder = json.JSONEncoder()
 
-        kwargs = ["%s=%s" % (k, v) for k, v in options.items()]
+        args = ['%s=%s' % (k, encoder.encode(v)) for k, v in options.items()]
 
-        exec_cmd(MAKE, '-j', str(multiprocessing.cpu_count()), target, *kwargs, cwd=V8_HOME, msg="build v8 from GIT " + V8_GIT_TAG)
+        exec_cmd(os.path.join(DEPOT_HOME, 'gn'), 'gen', 'out.gn/' + target,
+                 "--args='%s'" % ' '.join(args),
+                 cwd=V8_HOME, msg="generate build scripts for V8 (v%s)" % V8_GIT_TAG)
+
+        exec_cmd("ninja -C out.gn/%s v8" % target,
+                 cwd=V8_HOME, msg="build V8 with ninja")
 
 
 def generate_probes():
@@ -217,7 +211,7 @@ def generate_probes():
         log.info("automatic make the build folder: %s", build_path)
 
         try:
-            os.makedirs(build_path, 0755)
+            os.makedirs(build_path, 0o755)
         except os.error as ex:
             log.warn("fail to create the build folder, %s", ex)
 
@@ -228,7 +222,7 @@ def generate_probes():
     if is_osx and exec_cmd("dtrace -h -xnolibs -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes"):
         pass
     elif (is_linux or is_freebsd) and \
-         (exec_cmd("dtrace -h -C -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes.h") and \
+         (exec_cmd("dtrace -h -C -s %s -o %s" % (probes_d, probes_h), "generate DTrace probes.h") and
           exec_cmd("dtrace -G -C -s %s -o %s" % (probes_d, probes_o), "generate DTrace probes.o")):
         extra_objects.append(probes_o)
     else:
@@ -237,7 +231,7 @@ def generate_probes():
         config_file = os.path.join(PYV8_HOME, "src/Config.h")
 
         with open(config_file, "r") as f:
-            config_settings= f.read()
+            config_settings = f.read()
 
         modified_config_settings = config_settings.replace("\n#define SUPPORT_PROBES 1", "\n//#define SUPPORT_PROBES 1")
 
@@ -253,18 +247,20 @@ def generate_probes():
 
 def prepare_v8():
     try:
+        log.info("preparing V8 ...")
+
         check_env()
 
         if not OFFLINE_MODE:
             install_depot()
+
             sync_v8()
-        
+
         checkout_v8()
 
-        patch_gyp()
         build_v8()
 
-        #generate_probes()
+        # generate_probes()
     except Exception as e:
         log.error("fail to checkout and build v8, %s", e)
         log.debug(traceback.format_exc())
@@ -272,6 +268,8 @@ def prepare_v8():
 
 class build(_build):
     def run(self):
+        log.info("run `build` command")
+
         prepare_v8()
 
         _build.run(self)
@@ -279,6 +277,8 @@ class build(_build):
 
 class develop(_develop):
     def run(self):
+        log.info("run `develop` command")
+
         prepare_v8()
 
         _develop.run(self)
@@ -288,24 +288,22 @@ if __name__ == '__main__':
                         level=logging.DEBUG if PYV8_DEBUG else logging.INFO,
                         stream=sys.stderr)
 
-    source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp", "Wrapper.cpp",
-                    "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
+    source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp",
+                    "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
 
     if V8_AST:
         source_files += ["AST.cpp", "PrettyPrinter.cpp"]
 
-    sources = [os.path.join("src", file) for file in source_files]
-
     pyv8 = Extension(name="_PyV8",
-                    sources=sources,
-                    define_macros=macros,
-                    include_dirs=include_dirs,
-                    library_dirs=library_dirs,
-                    libraries=libraries,
-                    extra_compile_args=extra_compile_args,
-                    extra_link_args=extra_link_args,
-                    extra_objects=extra_objects,
-                    )
+                     sources=map(partial(os.path.join, "src"), source_files),
+                     define_macros=macros,
+                     include_dirs=include_dirs,
+                     library_dirs=library_dirs,
+                     libraries=libraries,
+                     extra_compile_args=extra_compile_args,
+                     extra_link_args=extra_link_args,
+                     extra_objects=extra_objects,
+                     )
 
     extra = {}
 
@@ -338,27 +336,29 @@ if __name__ == '__main__':
     """
 
     setup(name='PyV8',
-        version='2016.9.' + V8_GIT_TAG,
-        description='Python Wrapper for Google V8 Engine',
-        long_description=description,
-        classifiers=classifiers,
-        platforms="x86",
-        author='Flier Lu',
-        author_email='flier.lu@gmail.com',
-        url='https://github.com/flier/pyv8',
-        download_url='https://github.com/flier/pyv8/releases',
-        license="Apache Software License",
-        keywords=["javascript", "v8"],
-        install_requires=['setuptools'],
-        py_modules=['PyV8'],
-        ext_modules=[pyv8],
-        packages=[''],
-        package_dir={
-            '': v8_library_path,
-        },
-        package_data={
-            '': ['*.bin', '*.dat'],
-        },
-        test_suite='PyV8',
-        cmdclass=dict(compile=compile, build=build, v8build=_build, develop=develop),
-        **extra)
+          version='2.0.0.dev0+' + V8_GIT_TAG,
+          description='Python Wrapper for Google V8 Engine',
+          long_description=description,
+          url='https://github.com/flier/pyv8',
+          author='Flier Lu',
+          author_email='flier.lu@gmail.com',
+          license="Apache Software License",
+          classifiers=classifiers,
+          keywords=["javascript", "v8"],
+          download_url='https://github.com/flier/pyv8/releases',
+          install_requires=['setuptools'],
+          py_modules=['PyV8'],
+          ext_modules=[pyv8],
+          packages=[],
+          package_dir={
+              'v8': v8_library_path,
+          },
+          package_data={
+              'v8': ['*.bin', '*.dat', '*.dylib'],
+          },
+          test_suite='PyV8',
+          cmdclass=dict(compile=compile,
+                        build=build,
+                        v8build=_build,
+                        develop=develop),
+          **extra)

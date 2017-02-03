@@ -1,7 +1,8 @@
 build
 .vscode
-*.egg-info
+.idea
 
+*.egg-info
 *.pyc
 *.egg
 *.zip

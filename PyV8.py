@@ -3,10 +3,11 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import sys, os, re
+import sys
+import os
+import re
 import logging
 import collections
-import functools
 
 is_py3k = sys.version_info[0] > 2
 
@@ -554,8 +555,8 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
         def __init__(self, event):
             self.event = event
 
-    class NewFunctionEvent(DebugEvent):
-        type = _PyV8.JSDebugEvent.NewFunction
+    class AsyncTaskEvent(DebugEvent):
+        type = _PyV8.JSDebugEvent.AsyncTaskEvent
 
         def __init__(self, event):
             self.event = event
@@ -611,15 +612,6 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
         def __str__(self):
             return str(self.script)
 
-    class BeforeCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.BeforeCompile
-
-        def __init__(self, event):
-            JSDebugEvent.CompileEvent.__init__(self, event)
-
-        def __repr__(self):
-            return "before compile script: %s\n%s" % (repr(self.script), repr(self.state))
-
     class AfterCompileEvent(CompileEvent):
         type = _PyV8.JSDebugEvent.AfterCompile
 
@@ -629,12 +621,21 @@ class JSDebugEvent(_PyV8.JSDebugEvent):
         def __repr__(self):
             return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
 
+    class CompileErrorEvent(CompileEvent):
+        type = _PyV8.JSDebugEvent.CompileError
+
+        def __init__(self, event):
+            JSDebugEvent.CompileEvent.__init__(self, event)
+
+        def __repr__(self):
+            return "fail to compile script: %s\n%s" % (repr(self.script), repr(self.state))
+
     onMessage = None
     onBreak = None
     onException = None
-    onNewFunction = None
-    onBeforeCompile = None
     onAfterCompile = None
+    onCompileError = None
+    onAsyncTaskEvent = None
 
 
 class JSDebugger(JSDebugProtocol, JSDebugEvent):
@@ -685,12 +686,12 @@ class JSDebugger(JSDebugProtocol, JSDebugEvent):
             if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
         elif type == JSDebugEvent.Exception:
             if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
-        elif type == JSDebugEvent.NewFunction:
-            if self.onNewFunction: self.onNewFunction(JSDebugEvent.NewFunctionEvent(evt))
-        elif type == JSDebugEvent.BeforeCompile:
-            if self.onBeforeCompile: self.onBeforeCompile(JSDebugEvent.BeforeCompileEvent(evt))
         elif type == JSDebugEvent.AfterCompile:
             if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
+        elif type == JSDebugEvent.CompileError:
+            if self.onCompileError: self.onCompileError(JSDebugEvent.CompileErrorEvent(evt))
+        elif type == JSDebugEvent.AsyncTaskEvent:
+            if self.onAsyncTaskEvent: self.onAsyncTaskEvent(JSDebugEvent.AsyncTaskEvent(evt))
 
     def onDispatchDebugMessages(self):
         return True
@@ -2301,9 +2302,9 @@ class TestDebug(unittest.TestCase):
 
         debugger.onBreak = lambda evt: self.processDebugEvent(evt)
         debugger.onException = lambda evt: self.processDebugEvent(evt)
-        debugger.onNewFunction = lambda evt: self.processDebugEvent(evt)
-        debugger.onBeforeCompile = lambda evt: self.processDebugEvent(evt)
         debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
+        debugger.onCompileError = lambda evt: self.processDebugEvent(evt)
+        debugger.onAsyncTaskEvent = lambda evt: self.processDebugEvent(evt)
 
         with JSContext() as ctxt:
             debugger.enabled = True

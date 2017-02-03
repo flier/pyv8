@@ -28,7 +28,7 @@ BOOST_STATIC_LINK = True
 PYTHON_HOME = None
 V8_HOME = None
 V8_GIT_URL = "https://chromium.googlesource.com/v8/v8.git"
-V8_GIT_TAG = "5.4.500.23" # https://chromium.googlesource.com/v8/v8.git/+log/branch-heads/5.4
+V8_GIT_TAG = "5.8.110"  # https://chromium.googlesource.com/v8/v8.git/+/5.8.110
 DEPOT_HOME = None
 DEPOT_GIT_URL = "https://chromium.googlesource.com/chromium/tools/depot_tools.git"
 DEPOT_DOWNLOAD_URL = "https://storage.googleapis.com/chrome-infra/depot_tools.zip"
@@ -56,8 +56,8 @@ V8_GIT_URL = os.environ.get('V8_GIT_URL', V8_GIT_URL)
 DEPOT_HOME = os.environ.get('DEPOT_HOME', DEPOT_HOME)
 INCLUDE = os.environ.get('INCLUDE', INCLUDE)
 LIB = os.environ.get('LIB', LIB)
-OFFLINE_MODE = strtobool(os.environ.get('OFFLINE_MODE', str(OFFLINE_MODE)))
-PYV8_DEBUG =strtobool(os.environ.get('PYV8_DEBUG', str(PYV8_DEBUG)))
+OFFLINE_MODE = bool(strtobool(os.environ.get('OFFLINE_MODE', str(OFFLINE_MODE))))
+PYV8_DEBUG = bool(strtobool(os.environ.get('PYV8_DEBUG', str(PYV8_DEBUG))))
 MAKE = os.environ.get('MAKE', MAKE)
 
 if V8_HOME is None or not os.path.exists(os.path.join(V8_HOME, 'include', 'v8.h')):
@@ -67,54 +67,30 @@ if DEPOT_HOME is None:
     DEPOT_HOME = os.path.join(PYV8_HOME, 'depot_tools')
 
 if type(PYV8_DEBUG) == str:
-    PYV8_DEBUG = strtobool(PYV8_DEBUG)
+    PYV8_DEBUG = bool(strtobool(PYV8_DEBUG))
 
-V8_SNAPSHOT_ENABLED = not PYV8_DEBUG  # build using snapshots for faster start-up
-V8_NATIVE_REGEXP = True             # Whether to use native or interpreted regexp implementation
-V8_OBJECT_PRINT = PYV8_DEBUG          # enable object printing
-V8_EXTRA_CHECKS = PYV8_DEBUG          # enable extra checks
-V8_VERIFY_HEAP = PYV8_DEBUG           # enable verify heap
-V8_TRACE_MAPS = PYV8_DEBUG            # enable trace maps
-V8_GDB_JIT = PYV8_DEBUG               # enable GDB JIT supports
-V8_VTUNE_JIT = False                  # enable VTune JIT supports
-V8_DISASSEMBLEER = PYV8_DEBUG         # enable the disassembler to inspect generated code
-V8_DEBUGGER_SUPPORT = True          # enable debugging of JavaScript code
-V8_DEBUG_SYMBOLS = True             # enable debug symbols
-V8_LIVE_OBJECT_LIST = PYV8_DEBUG      # enable live object list features in the debugger
-V8_WERROR = False                   # ignore compile warnings
-V8_STRICTALIASING = True            # enable strict aliasing
-V8_BACKTRACE = True
-V8_I18N = False                     # enable i18n supports
-V8_AST = False                      # enable AST supports
-V8_STATIC_LINK = True
+V8_BACKTRACE = True                     # Support for backtrace_symbols on linux.
+V8_DISASSEMBLER = PYV8_DEBUG            # enable the disassembler to inspect generated code
+V8_GDB_JIT = PYV8_DEBUG
+V8_HANDLE_ZAPPING = True
+V8_I18N = False
+V8_INSPECTOR = True
+V8_OBJECT_PRINT = PYV8_DEBUG
+V8_SLOW_DCHECKS = PYV8_DEBUG
+V8_TRACE_MAPS = PYV8_DEBUG
+V8_EXTRA_CHECKS = PYV8_DEBUG
+V8_VERIFY_CSA = PYV8_DEBUG
+V8_VERIFY_HEAP = PYV8_DEBUG
+V8_VERIFY_PREDICTABLE = PYV8_DEBUG
+V8_NATIVE_REGEXP = True                 # Whether to use native or interpreted regexp implementation
+V8_NO_INLINE = False
+V8_USE_SNAPSHOT = not PYV8_DEBUG        # build using snapshots for faster start-up
+V8_DEBUG_SYMBOLS = True
+V8_AST = False
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
 ]
-
-if PYV8_DEBUG:
-    macros += [
-        ("V8_ENABLE_CHECKS", None),
-    ]
-
-if V8_NATIVE_REGEXP:
-    macros += [("V8_NATIVE_REGEXP", None)]
-else:
-    macros += [("V8_INTERPRETED_REGEXP", None)]
-
-if V8_DISASSEMBLEER:
-    macros += [("ENABLE_DISASSEMBLER", None)]
-
-if V8_LIVE_OBJECT_LIST:
-    V8_OBJECT_PRINT = True
-    V8_DEBUGGER_SUPPORT = True
-    macros += [("LIVE_OBJECT_LIST", None)]
-
-if V8_OBJECT_PRINT:
-    macros += [("OBJECT_PRINT", None)]
-
-if V8_DEBUGGER_SUPPORT:
-    macros += [("ENABLE_DEBUGGER_SUPPORT", None)]
 
 boost_libs = [
     'boost_date_time',
@@ -268,35 +244,15 @@ else:
 
 arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if PYV8_DEBUG else 'release'
+target = arch + '.' + mode
 
 v8_libs = [
-    'v8_base',
+    'v8',
     'v8_libbase',
     'v8_libplatform',
-    'v8_libsampler',
-    'v8_external_snapshot' if V8_SNAPSHOT_ENABLED else 'v8_nosnapshot',
 ]
 
-if is_winnt:
-    v8_library_path = icu_path = "%s/build/%s/lib/" % (V8_HOME, mode)
+v8_library_path = "%s/out.gn/%s/" % (V8_HOME, target)
 
-elif is_linux or is_freebsd:
-    v8_library_path = "%s/out/%s.%s/obj.target/tools/gyp/" % (V8_HOME, arch, mode)
-    icu_path = "%s/out/%s.%s/obj.target/third_party/icu/" % (V8_HOME, arch, mode)
-    native_path = "%s/out/native/obj.target/tools/gyp/" % V8_HOME
-
-elif is_osx:
-    v8_library_path = icu_path = "%s/out/%s.%s/" % (V8_HOME, arch, mode)
-    native_path = "%s/out/native/" % V8_HOME
-
-if V8_STATIC_LINK and not is_winnt:
-    extra_link_args += [os.path.join(v8_library_path, "lib%s.a" % lib) for lib in v8_libs]
-else:
-    libraries += v8_libs
-    library_dirs.append(v8_library_path)
-
-if os.path.isdir(native_path):
-    library_dirs.append(native_path)
-
-if V8_I18N:
-    extra_objects += [os.path.join(icu_path, "lib%s.a" % name) for name in ['icui18n', 'icuuc', 'icudata']]
+libraries += v8_libs
+library_dirs.append(v8_library_path)
