@@ -315,9 +315,9 @@ void CEngine::CollectAllGarbage(bool force_compaction)
   v8i::HandleScope handle_scope(v8i::Isolate::Current());
 
   if (force_compaction) {
-    v8i::Isolate::Current()->heap()->CollectAllAvailableGarbage();
+    v8i::Isolate::Current()->heap()->CollectAllAvailableGarbage(v8i::GarbageCollectionReason::kRuntime);
   } else {
-    v8i::Isolate::Current()->heap()->CollectAllGarbage();
+    v8i::Isolate::Current()->heap()->CollectAllGarbage(v8i::Heap::kNoGCFlags, v8i::GarbageCollectionReason::kRuntime);
   }
 }
 

@@ -160,11 +160,11 @@ void CDebug::Expose(void)
     ;
 
   py::enum_<v8::DebugEvent>("JSDebugEvent")
-    .value("Break", v8::Break)
-    .value("Exception", v8::Exception)
-    .value("NewFunction", v8::NewFunction)
-    .value("BeforeCompile", v8::BeforeCompile)
-    .value("AfterCompile", v8::AfterCompile)
+    .value("Break", v8::DebugEvent::Break)
+    .value("Exception", v8::DebugEvent::Exception)
+    .value("AfterCompile", v8::DebugEvent::AfterCompile)
+    .value("CompileError", v8::DebugEvent::CompileError)
+    .value("AsyncTaskEvent", v8::DebugEvent::AsyncTaskEvent)
     ;
 
   def("debug", &CDebug::GetInstance,
