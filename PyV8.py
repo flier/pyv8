@@ -39,10 +39,10 @@ __version__ = '1.0'
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSObject", "JSNull", "JSUndefined", "JSArray", "JSFunction",
            "JSClass", "JSEngine", "JSContext", "JSIsolate",
-           "JSStackTrace", "JSStackFrame", "profiler",
-           "JSExtension", "JSLocker", "JSUnlocker"]
+           "JSStackTrace", "JSStackFrame", "JSExtension", "JSLocker", "JSUnlocker"]
 
 SUPPORT_AST = hasattr(_PyV8, 'AstScope')
+SUPPORT_DEBUGGER = hasattr(_PyV8, 'JSDebug')
 
 SUPPORT_MEMORY_ALLOCATOR = hasattr(_PyV8, 'JSObjectSpace')
 
@@ -308,436 +308,437 @@ class JSClassPrototype(JSClass):
     def name(self):
         return self.cls.__name__
 
+if SUPPORT_DEBUGGER:
+    class JSDebugProtocol(object):
+        """
+        Support the V8 debugger JSON based protocol.
 
-class JSDebugProtocol(object):
-    """
-    Support the V8 debugger JSON based protocol.
+        <http://code.google.com/p/v8/wiki/DebuggerProtocol>
+        """
+        class Packet(object):
+            REQUEST = 'request'
+            RESPONSE = 'response'
+            EVENT = 'event'
 
-    <http://code.google.com/p/v8/wiki/DebuggerProtocol>
-    """
-    class Packet(object):
-        REQUEST = 'request'
-        RESPONSE = 'response'
-        EVENT = 'event'
+            def __init__(self, payload):
+                self.data = json.loads(payload) if type(payload) in [str, unicode] else payload
 
-        def __init__(self, payload):
-            self.data = json.loads(payload) if type(payload) in [str, unicode] else payload
+            @property
+            def seq(self):
+                return self.data['seq']
+
+            @property
+            def type(self):
+                return self.data['type']
+
+        class Request(Packet):
+            @property
+            def cmd(self):
+                return self.data['command']
+
+            @property
+            def args(self):
+                return self.data['args']
+
+        class Response(Packet):
+            @property
+            def request_seq(self):
+                return self.data['request_seq']
+
+            @property
+            def cmd(self):
+                return self.data['command']
+
+            @property
+            def body(self):
+                return self.data['body']
+
+            @property
+            def running(self):
+                return self.data['running']
+
+            @property
+            def success(self):
+                return self.data['success']
+
+            @property
+            def message(self):
+                return self.data['message']
+
+        class Event(Packet):
+            @property
+            def event(self):
+                return self.data['event']
+
+            @property
+            def body(self):
+                return self.data['body']
+
+        def __init__(self):
+            self.seq = 0
+
+        def nextSeq(self):
+            seq = self.seq
+            self.seq += 1
+
+            return seq
+
+        def parsePacket(self, payload):
+            obj = json.loads(payload)
+
+            return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
+
+
+    class JSDebugEvent(_PyV8.JSDebugEvent):
+        class FrameData(object):
+            def __init__(self, frame, count, name, value):
+                self.frame = frame
+                self.count = count
+                self.name = name
+                self.value = value
+
+            def __len__(self):
+                return self.count(self.frame)
+
+            def __iter__(self):
+                for i in range(self.count(self.frame)):
+                    yield (self.name(self.frame, i), self.value(self.frame, i))
+
+        class Frame(object):
+            def __init__(self, frame):
+                self.frame = frame
+
+            @property
+            def index(self):
+                return int(self.frame.index())
+
+            @property
+            def function(self):
+                return self.frame.func()
+
+            @property
+            def receiver(self):
+                return self.frame.receiver()
+
+            @property
+            def isConstructCall(self):
+                return bool(self.frame.isConstructCall())
+
+            @property
+            def isDebuggerFrame(self):
+                return bool(self.frame.isDebuggerFrame())
+
+            @property
+            def argumentCount(self):
+                return int(self.frame.argumentCount())
+
+            def argumentName(self, idx):
+                return str(self.frame.argumentName(idx))
+
+            def argumentValue(self, idx):
+                return self.frame.argumentValue(idx)
+
+            @property
+            def arguments(self):
+                return JSDebugEvent.FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
+
+            def localCount(self, idx):
+                return int(self.frame.localCount())
+
+            def localName(self, idx):
+                return str(self.frame.localName(idx))
+
+            def localValue(self, idx):
+                return self.frame.localValue(idx)
+
+            @property
+            def locals(self):
+                return JSDebugEvent.FrameData(self, self.localCount, self.localName, self.localValue)
+
+            @property
+            def sourcePosition(self):
+                return self.frame.sourcePosition()
+
+            @property
+            def sourceLine(self):
+                return int(self.frame.sourceLine())
+
+            @property
+            def sourceColumn(self):
+                return int(self.frame.sourceColumn())
+
+            @property
+            def sourceLineText(self):
+                return str(self.frame.sourceLineText())
+
+            def evaluate(self, source, disable_break = True):
+                return self.frame.evaluate(source, disable_break)
+
+            @property
+            def invocationText(self):
+                return str(self.frame.invocationText())
+
+            @property
+            def sourceAndPositionText(self):
+                return str(self.frame.sourceAndPositionText())
+
+            @property
+            def localsText(self):
+                return str(self.frame.localsText())
+
+            def __str__(self):
+                return str(self.frame.toText())
+
+        class Frames(object):
+            def __init__(self, state):
+                self.state = state
+
+            def __len__(self):
+                return self.state.frameCount
+
+            def __iter__(self):
+                for i in range(self.state.frameCount):
+                    yield self.state.frame(i)
+
+        class State(object):
+            def __init__(self, state):
+                self.state = state
+
+            @property
+            def frameCount(self):
+                return int(self.state.frameCount())
+
+            def frame(self, idx = None):
+                return JSDebugEvent.Frame(self.state.frame(idx))
+
+            @property
+            def selectedFrame(self):
+                return int(self.state.selectedFrame())
+
+            @property
+            def frames(self):
+                return JSDebugEvent.Frames(self)
+
+            def __repr__(self):
+                s = StringIO()
+
+                try:
+                    for frame in self.frames:
+                        s.write(str(frame))
+
+                    return s.getvalue()
+                finally:
+                    s.close()
+
+        class DebugEvent(object):
+            pass
+
+        class StateEvent(DebugEvent):
+            __state = None
+
+            @property
+            def state(self):
+                if not self.__state:
+                    self.__state = JSDebugEvent.State(self.event.executionState())
+
+                return self.__state
+
+        class BreakEvent(StateEvent):
+            type = _PyV8.JSDebugEvent.Break
+
+            def __init__(self, event):
+                self.event = event
+
+        class ExceptionEvent(StateEvent):
+            type = _PyV8.JSDebugEvent.Exception
+
+            def __init__(self, event):
+                self.event = event
+
+        class AsyncTaskEvent(DebugEvent):
+            type = _PyV8.JSDebugEvent.AsyncTaskEvent
+
+            def __init__(self, event):
+                self.event = event
+
+        class Script(object):
+            def __init__(self, script):
+                self.script = script
+
+            @property
+            def source(self):
+                return self.script.source()
+
+            @property
+            def id(self):
+                return self.script.id()
+
+            @property
+            def name(self):
+                return self.script.name()
+
+            @property
+            def lineOffset(self):
+                return self.script.lineOffset()
+
+            @property
+            def lineCount(self):
+                return self.script.lineCount()
+
+            @property
+            def columnOffset(self):
+                return self.script.columnOffset()
+
+            @property
+            def type(self):
+                return self.script.type()
+
+            def __repr__(self):
+                return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
+                                                          self.lineOffset, self.columnOffset,
+                                                          self.source)
+
+        class CompileEvent(StateEvent):
+            def __init__(self, event):
+                self.event = event
+
+            @property
+            def script(self):
+                if not hasattr(self, "_script"):
+                    setattr(self, "_script", JSDebugEvent.Script(self.event.script()))
+
+                return self._script
+
+            def __str__(self):
+                return str(self.script)
+
+        class AfterCompileEvent(CompileEvent):
+            type = _PyV8.JSDebugEvent.AfterCompile
+
+            def __init__(self, event):
+                JSDebugEvent.CompileEvent.__init__(self, event)
+
+            def __repr__(self):
+                return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
+
+        class CompileErrorEvent(CompileEvent):
+            type = _PyV8.JSDebugEvent.CompileError
+
+            def __init__(self, event):
+                JSDebugEvent.CompileEvent.__init__(self, event)
+
+            def __repr__(self):
+                return "fail to compile script: %s\n%s" % (repr(self.script), repr(self.state))
+
+        onMessage = None
+        onBreak = None
+        onException = None
+        onAfterCompile = None
+        onCompileError = None
+        onAsyncTaskEvent = None
+
+
+    class JSDebugger(JSDebugProtocol, JSDebugEvent):
+        def __init__(self):
+            JSDebugProtocol.__init__(self)
+            JSDebugEvent.__init__(self)
+
+        def __enter__(self):
+            self.enabled = True
+
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.enabled = False
 
         @property
-        def seq(self):
-            return self.data['seq']
+        def context(self):
+            if not hasattr(self, '_context'):
+                self._context = JSContext(ctxt=_PyV8.debug().context)
 
-        @property
-        def type(self):
-            return self.data['type']
+            return self._context
 
-    class Request(Packet):
-        @property
-        def cmd(self):
-            return self.data['command']
+        def isEnabled(self):
+            return _PyV8.debug().enabled
 
-        @property
-        def args(self):
-            return self.data['args']
+        def setEnabled(self, enable):
+            dbg = _PyV8.debug()
 
-    class Response(Packet):
-        @property
-        def request_seq(self):
-            return self.data['request_seq']
+            if enable:
+                dbg.onDebugEvent = self.onDebugEvent
+                dbg.onDebugMessage = self.onDebugMessage
+                dbg.onDispatchDebugMessages = self.onDispatchDebugMessages
+            else:
+                dbg.onDebugEvent = None
+                dbg.onDebugMessage = None
+                dbg.onDispatchDebugMessages = None
 
-        @property
-        def cmd(self):
-            return self.data['command']
+            dbg.enabled = enable
 
-        @property
-        def body(self):
-            return self.data['body']
+        enabled = property(isEnabled, setEnabled)
 
-        @property
-        def running(self):
-            return self.data['running']
+        def onDebugMessage(self, msg, data):
+            if self.onMessage:
+                self.onMessage(json.loads(msg))
 
-        @property
-        def success(self):
-            return self.data['success']
+        def onDebugEvent(self, type, state, evt):
+            if type == JSDebugEvent.Break:
+                if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
+            elif type == JSDebugEvent.Exception:
+                if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
+            elif type == JSDebugEvent.AfterCompile:
+                if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
+            elif type == JSDebugEvent.CompileError:
+                if self.onCompileError: self.onCompileError(JSDebugEvent.CompileErrorEvent(evt))
+            elif type == JSDebugEvent.AsyncTaskEvent:
+                if self.onAsyncTaskEvent: self.onAsyncTaskEvent(JSDebugEvent.AsyncTaskEvent(evt))
 
-        @property
-        def message(self):
-            return self.data['message']
+        def onDispatchDebugMessages(self):
+            return True
 
-    class Event(Packet):
-        @property
-        def event(self):
-            return self.data['event']
+        def debugBreak(self):
+            _PyV8.debug().debugBreak()
 
-        @property
-        def body(self):
-            return self.data['body']
+        def debugBreakForCommand(self):
+            _PyV8.debug().debugBreakForCommand()
 
-    def __init__(self):
-        self.seq = 0
+        def cancelDebugBreak(self):
+            _PyV8.debug().cancelDebugBreak()
 
-    def nextSeq(self):
-        seq = self.seq
-        self.seq += 1
+        def processDebugMessages(self):
+            _PyV8.debug().processDebugMessages()
 
-        return seq
+        def sendCommand(self, cmd, *args, **kwds):
+            request = json.dumps({
+                'seq': self.nextSeq(),
+                'type': 'request',
+                'command': cmd,
+                'arguments': kwds
+            })
 
-    def parsePacket(self, payload):
-        obj = json.loads(payload)
+            _PyV8.debug().sendCommand(request)
 
-        return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
+            return request
 
+        def debugContinue(self, action='next', steps=1):
+            return self.sendCommand('continue', stepaction=action)
 
-class JSDebugEvent(_PyV8.JSDebugEvent):
-    class FrameData(object):
-        def __init__(self, frame, count, name, value):
-            self.frame = frame
-            self.count = count
-            self.name = name
-            self.value = value
+        def stepNext(self, steps=1):
+            """Step to the next statement in the current function."""
+            return self.debugContinue(action='next', steps=steps)
 
-        def __len__(self):
-            return self.count(self.frame)
+        def stepIn(self, steps=1):
+            """Step into new functions invoked or the next statement in the current function."""
+            return self.debugContinue(action='in', steps=steps)
 
-        def __iter__(self):
-            for i in range(self.count(self.frame)):
-                yield (self.name(self.frame, i), self.value(self.frame, i))
+        def stepOut(self, steps=1):
+            """Step out of the current function."""
+            return self.debugContinue(action='out', steps=steps)
 
-    class Frame(object):
-        def __init__(self, frame):
-            self.frame = frame
+        def stepMin(self, steps=1):
+            """Perform a minimum step in the current function."""
+            return self.debugContinue(action='out', steps=steps)
 
-        @property
-        def index(self):
-            return int(self.frame.index())
-
-        @property
-        def function(self):
-            return self.frame.func()
-
-        @property
-        def receiver(self):
-            return self.frame.receiver()
-
-        @property
-        def isConstructCall(self):
-            return bool(self.frame.isConstructCall())
-
-        @property
-        def isDebuggerFrame(self):
-            return bool(self.frame.isDebuggerFrame())
-
-        @property
-        def argumentCount(self):
-            return int(self.frame.argumentCount())
-
-        def argumentName(self, idx):
-            return str(self.frame.argumentName(idx))
-
-        def argumentValue(self, idx):
-            return self.frame.argumentValue(idx)
-
-        @property
-        def arguments(self):
-            return JSDebugEvent.FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
-
-        def localCount(self, idx):
-            return int(self.frame.localCount())
-
-        def localName(self, idx):
-            return str(self.frame.localName(idx))
-
-        def localValue(self, idx):
-            return self.frame.localValue(idx)
-
-        @property
-        def locals(self):
-            return JSDebugEvent.FrameData(self, self.localCount, self.localName, self.localValue)
-
-        @property
-        def sourcePosition(self):
-            return self.frame.sourcePosition()
-
-        @property
-        def sourceLine(self):
-            return int(self.frame.sourceLine())
-
-        @property
-        def sourceColumn(self):
-            return int(self.frame.sourceColumn())
-
-        @property
-        def sourceLineText(self):
-            return str(self.frame.sourceLineText())
-
-        def evaluate(self, source, disable_break = True):
-            return self.frame.evaluate(source, disable_break)
-
-        @property
-        def invocationText(self):
-            return str(self.frame.invocationText())
-
-        @property
-        def sourceAndPositionText(self):
-            return str(self.frame.sourceAndPositionText())
-
-        @property
-        def localsText(self):
-            return str(self.frame.localsText())
-
-        def __str__(self):
-            return str(self.frame.toText())
-
-    class Frames(object):
-        def __init__(self, state):
-            self.state = state
-
-        def __len__(self):
-            return self.state.frameCount
-
-        def __iter__(self):
-            for i in range(self.state.frameCount):
-                yield self.state.frame(i)
-
-    class State(object):
-        def __init__(self, state):
-            self.state = state
-
-        @property
-        def frameCount(self):
-            return int(self.state.frameCount())
-
-        def frame(self, idx = None):
-            return JSDebugEvent.Frame(self.state.frame(idx))
-
-        @property
-        def selectedFrame(self):
-            return int(self.state.selectedFrame())
-
-        @property
-        def frames(self):
-            return JSDebugEvent.Frames(self)
-
-        def __repr__(self):
-            s = StringIO()
-
-            try:
-                for frame in self.frames:
-                    s.write(str(frame))
-
-                return s.getvalue()
-            finally:
-                s.close()
-
-    class DebugEvent(object):
-        pass
-
-    class StateEvent(DebugEvent):
-        __state = None
-
-        @property
-        def state(self):
-            if not self.__state:
-                self.__state = JSDebugEvent.State(self.event.executionState())
-
-            return self.__state
-
-    class BreakEvent(StateEvent):
-        type = _PyV8.JSDebugEvent.Break
-
-        def __init__(self, event):
-            self.event = event
-
-    class ExceptionEvent(StateEvent):
-        type = _PyV8.JSDebugEvent.Exception
-
-        def __init__(self, event):
-            self.event = event
-
-    class AsyncTaskEvent(DebugEvent):
-        type = _PyV8.JSDebugEvent.AsyncTaskEvent
-
-        def __init__(self, event):
-            self.event = event
-
-    class Script(object):
-        def __init__(self, script):
-            self.script = script
-
-        @property
-        def source(self):
-            return self.script.source()
-
-        @property
-        def id(self):
-            return self.script.id()
-
-        @property
-        def name(self):
-            return self.script.name()
-
-        @property
-        def lineOffset(self):
-            return self.script.lineOffset()
-
-        @property
-        def lineCount(self):
-            return self.script.lineCount()
-
-        @property
-        def columnOffset(self):
-            return self.script.columnOffset()
-
-        @property
-        def type(self):
-            return self.script.type()
-
-        def __repr__(self):
-            return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
-                                                      self.lineOffset, self.columnOffset,
-                                                      self.source)
-
-    class CompileEvent(StateEvent):
-        def __init__(self, event):
-            self.event = event
-
-        @property
-        def script(self):
-            if not hasattr(self, "_script"):
-                setattr(self, "_script", JSDebugEvent.Script(self.event.script()))
-
-            return self._script
-
-        def __str__(self):
-            return str(self.script)
-
-    class AfterCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.AfterCompile
-
-        def __init__(self, event):
-            JSDebugEvent.CompileEvent.__init__(self, event)
-
-        def __repr__(self):
-            return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
-
-    class CompileErrorEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.CompileError
-
-        def __init__(self, event):
-            JSDebugEvent.CompileEvent.__init__(self, event)
-
-        def __repr__(self):
-            return "fail to compile script: %s\n%s" % (repr(self.script), repr(self.state))
-
-    onMessage = None
-    onBreak = None
-    onException = None
-    onAfterCompile = None
-    onCompileError = None
-    onAsyncTaskEvent = None
-
-
-class JSDebugger(JSDebugProtocol, JSDebugEvent):
-    def __init__(self):
-        JSDebugProtocol.__init__(self)
-        JSDebugEvent.__init__(self)
-
-    def __enter__(self):
-        self.enabled = True
-
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.enabled = False
-
-    @property
-    def context(self):
-        if not hasattr(self, '_context'):
-            self._context = JSContext(ctxt=_PyV8.debug().context)
-
-        return self._context
-
-    def isEnabled(self):
-        return _PyV8.debug().enabled
-
-    def setEnabled(self, enable):
-        dbg = _PyV8.debug()
-
-        if enable:
-            dbg.onDebugEvent = self.onDebugEvent
-            dbg.onDebugMessage = self.onDebugMessage
-            dbg.onDispatchDebugMessages = self.onDispatchDebugMessages
-        else:
-            dbg.onDebugEvent = None
-            dbg.onDebugMessage = None
-            dbg.onDispatchDebugMessages = None
-
-        dbg.enabled = enable
-
-    enabled = property(isEnabled, setEnabled)
-
-    def onDebugMessage(self, msg, data):
-        if self.onMessage:
-            self.onMessage(json.loads(msg))
-
-    def onDebugEvent(self, type, state, evt):
-        if type == JSDebugEvent.Break:
-            if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
-        elif type == JSDebugEvent.Exception:
-            if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
-        elif type == JSDebugEvent.AfterCompile:
-            if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
-        elif type == JSDebugEvent.CompileError:
-            if self.onCompileError: self.onCompileError(JSDebugEvent.CompileErrorEvent(evt))
-        elif type == JSDebugEvent.AsyncTaskEvent:
-            if self.onAsyncTaskEvent: self.onAsyncTaskEvent(JSDebugEvent.AsyncTaskEvent(evt))
-
-    def onDispatchDebugMessages(self):
-        return True
-
-    def debugBreak(self):
-        _PyV8.debug().debugBreak()
-
-    def debugBreakForCommand(self):
-        _PyV8.debug().debugBreakForCommand()
-
-    def cancelDebugBreak(self):
-        _PyV8.debug().cancelDebugBreak()
-
-    def processDebugMessages(self):
-        _PyV8.debug().processDebugMessages()
-
-    def sendCommand(self, cmd, *args, **kwds):
-        request = json.dumps({
-            'seq': self.nextSeq(),
-            'type': 'request',
-            'command': cmd,
-            'arguments': kwds
-        })
-
-        _PyV8.debug().sendCommand(request)
-
-        return request
-
-    def debugContinue(self, action='next', steps=1):
-        return self.sendCommand('continue', stepaction=action)
-
-    def stepNext(self, steps=1):
-        """Step to the next statement in the current function."""
-        return self.debugContinue(action='next', steps=steps)
-
-    def stepIn(self, steps=1):
-        """Step into new functions invoked or the next statement in the current function."""
-        return self.debugContinue(action='in', steps=steps)
-
-    def stepOut(self, steps=1):
-        """Step out of the current function."""
-        return self.debugContinue(action='out', steps=steps)
-
-    def stepMin(self, steps=1):
-        """Perform a minimum step in the current function."""
-        return self.debugContinue(action='out', steps=steps)
 
 class JSEngine(_PyV8.JSEngine):
     def __init__(self):
@@ -883,6 +884,7 @@ else:
 
     def toUnicodeString(s, encoding='utf-8'):
         return s if isinstance(s, unicode) else unicode(s, encoding)
+
 
 class TestContext(unittest.TestCase):
     def testMultiNamespace(self):
@@ -1861,7 +1863,7 @@ class TestWrapper(unittest.TestCase):
             self.assertTrue(ctxt.eval('null == returnNone()'))
 
 
-class TestMultithread(unittest.TestCase):
+class TestMultiThread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.active)
         self.assertFalse(JSLocker.locked)
@@ -1967,6 +1969,7 @@ class TestMultithread(unittest.TestCase):
         for t in threads: t.join()
 
         self.assertEqual(20, len(g.result))
+
 
 class TestEngine(unittest.TestCase):
     def setUp(self):
@@ -2277,47 +2280,48 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(newStackSize > oldStackSize * 2)
 
 
-class TestDebug(unittest.TestCase):
-    def setUp(self):
-        self.engine = JSEngine()
+if SUPPORT_DEBUGGER:
+    class TestDebug(unittest.TestCase):
+        def setUp(self):
+            self.engine = JSEngine()
 
-    def tearDown(self):
-        del self.engine
+        def tearDown(self):
+            del self.engine
 
-    events = []
+        events = []
 
-    def processDebugEvent(self, event):
-        try:
-            logging.debug("receive debug event: %s", repr(event))
+        def processDebugEvent(self, event):
+            try:
+                logging.debug("receive debug event: %s", repr(event))
 
-            self.events.append(repr(event))
-        except:
-            logging.error("fail to process debug event")
-            logging.debug(traceback.extract_stack())
+                self.events.append(repr(event))
+            except:
+                logging.error("fail to process debug event")
+                logging.debug(traceback.extract_stack())
 
-    def testEventDispatch(self):
-        debugger = JSDebugger()
-
-        self.assertTrue(not debugger.enabled)
-
-        debugger.onBreak = lambda evt: self.processDebugEvent(evt)
-        debugger.onException = lambda evt: self.processDebugEvent(evt)
-        debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
-        debugger.onCompileError = lambda evt: self.processDebugEvent(evt)
-        debugger.onAsyncTaskEvent = lambda evt: self.processDebugEvent(evt)
-
-        with JSContext() as ctxt:
-            debugger.enabled = True
-
-            self.assertEqual(3, int(ctxt.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
-
-            debugger.enabled = False
-
-            self.assertRaises(JSError, JSContext.eval, ctxt, "throw 1")
+        def testEventDispatch(self):
+            debugger = JSDebugger()
 
             self.assertTrue(not debugger.enabled)
 
-        self.assertEqual(4, len(self.events))
+            debugger.onBreak = lambda evt: self.processDebugEvent(evt)
+            debugger.onException = lambda evt: self.processDebugEvent(evt)
+            debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
+            debugger.onCompileError = lambda evt: self.processDebugEvent(evt)
+            debugger.onAsyncTaskEvent = lambda evt: self.processDebugEvent(evt)
+
+            with JSContext() as ctxt:
+                debugger.enabled = True
+
+                self.assertEqual(3, int(ctxt.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
+
+                debugger.enabled = False
+
+                self.assertRaises(JSError, JSContext.eval, ctxt, "throw 1")
+
+                self.assertTrue(not debugger.enabled)
+
+            self.assertEqual(4, len(self.events))
 
 
 if SUPPORT_AST:

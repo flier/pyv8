@@ -33,9 +33,12 @@ namespace sinks = boost::log::sinks;
 
 #include "Config.h"
 #include "Engine.h"
-#include "Debug.h"
 #include "Locker.h"
 #include "Utils.h"
+
+#ifdef SUPPORT_DEBUGGER
+  #include "Debug.h"
+#endif
 
 #ifdef SUPPORT_AST
   #include "AST.h"
@@ -137,13 +140,13 @@ static void load_external_data(logger_t& logger) {
   PyFrameObject* frame = PyThreadState_Get()->frame;
 
   const char *filename = PyString_AsString(frame->f_code->co_filename);
-  fs::path load_path = fs::canonical(filename, fs::current_path());
+  fs::path load_path = fs::canonical(fs::path(filename).parent_path(), fs::current_path());
 
-  BOOST_LOG_SEV(logger, debug) << "load ICU data from " << load_path.parent_path().c_str() << " ...";
+  BOOST_LOG_SEV(logger, debug) << "load ICU data from " << load_path.c_str() << " ...";
 
   v8::V8::InitializeICUDefaultLocation(load_path.c_str());
 
-  BOOST_LOG_SEV(logger, debug) << "load external snapshot from " << load_path.parent_path().c_str() << " ...";
+  BOOST_LOG_SEV(logger, debug) << "load external snapshot from " << load_path.c_str() << " ...";
 
   v8::V8::InitializeExternalStartupData(load_path.c_str());
 }
@@ -173,10 +176,14 @@ BOOST_PYTHON_MODULE(_PyV8)
   CJavascriptException::Expose();
   CWrapper::Expose();
   CContext::Expose();
+  CEngine::Expose();
+  CLocker::Expose();
+
+#ifdef SUPPORT_DEBUGGER
+  CDebug::Expose();
+#endif
+
 #ifdef SUPPORT_AST
   CAstNode::Expose();
 #endif
-  CEngine::Expose();
-  CDebug::Expose();
-  CLocker::Expose();
 }

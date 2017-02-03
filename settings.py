@@ -87,10 +87,14 @@ V8_NO_INLINE = False
 V8_USE_SNAPSHOT = not PYV8_DEBUG        # build using snapshots for faster start-up
 V8_DEBUG_SYMBOLS = True
 V8_AST = False
+V8_DEBUGGER = False
 
 macros = [
     ("BOOST_PYTHON_STATIC_LIB", None),
 ]
+
+if V8_DEBUGGER:
+    macros += [('SUPPORT_DEBUGGER', None)]
 
 boost_libs = [
     'boost_date_time',
