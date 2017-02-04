@@ -73,7 +73,7 @@ V8_BACKTRACE = True                     # Support for backtrace_symbols on linux
 V8_DISASSEMBLER = PYV8_DEBUG            # enable the disassembler to inspect generated code
 V8_GDB_JIT = PYV8_DEBUG
 V8_HANDLE_ZAPPING = True
-V8_I18N = False
+V8_I18N = True
 V8_INSPECTOR = True
 V8_OBJECT_PRINT = PYV8_DEBUG
 V8_SLOW_DCHECKS = PYV8_DEBUG
@@ -250,11 +250,10 @@ arch = 'x64' if is_64bit else 'arm' if is_arm else 'ia32'
 mode = 'debug' if PYV8_DEBUG else 'release'
 target = arch + '.' + mode
 
-v8_libs = [
-    'v8',
-    'v8_libbase',
-    'v8_libplatform',
-]
+v8_libs = ['v8', 'v8_libbase', 'v8_libplatform']
+
+if V8_I18N:
+    v8_libs += ['icuuc', 'icui18n']
 
 v8_library_path = "%s/out.gn/%s/" % (V8_HOME, target)
 

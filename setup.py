@@ -283,17 +283,18 @@ class pyv8_build_ext(build_ext):
 
                 libs = ['lib%s.dylib' % lib for lib in v8_libs]
                 args = chain.from_iterable([['-change', '@rpath/' + lib, '@loader_path/v8/' + lib] for lib in libs])
-                dirname, filename = os.path.split(os.path.abspath(self.get_ext_fullpath(ext.name)))
+                dir_name, filename = os.path.split(os.path.abspath(self.get_ext_fullpath(ext.name)))
                 exec_cmd('install_name_tool', filename, *args,
-                         cwd=dirname,
+                         cwd=dir_name,
                          msg="Install Extension " + filename)
 
                 for lib_name in libs:
                     args = chain.from_iterable([['-change', '@rpath/' + lib, '@loader_path/' + lib] for lib in libs])
 
                     exec_cmd('install_name_tool', lib_name, *args,
-                             cwd=os.path.join(dirname, 'v8'),
+                             cwd=os.path.join(dir_name, 'v8'),
                              msg="Install V8 Library " + lib_name)
+
 
 class pyv8_build(build):
     def run(self):
