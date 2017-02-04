@@ -119,6 +119,7 @@ public:
 
 class CExtension
 {
+  std::string m_name, m_source;
   py::list m_deps;
   std::vector<std::string> m_depNames;
   std::vector<const char *> m_depPtrs;

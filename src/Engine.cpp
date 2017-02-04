@@ -556,7 +556,7 @@ class CPythonExtension : public v8::Extension
   }
 public:
   CPythonExtension(const char *name, const char *source, py::object callback, int dep_count, const char**deps)
-    : v8::Extension(strdup(name), strdup(source), dep_count, deps), m_callback(callback)
+    : v8::Extension(name, source, dep_count, deps), m_callback(callback)
   {
 
   }
@@ -600,7 +600,7 @@ std::vector< boost::shared_ptr<v8::Extension> > CExtension::s_extensions;
 
 CExtension::CExtension(const std::string& name, const std::string& source,
                        py::object callback, py::list deps, bool autoRegister)
-  : m_deps(deps), m_registered(false)
+  : m_name(name), m_source(source), m_deps(deps), m_registered(false)
 {
   for (Py_ssize_t i=0; i<PyList_Size(deps.ptr()); i++)
   {
@@ -613,10 +613,10 @@ CExtension::CExtension(const std::string& name, const std::string& source,
     }
   }
 
-  m_extension.reset(new CPythonExtension(name.c_str(), source.c_str(),
+  m_extension.reset(new CPythonExtension(m_name.c_str(), m_source.c_str(),
     callback, m_depPtrs.size(), m_depPtrs.empty() ? NULL : &m_depPtrs[0]));
 
-  if (autoRegister) this->Register();
+  if (autoRegister) Register();
 }
 
 void CExtension::Register(void)
