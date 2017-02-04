@@ -64,6 +64,8 @@ inline std::basic_istream< CharT, TraitsT >& operator>> (
 
   stream >> s;
 
+  s = boost::to_upper(s);
+
   if (s.compare("TRACE") == 0) level = trace;
   else if (s.compare("DEBUG") == 0) level = debug;
   else if (s.compare("INFO") == 0) level = info;
