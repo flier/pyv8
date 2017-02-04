@@ -803,11 +803,13 @@ class JSContext(_PyV8.JSContext):
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
+        self.leave()
+
         if exc_type:
             logging.warn("throw exceptions in %r", self)
             logging.debug(''.join(traceback.format_exception(exc_type, exc_value, tb)))
 
-        self.leave()
+            self.dispose()
 
         if hasattr(JSLocker, 'lock'):
             self.lock.leave()

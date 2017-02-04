@@ -22,13 +22,9 @@ public:
   CContext(v8::Handle<v8::Context> context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
   CContext(const CContext& context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
   CContext(py::object global, py::list extensions, v8::Isolate *isolate = v8::Isolate::GetCurrent());
+  ~CContext();
 
-  ~CContext()
-  {
-    BOOST_LOG_SEV(m_logger, trace) << "context destroyed";
-
-    m_context.Reset();
-  }
+  void Dispose(void);
 
   inline v8::Handle<v8::Context> Context(void) const { return m_context.Get(v8::Isolate::GetCurrent()); }
 

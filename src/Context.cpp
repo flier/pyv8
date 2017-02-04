@@ -39,6 +39,8 @@ void CContext::Expose(void)
     .def("leave", &CContext::Leave, "Exit this context. "
          "Exiting the current context restores the context "
          "that was in place when entering the current context.")
+    .def("dispose", &CContext::Dispose, "Dispose this context.",
+         "Force to dispose a context, release all resources.")
 
     .def("__nonzero__", &CContext::IsEntered, "the context has been entered.")
     ;
@@ -109,6 +111,23 @@ CContext::CContext(py::object global, py::list extensions, v8::Isolate *isolate)
 
     Py_DECREF(global.ptr());
   }
+}
+
+CContext::~CContext()
+{
+  if (!m_context.IsEmpty())
+  {
+    BOOST_LOG_SEV(m_logger, trace) << "context destroyed";
+
+    m_context.Reset();
+  }
+}
+
+void CContext::Dispose(void)
+{
+  BOOST_LOG_SEV(m_logger, trace) << "context disposed";
+
+  m_context.Reset();
 }
 
 py::object CContext::GetGlobal(void) const
