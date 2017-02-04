@@ -41,6 +41,8 @@ public:
   }
   ~CIsolate(void) {
     if (m_owner) {
+      ClearDataSlots();
+
       m_isolate->Dispose();
 
       BOOST_LOG_SEV(m_logger, trace) << "isolated destroyed";
@@ -53,6 +55,8 @@ public:
     v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview) {
     return CJavascriptStackTrace::GetCurrentStackTrace(m_isolate, frame_limit, options);
   }
+
+  static CIsolate Current(void) { return CIsolate(v8::Isolate::GetCurrent()); }
 
   static py::object GetCurrent(void);
 
@@ -78,6 +82,36 @@ public:
     BOOST_LOG_SEV(m_logger, trace) << "isolated was locked";
 
     return locked;
+  }
+
+  enum Slot {
+    ObjectTemplate
+  };
+
+  template <typename T>
+  v8::Persistent<T> * GetData(Slot slot) {
+    return static_cast<v8::Persistent<T> *>(m_isolate->GetData(slot));
+  }
+
+  template <typename T>
+  void SetData(Slot slot, v8::Persistent<T> * data) {
+    m_isolate->SetData(slot, data);
+  }
+
+  void ClearDataSlots() {
+    delete GetData<v8::ObjectTemplate>(CIsolate::Slot::ObjectTemplate);
+  }
+
+  v8::Local<v8::ObjectTemplate> GetObjectTemplate(void) {
+    auto object_template = GetData<v8::ObjectTemplate>(CIsolate::Slot::ObjectTemplate);
+
+    if (!object_template) {
+      object_template = new v8::Persistent<v8::ObjectTemplate>(m_isolate, CPythonObject::CreateObjectTemplate(m_isolate));
+
+      SetData(CIsolate::Slot::ObjectTemplate, object_template);
+    }
+
+    return object_template->Get(m_isolate);
   }
 };
 

@@ -928,9 +928,7 @@ v8::Handle<v8::Value> CPythonObject::WrapInternal(py::object obj)
   }
   else
   {
-    static v8::Persistent<v8::ObjectTemplate> s_template(v8::Isolate::GetCurrent(), CreateObjectTemplate(v8::Isolate::GetCurrent()));
-
-    v8::Handle<v8::Object> instance = v8::Local<v8::ObjectTemplate>::New(v8::Isolate::GetCurrent(), s_template)->NewInstance();
+    v8::Handle<v8::Object> instance = CIsolate::Current().GetObjectTemplate()->NewInstance();
 
     if (!instance.IsEmpty())
     {

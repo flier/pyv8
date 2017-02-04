@@ -40,10 +40,9 @@ class CPythonObject : public CWrapper
 #endif
 protected:
   static void SetupObjectTemplate(v8::Isolate *isolate, v8::Handle<v8::ObjectTemplate> clazz);
-  static v8::Handle<v8::ObjectTemplate> CreateObjectTemplate(v8::Isolate *isolate);
-
   static v8::Handle<v8::Value> WrapInternal(py::object obj);
 public:
+  static v8::Handle<v8::ObjectTemplate> CreateObjectTemplate(v8::Isolate *isolate);
   static bool IsWrapped(v8::Handle<v8::Object> obj);
   static v8::Handle<v8::Value> Wrap(py::object obj);
   static py::object Unwrap(v8::Handle<v8::Object> obj);
