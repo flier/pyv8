@@ -127,7 +127,8 @@ void CEngine::Expose(void)
     .def(py::init<>("Create a new script engine instance."))
     .add_static_property("version", &CEngine::GetVersion,
                          "Get the V8 engine version.")
-
+    .add_static_property("boost", &CEngine::GetBoostVersion,
+                         "Get the boost version.")
     .add_static_property("dead", &v8::V8::IsDead,
                          "Check if V8 is dead and therefore unusable.")
 

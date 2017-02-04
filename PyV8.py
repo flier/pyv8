@@ -740,7 +740,19 @@ if SUPPORT_DEBUGGER:
             return self.debugContinue(action='out', steps=steps)
 
 
+class Version(collections.namedtuple('Version', ['major', 'minor', 'patch'])):
+    __slots__ = ()
+
+    def __str__(self):
+        return "{major}.{minor}.{patch}".format(**self._asdict())
+
+
 class JSEngine(_PyV8.JSEngine):
+    v8_version = Version(*_PyV8.JSEngine.version.split('.'))
+    boost_version = Version(_PyV8.JSEngine.boost / 100000,
+                            _PyV8.JSEngine.boost / 100 % 1000,
+                            _PyV8.JSEngine.boost % 100)
+
     def __init__(self):
         _PyV8.JSEngine.__init__(self)
 
@@ -2780,6 +2792,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
-    logging.info("testing PyV8 module %s with V8 v%s", __version__, JSEngine.version)
+    logging.info("testing PyV8 module %s with V8 v%s (boost v%s)",
+                 __version__, JSEngine.v8_version, JSEngine.boost_version)
 
     unittest.main()

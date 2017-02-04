@@ -6,6 +6,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include "Isolate.h"
 #include "Context.h"
 #include "Utils.h"
 
@@ -58,6 +59,7 @@ public:
   static void Expose(void);
 
   static const std::string GetVersion(void) { return v8::V8::GetVersion(); }
+  static int GetBoostVersion(void) { return BOOST_VERSION; }
   static bool SetMemoryLimit(int max_semi_space_size, int max_old_space_size, int max_executable_size, int code_range_size);
   static bool SetStackLimit(uint32_t stack_limit_size);
 
