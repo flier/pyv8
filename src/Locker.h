@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Exception.h"
-#include "Context.h"
+#include "Isolate.h"
 #include "Utils.h"
 
 class CLocker

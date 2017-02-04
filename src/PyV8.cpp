@@ -11,6 +11,7 @@
 
 #include <boost/core/null_deleter.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
@@ -64,7 +65,7 @@ inline std::basic_istream< CharT, TraitsT >& operator>> (
 
   stream >> s;
 
-  s = boost::to_upper(s);
+  boost::to_upper(s);
 
   if (s.compare("TRACE") == 0) level = trace;
   else if (s.compare("DEBUG") == 0) level = debug;
@@ -177,6 +178,7 @@ BOOST_PYTHON_MODULE(_PyV8)
 
   CJavascriptException::Expose();
   CWrapper::Expose();
+  CIsolate::Expose();
   CContext::Expose();
   CEngine::Expose();
   CLocker::Expose();

@@ -318,7 +318,7 @@ if __name__ == '__main__':
                         level=logging.DEBUG if PYV8_DEBUG else logging.INFO,
                         stream=sys.stderr)
 
-    source_files = ["Utils.cpp", "Exception.cpp", "Context.cpp", "Engine.cpp",
+    source_files = ["Utils.cpp", "Exception.cpp", "Isolate.cpp", "Context.cpp", "Engine.cpp",
                     "Wrapper.cpp", "Debug.cpp", "Locker.cpp", "PyV8.cpp"]
 
     if V8_AST:

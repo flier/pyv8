@@ -12,6 +12,7 @@
 
 #include "V8Internal.h"
 
+#include "Isolate.h"
 #include "Context.h"
 #include "Utils.h"
 
