@@ -10,12 +10,14 @@ import logging
 import urllib
 import zipfile
 import json
+from itertools import chain
 from functools import partial
 from datetime import datetime
 
-from distutils.command.build import build as _build
+from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 from setuptools import setup, Extension
-from setuptools.command.develop import develop as _develop
+from setuptools.command.develop import develop
 
 from settings import *
 
@@ -266,22 +268,49 @@ def prepare_v8():
         log.debug(traceback.format_exc())
 
 
-class build(_build):
+class pyv8_build_ext(build_ext):
+    def run(self):
+        log.info("run `build_ext` command")
+
+        build_ext.run(self)
+
+        self.install()
+
+    def install(self):
+        if is_osx:
+            for ext in self.extensions:
+                log.info("Install `%s` extension", ext.name)
+
+                libs = ['lib%s.dylib' % lib for lib in v8_libs]
+                args = chain.from_iterable([['-change', '@rpath/' + lib, '@loader_path/v8/' + lib] for lib in libs])
+                dirname, filename = os.path.split(os.path.abspath(self.get_ext_fullpath(ext.name)))
+                exec_cmd('install_name_tool', filename, *args,
+                         cwd=dirname,
+                         msg="Install Extension " + filename)
+
+                for lib_name in libs:
+                    args = chain.from_iterable([['-change', '@rpath/' + lib, '@loader_path/' + lib] for lib in libs])
+
+                    exec_cmd('install_name_tool', lib_name, *args,
+                             cwd=os.path.join(dirname, 'v8'),
+                             msg="Install V8 Library " + lib_name)
+
+class pyv8_build(build):
     def run(self):
         log.info("run `build` command")
 
         prepare_v8()
 
-        _build.run(self)
+        build.run(self)
 
 
-class develop(_develop):
+class pyv8_develop(develop):
     def run(self):
         log.info("run `develop` command")
 
         prepare_v8()
 
-        _develop.run(self)
+        develop.run(self)
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s [%(process)d] %(levelname)s %(message)s',
@@ -349,16 +378,16 @@ if __name__ == '__main__':
           install_requires=['setuptools'],
           py_modules=['PyV8'],
           ext_modules=[pyv8],
-          packages=[],
+          packages=['v8'],
           package_dir={
               'v8': v8_library_path,
           },
           package_data={
-              'v8': ['*.bin', '*.dat', '*.dylib'],
+              'v8': ['*.bin', '*.dat', '*.so', '*.dylib'],
           },
           test_suite='PyV8',
           cmdclass=dict(compile=compile,
-                        build=build,
-                        v8build=_build,
-                        develop=develop),
+                        build_ext=pyv8_build_ext,
+                        build=pyv8_build,
+                        develop=pyv8_develop),
           **extra)
