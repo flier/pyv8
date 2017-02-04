@@ -140,18 +140,26 @@ static void initialize_logging() {
 }
 
 static void load_external_data(logger_t& logger) {
-  PyFrameObject* frame = PyThreadState_Get()->frame;
+  const char *filename = ::PyString_AsString(::PyThreadState_Get()->frame->f_code->co_filename);
+  fs::path load_path = fs::absolute(fs::path(filename).parent_path() / "v8");
 
-  const char *filename = PyString_AsString(frame->f_code->co_filename);
-  fs::path load_path = fs::canonical(fs::path(filename).parent_path(), fs::current_path());
+#ifdef V8_I18N_SUPPORT
+  fs::path icu_data_path = load_path / "icudtl.dat";
 
-  BOOST_LOG_SEV(logger, debug) << "load ICU data from " << load_path.c_str() << " ...";
+  if (v8::V8::InitializeICUDefaultLocation(filename, icu_data_path.c_str())) {
+    BOOST_LOG_SEV(logger, info) << "loaded ICU data from " << icu_data_path.c_str();
+  } else {
+    BOOST_LOG_SEV(logger, warning) << "fail to load ICU data from " << icu_data_path.c_str();
+  }
+#endif
 
-  v8::V8::InitializeICUDefaultLocation(load_path.c_str());
+#ifdef V8_USE_EXTERNAL_STARTUP_DATA
+  fs::path startup_data_path = load_path / "*.bin";
 
-  BOOST_LOG_SEV(logger, debug) << "load external snapshot from " << load_path.c_str() << " ...";
+  BOOST_LOG_SEV(logger, info) << "loading external snapshot from " << startup_data_path.c_str() << "...";
 
-  v8::V8::InitializeExternalStartupData(load_path.c_str());
+  v8::V8::InitializeExternalStartupData(startup_data_path.c_str());
+#endif
 }
 
 BOOST_PYTHON_MODULE(_PyV8)
@@ -166,11 +174,13 @@ BOOST_PYTHON_MODULE(_PyV8)
 
   v8::V8::InitializePlatform(v8::platform::CreateDefaultPlatform());
 
-  BOOST_LOG_SEV(logger, debug) << "initializing V8 ...";
+  BOOST_LOG_SEV(logger, debug) << "initializing V8 v" << v8::V8::GetVersion() << "...";
 
   v8::V8::Initialize();
 
-  CIsolate *isolate = new CIsolate();
+  BOOST_LOG_SEV(logger, debug) << "creating root isolate ...";
+
+  CIsolate *isolate = new CIsolate(true);
 
   isolate->Enter();
 

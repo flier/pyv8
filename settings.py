@@ -84,7 +84,7 @@ V8_VERIFY_HEAP = PYV8_DEBUG
 V8_VERIFY_PREDICTABLE = PYV8_DEBUG
 V8_NATIVE_REGEXP = True                 # Whether to use native or interpreted regexp implementation
 V8_NO_INLINE = False
-V8_USE_SNAPSHOT = not PYV8_DEBUG        # build using snapshots for faster start-up
+V8_USE_SNAPSHOT = True                  # build using snapshots for faster start-up
 V8_DEBUG_SYMBOLS = True
 V8_AST = False
 V8_DEBUGGER = False
@@ -95,6 +95,12 @@ macros = [
 
 if V8_DEBUGGER:
     macros += [('SUPPORT_DEBUGGER', None)]
+
+if V8_I18N:
+    macros += [('V8_I18N_SUPPORT', None)]
+
+if V8_USE_SNAPSHOT:
+    macros += [('V8_USE_EXTERNAL_STARTUP_DATA', None)]
 
 boost_libs = [
     'boost_date_time',
