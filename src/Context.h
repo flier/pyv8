@@ -5,7 +5,7 @@
 #include "Wrapper.h"
 #include "Utils.h"
 
-class CContext
+class CContext final
 {
   logger_t m_logger;
   v8::Persistent<v8::Context> m_context;
@@ -30,40 +30,26 @@ public:
     m_context.Reset();
   }
 
-  v8::Handle<v8::Context> Context(v8::Isolate *isolate = v8::Isolate::GetCurrent()) const {
-    return m_context.Get(isolate);
-  }
+  inline v8::Handle<v8::Context> Context(void) const { return m_context.Get(v8::Isolate::GetCurrent()); }
 
-  py::object GetGlobal(void);
+  py::object GetGlobal(void) const;
 
-  py::str GetSecurityToken(void);
+  py::str GetSecurityToken(void) const;
   void SetSecurityToken(py::str token);
 
-  bool IsEntered(void) { return !m_context.IsEmpty(); }
+  bool IsEntered(void) const { return !m_context.IsEmpty(); }
 
-  void Enter(void) {
-    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-
-    Context()->Enter();
-
-    BOOST_LOG_SEV(m_logger, trace) << "context entered";
-  }
-  void Leave(void) {
-    v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-
-    Context()->Exit();
-
-    BOOST_LOG_SEV(m_logger, trace) << "context exited";
-  }
+  void Enter(void);
+  void Leave(void);
 
   py::object Evaluate(const std::string& src, const std::string name = std::string(), int line = -1, int col = -1);
   py::object EvaluateW(const std::wstring& src, const std::string name = std::string(), int line = -1, int col = -1);
 
-  static py::object GetEntered(void);
-  static py::object GetCurrent(void);
-  static py::object GetCalling(void);
+  static py::object GetEntered(v8::Isolate *isolate = v8::Isolate::GetCurrent());
+  static py::object GetCurrent(v8::Isolate *isolate = v8::Isolate::GetCurrent());
+  static py::object GetCalling(v8::Isolate *isolate = v8::Isolate::GetCurrent());
 
-  static bool InContext(void) { return v8::Isolate::GetCurrent()->InContext(); }
+  static bool InContext(v8::Isolate *isolate = v8::Isolate::GetCurrent()) { return isolate->InContext(); }
 
   static void Expose(void);
 };

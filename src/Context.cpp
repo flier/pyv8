@@ -111,14 +111,14 @@ CContext::CContext(py::object global, py::list extensions, v8::Isolate *isolate)
   }
 }
 
-py::object CContext::GetGlobal(void)
+py::object CContext::GetGlobal(void) const
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
   return CJavascriptObject::Wrap(Context()->Global());
 }
 
-py::str CContext::GetSecurityToken(void)
+py::str CContext::GetSecurityToken(void) const
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
@@ -149,33 +149,50 @@ void CContext::SetSecurityToken(py::str token)
   }
 }
 
-py::object CContext::GetEntered(void)
+void CContext::Enter(void)
 {
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
 
-  v8::Handle<v8::Context> entered = v8::Isolate::GetCurrent()->GetEnteredContext();
+  Context()->Enter();
 
-  return (!v8::Isolate::GetCurrent()->InContext() || entered.IsEmpty()) ? py::object() :
+  BOOST_LOG_SEV(m_logger, trace) << "context entered";
+}
+void CContext::Leave(void)
+{
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+
+  Context()->Exit();
+
+  BOOST_LOG_SEV(m_logger, trace) << "context exited";
+}
+
+py::object CContext::GetEntered(v8::Isolate *isolate)
+{
+  v8::HandleScope handle_scope(isolate);
+
+  v8::Handle<v8::Context> entered = isolate->GetEnteredContext();
+
+  return (!isolate->InContext() || entered.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(entered)))));
 }
 
-py::object CContext::GetCurrent(void)
+py::object CContext::GetCurrent(v8::Isolate *isolate)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(isolate);
 
-  v8::Handle<v8::Context> current = v8::Isolate::GetCurrent()->GetCurrentContext();
+  v8::Handle<v8::Context> current = isolate->GetCurrentContext();
 
   return (current.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(current)))));
 }
 
-py::object CContext::GetCalling(void)
+py::object CContext::GetCalling(v8::Isolate *isolate)
 {
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  v8::HandleScope handle_scope(isolate);
 
-  v8::Handle<v8::Context> calling = v8::Isolate::GetCurrent()->GetCallingContext();
+  v8::Handle<v8::Context> calling = isolate->GetCallingContext();
 
-  return (!v8::Isolate::GetCurrent()->InContext() || calling.IsEmpty()) ? py::object() :
+  return (!isolate->InContext() || calling.IsEmpty()) ? py::object() :
     py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(calling)))));
 }
 

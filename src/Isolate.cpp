@@ -3,7 +3,7 @@
 void CIsolate::Expose(void)
 {
   py::class_<CIsolate, boost::noncopyable>("JSIsolate", "JSIsolate is an isolated instance of the V8 engine.", py::no_init)
-    .def(py::init<bool>((py::arg("owner") = false)))
+    .def(py::init<bool>((py::arg("owned") = false)))
 
     .add_static_property("current", &CIsolate::GetCurrent,
                          "Returns the entered isolate for the current thread or NULL in case there is no current isolate.")
@@ -25,7 +25,7 @@ void CIsolate::Expose(void)
     ;
 }
 
-CIsolate::CIsolate(bool owner) : m_owner(owner)
+CIsolate::CIsolate(bool owned) : m_owned(owned)
 {
     v8::Isolate::CreateParams params;
 
@@ -38,7 +38,7 @@ CIsolate::CIsolate(bool owner) : m_owner(owner)
     BOOST_LOG_SEV(m_logger, trace) << "isolated created";
 }
 
-CIsolate::CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owner(false)
+CIsolate::CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owned(false)
 {
     initLogger();
 
@@ -47,7 +47,7 @@ CIsolate::CIsolate(v8::Isolate *isolate) : m_isolate(isolate), m_owner(false)
 
 CIsolate::~CIsolate(void)
 {
-    if (m_owner)
+    if (m_owned)
     {
         ClearDataSlots();
 

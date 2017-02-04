@@ -5,17 +5,17 @@
 #include "Wrapper.h"
 #include "Utils.h"
 
-class CIsolate
+class CIsolate final
 {
   logger_t m_logger;
   v8::Isolate *m_isolate;
-  bool m_owner;
+  bool m_owned;
 
   void initLogger() {
     m_logger.add_attribute(ISOLATE_ATTR, attrs::constant< const v8::Isolate * >(m_isolate));
   }
 public:
-  CIsolate(bool owner=false);
+  CIsolate(bool owned=false);
   CIsolate(v8::Isolate *isolate);
   ~CIsolate(void);
 
@@ -30,47 +30,41 @@ public:
 
   static py::object GetCurrent(void);
 
-  void Enter(void) {
+  inline void Enter(void) {
     m_isolate->Enter();
 
     BOOST_LOG_SEV(m_logger, trace) << "isolated entered";
   }
-  void Leave(void) {
+  inline void Leave(void) {
     m_isolate->Exit();
 
     BOOST_LOG_SEV(m_logger, trace) << "isolated exited";
   }
-  void Dispose(void) {
+  inline void Dispose(void) {
     m_isolate->Dispose();
 
     BOOST_LOG_SEV(m_logger, trace) << "isolated disposed";
   }
 
-  bool IsLocked(void) {
-    bool locked = v8::Locker::IsLocked(m_isolate);
+  inline bool IsLocked(void) const { return v8::Locker::IsLocked(m_isolate); }
 
-    BOOST_LOG_SEV(m_logger, trace) << "isolated was locked";
-
-    return locked;
-  }
-
-  bool InUse(void) { return m_isolate->IsInUse(); }
+  inline bool InUse(void) const { return m_isolate->IsInUse(); }
 
   enum Slots {
     ObjectTemplate
   };
 
   template <typename T>
-  v8::Persistent<T> * GetData(Slots slot) {
+  inline v8::Persistent<T> * GetData(Slots slot) const {
     return static_cast<v8::Persistent<T> *>(m_isolate->GetData(slot));
   }
 
   template <typename T>
-  void SetData(Slots slot, v8::Persistent<T> * data) {
+  inline void SetData(Slots slot, v8::Persistent<T> * data) const {
     m_isolate->SetData(slot, data);
   }
 
-  void ClearDataSlots() {
+  void ClearDataSlots() const {
     delete GetData<v8::ObjectTemplate>(CIsolate::Slots::ObjectTemplate);
   }
 
