@@ -4,6 +4,30 @@
 
 bool CLocker::s_preemption = false;
 
+void CLocker::Expose(void)
+{
+  py::class_<CLocker, boost::noncopyable>("JSLocker", py::no_init)
+      .def(py::init<>())
+      .def(py::init<CIsolateWrapperPtr>((py::arg("isolate"))))
+
+      .add_static_property("active", &v8::Locker::IsActive,
+                           "whether Locker is being used by this V8 instance.")
+
+      .add_static_property("locked", &CLocker::IsLocked,
+                           "whether or not the locker is locked by the current thread.")
+
+      .def("entered", &CLocker::entered)
+
+      .def("enter", &CLocker::enter)
+      .def("leave", &CLocker::leave);
+
+  py::class_<CUnlocker, boost::noncopyable>("JSUnlocker")
+      .def("entered", &CUnlocker::entered)
+
+      .def("enter", &CUnlocker::enter)
+      .def("leave", &CUnlocker::leave);
+}
+
 void CLocker::enter(void)
 {
   Py_BEGIN_ALLOW_THREADS
@@ -24,28 +48,4 @@ void CLocker::leave(void)
 bool CLocker::IsLocked()
 {
   return v8::Locker::IsLocked(m_isolate->GetIsolate());
-}
-
-void CLocker::Expose(void)
-{
-  py::class_<CLocker, boost::noncopyable>("JSLocker", py::no_init)
-      .def(py::init<>())
-      .def(py::init<CIsolatePtr>((py::arg("isolate"))))
-
-      .add_static_property("active", &v8::Locker::IsActive,
-                           "whether Locker is being used by this V8 instance.")
-
-      .add_static_property("locked", &CLocker::IsLocked,
-                           "whether or not the locker is locked by the current thread.")
-
-      .def("entered", &CLocker::entered)
-
-      .def("enter", &CLocker::enter)
-      .def("leave", &CLocker::leave);
-
-  py::class_<CUnlocker, boost::noncopyable>("JSUnlocker")
-      .def("entered", &CUnlocker::entered)
-
-      .def("enter", &CUnlocker::enter)
-      .def("leave", &CUnlocker::leave);
 }

@@ -50,7 +50,14 @@ private: // Embeded Data
 
   static logger_t &GetLogger(v8::Handle<v8::Context> context);
 
-  logger_t &logger(void) { return GetLogger(Context()); }
+  logger_t &logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
+  {
+    v8::HandleScope handle_scope(isolate);
+
+    auto context = m_context.Get(isolate);
+
+    return GetLogger(context);
+  }
 
 public:
   CContext(v8::Handle<v8::Context> context, v8::Isolate *isolate = v8::Isolate::GetCurrent());

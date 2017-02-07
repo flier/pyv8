@@ -53,27 +53,10 @@ public: // Internal Properties
   logger_t &Logger(void);
 };
 
-class CIsolate : public CIsolateBase
+class CIsolateWrapper : public CIsolateBase
 {
-public:
-  CIsolate(v8::Isolate *isolate);
-  virtual ~CIsolate() = default;
-
-public: // Internal Properties
-  static CIsolate Current(void) { return CIsolate(v8::Isolate::GetCurrent()); }
-
-  v8::Local<v8::ObjectTemplate> ObjectTemplate(void);
-};
-
-class CManagedIsolate : public CIsolateBase, private boost::noncopyable
-{
-  static v8::Isolate *CreateIsolate();
-
-  void ClearDataSlots() const;
-
-public:
-  CManagedIsolate();
-  virtual ~CManagedIsolate(void);
+protected:
+  CIsolateWrapper(v8::Isolate *isolate) : CIsolateBase(isolate) {}
 
 public: // Properties
   inline bool IsLocked(void) const { return v8::Locker::IsLocked(m_isolate); }
@@ -110,9 +93,31 @@ public: // Python Helper
   }
 
   static py::object GetCurrent(void);
+};
+
+class CIsolate : public CIsolateWrapper
+{
+public:
+  CIsolate(v8::Isolate *isolate);
+  virtual ~CIsolate() = default;
+
+public: // Internal Properties
+  static CIsolate Current(void) { return CIsolate(v8::Isolate::GetCurrent()); }
+
+  v8::Local<v8::ObjectTemplate> ObjectTemplate(void);
+};
+
+class CManagedIsolate : public CIsolateWrapper, private boost::noncopyable
+{
+  static v8::Isolate *CreateIsolate();
+
+  void ClearDataSlots() const;
+
+public:
+  CManagedIsolate();
+  virtual ~CManagedIsolate(void);
 
   static void Expose(void);
 };
 
-typedef boost::shared_ptr<CIsolate> CIsolatePtr;
-typedef boost::shared_ptr<CManagedIsolate> CManagedIsolatePtr;
+typedef boost::shared_ptr<CIsolateWrapper> CIsolateWrapperPtr;

@@ -2,25 +2,30 @@
 
 void CManagedIsolate::Expose(void)
 {
-    py::class_<CManagedIsolate, boost::noncopyable>("JSIsolate", py::no_init)
-        .def(py::init<>("Creates a new isolate.  Does not change the currently entered isolate."))
+    py::class_<CIsolateWrapper, boost::noncopyable>("JSIsolate", py::no_init)
+        .add_property("locked", &CIsolateWrapper::IsLocked)
+        .add_property("used", &CIsolateWrapper::InUse, "Check if this isolate is in use.")
 
-        .add_property("locked", &CManagedIsolate::IsLocked)
-        .add_property("used", &CManagedIsolate::InUse, "Check if this isolate is in use.")
-
-        .def("enter", &CManagedIsolate::Enter,
+        .def("enter", &CIsolateWrapper::Enter,
              "Sets this isolate as the entered one for the current thread. "
              "Saves the previously entered one (if any), so that it can be "
              "restored when exiting.  Re-entering an isolate is allowed.")
 
-        .def("leave", &CManagedIsolate::Leave,
+        .def("leave", &CIsolateWrapper::Leave,
              "Exits this isolate by restoring the previously entered one in the current thread. "
              "The isolate may still stay the same, if it was entered more than once.")
 
-        .add_static_property("current", &CManagedIsolate::GetCurrent,
+        .add_static_property("current", &CIsolateWrapper::GetCurrent,
                              "Returns the entered isolate for the current thread or NULL in case there is no current isolate.")
 
-        .def("GetCurrentStackTrace", &CManagedIsolate::GetCurrentStackTrace);
+        .def("GetCurrentStackTrace", &CIsolateWrapper::GetCurrentStackTrace);
+
+    py::class_<CManagedIsolate, py::bases<CIsolateWrapper>, boost::noncopyable>("JSManagedIsolate", py::no_init)
+        .def(py::init<>("Creates a new isolate.  Does not change the currently entered isolate."));
+
+    py::objects::class_value_wrapper<CIsolateWrapperPtr,
+                                     py::objects::make_ptr_instance<CIsolateWrapper,
+                                                                    py::objects::pointer_holder<CIsolateWrapperPtr, CIsolateWrapper>>>();
 }
 
 logger_t &CIsolateBase::Logger(void)
@@ -36,9 +41,19 @@ logger_t &CIsolateBase::Logger(void)
     return *logger;
 }
 
-CIsolate::CIsolate(v8::Isolate *isolate) : CIsolateBase(isolate)
+py::object CIsolateWrapper::GetCurrent(void)
 {
-    BOOST_LOG_SEV(Logger(), trace) << "isolated wrapped";
+    v8::Isolate *isolate = v8::Isolate::GetCurrent();
+
+    v8::HandleScope handle_scope(isolate);
+
+    return !isolate ? py::object() : py::object(py::handle<>(py::converter::shared_ptr_to_python<CIsolateWrapper>(
+                                         CIsolateWrapperPtr(new CIsolate(isolate)))));
+}
+
+CIsolate::CIsolate(v8::Isolate *isolate) : CIsolateWrapper(isolate)
+{
+    BOOST_LOG_SEV(Logger(), trace) << "isolate wrapped";
 }
 
 v8::Local<v8::ObjectTemplate> CIsolate::ObjectTemplate(void)
@@ -52,14 +67,14 @@ v8::Local<v8::ObjectTemplate> CIsolate::ObjectTemplate(void)
     return object_template->Get(m_isolate);
 }
 
-CManagedIsolate::CManagedIsolate() : CIsolateBase(CreateIsolate())
+CManagedIsolate::CManagedIsolate() : CIsolateWrapper(CreateIsolate())
 {
-    BOOST_LOG_SEV(Logger(), trace) << "isolated created";
+    BOOST_LOG_SEV(Logger(), trace) << "isolate created";
 }
 
 CManagedIsolate::~CManagedIsolate(void)
 {
-    BOOST_LOG_SEV(Logger(), trace) << "isolated destroyed";
+    BOOST_LOG_SEV(Logger(), trace) << "isolate destroyed";
 
     ClearDataSlots();
 
@@ -79,14 +94,4 @@ v8::Isolate *CManagedIsolate::CreateIsolate()
     params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 
     return v8::Isolate::New(params);
-}
-
-py::object CManagedIsolate::GetCurrent(void)
-{
-    v8::Isolate *isolate = v8::Isolate::GetCurrent();
-
-    v8::HandleScope handle_scope(isolate);
-
-    return !isolate ? py::object() : py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CIsolate>(
-                                         CIsolatePtr(new CIsolate(isolate)))));
 }

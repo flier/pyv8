@@ -44,13 +44,9 @@ void CContext::Expose(void)
 
       .def("__nonzero__", &CContext::IsEntered, "the context has been entered.");
 
-  py::objects::class_value_wrapper<boost::shared_ptr<CIsolate>,
-                                   py::objects::make_ptr_instance<CIsolate,
-                                                                  py::objects::pointer_holder<boost::shared_ptr<CIsolate>, CIsolate>>>();
-
-  py::objects::class_value_wrapper<boost::shared_ptr<CContext>,
+  py::objects::class_value_wrapper<CContextPtr,
                                    py::objects::make_ptr_instance<CContext,
-                                                                  py::objects::pointer_holder<boost::shared_ptr<CContext>, CContext>>>();
+                                                                  py::objects::pointer_holder<CContextPtr, CContext>>>();
 }
 
 CContext::CContext(v8::Handle<v8::Context> context, v8::Isolate *isolate) : m_context(isolate, context)
@@ -89,21 +85,32 @@ CContext::CContext(py::object global, py::list extensions, v8::Isolate *isolate)
   if (!ext_ptrs.empty())
     cfg.reset(new v8::ExtensionConfiguration(ext_ptrs.size(), &ext_ptrs[0]));
 
+  v8::TryCatch try_catch(isolate);
   v8::Handle<v8::Context> context = v8::Context::New(isolate, cfg.get());
 
-  m_context.Reset(isolate, context);
-
-  BOOST_LOG_SEV(logger(), trace) << "context created";
-
-  if (!global.is_none())
+  if (context.IsEmpty())
   {
-    v8::Context::Scope context_scope(context);
+    if (try_catch.HasCaught())
+      CJavascriptException::ThrowIf(isolate, try_catch);
 
-    context->Global()->Set(context, v8::String::NewFromUtf8(isolate, "__proto__"), CPythonObject::Wrap(global));
+    BOOST_LOG_SEV(CIsolate::Current().Logger(), warning) << "failed to create context";
+  }
+  else
+  {
+    m_context.Reset(isolate, context);
 
-    m_global = global;
+    BOOST_LOG_SEV(logger(), trace) << "context created";
 
-    Py_DECREF(global.ptr());
+    if (!global.is_none())
+    {
+      v8::Context::Scope context_scope(context);
+
+      context->Global()->Set(context, v8::String::NewFromUtf8(isolate, "__proto__"), CPythonObject::Wrap(global));
+
+      m_global = global;
+
+      Py_DECREF(global.ptr());
+    }
   }
 }
 
@@ -125,7 +132,7 @@ void CContext::Dispose(bool disposed, v8::Isolate *isolate)
 
 logger_t &CContext::GetLogger(v8::Handle<v8::Context> context)
 {
-  auto logger = GetEmbedderData<logger_t>(context, EmbedderDataFields::LoggerIndex, [context]() -> logger_t * {
+  auto logger = GetEmbedderData<logger_t>(context, EmbedderDataFields::LoggerIndex, [context]() {
     auto logger = new logger_t();
 
     logger->add_attribute(ISOLATE_ATTR, attrs::constant<const v8::Isolate *>(context->GetIsolate()));
@@ -208,7 +215,7 @@ py::object CContext::GetCurrent(v8::Isolate *isolate)
 
   v8::Handle<v8::Context> current = isolate->GetCurrentContext();
 
-  return (current.IsEmpty()) ? py::object() : py::object(py::handle<>(boost::python::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(current)))));
+  return (current.IsEmpty()) ? py::object() : py::object(py::handle<>(py::converter::shared_ptr_to_python<CContext>(CContextPtr(new CContext(current)))));
 }
 
 py::object CContext::GetCalling(v8::Isolate *isolate)

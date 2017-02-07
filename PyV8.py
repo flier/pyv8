@@ -31,6 +31,12 @@ try:
 except ImportError:
     import simplejson as json
 
+if __name__ == '__main__':
+    if "-p" in sys.argv:
+        sys.argv.remove("-p")
+        print("Press any key to continue or attach process #%d..." % os.getpid())
+        raw_input()
+
 import _PyV8
 
 __author__ = 'Flier Lu <flier.lu@gmail.com>'
@@ -766,11 +772,11 @@ JSScript = _PyV8.JSScript
 
 JSStackTrace = _PyV8.JSStackTrace
 JSStackTrace.Options = _PyV8.JSStackTraceOptions
-JSStackTrace.GetCurrentStackTrace = staticmethod(lambda frame_limit, options: _PyV8.JSIsolate.current.GetCurrentStackTrace(frame_limit, options))
+JSStackTrace.GetCurrentStackTrace = staticmethod(lambda frame_limit, options: _PyV8.JSManagedIsolate.current.GetCurrentStackTrace(frame_limit, options))
 JSStackFrame = _PyV8.JSStackFrame
 
 
-class JSIsolate(_PyV8.JSIsolate):
+class JSIsolate(_PyV8.JSManagedIsolate):
     def __enter__(self):
         self.enter()
 
@@ -805,15 +811,15 @@ class JSContext(_PyV8.JSContext):
     def __exit__(self, exc_type, exc_value, tb):
         self.leave()
 
+        if hasattr(JSLocker, 'lock'):
+            self.lock.leave()
+            self.lock = None
+
         if exc_type:
             logging.warn("throw exceptions in %r", self)
             logging.debug(''.join(traceback.format_exception(exc_type, exc_value, tb)))
 
             self.dispose()
-
-        if hasattr(JSLocker, 'lock'):
-            self.lock.leave()
-            self.lock = None
 
         del self
 
@@ -1995,7 +2001,7 @@ class TestMultiThread(unittest.TestCase):
 
 class TestEngine(unittest.TestCase):
     def setUp(self):
-        self.isolate = JSIsolate(True)
+        self.isolate = JSIsolate()
         self.isolate.enter()
 
     def tearDown(self):
@@ -2004,9 +2010,8 @@ class TestEngine(unittest.TestCase):
         del self.isolate
 
     def testClassProperties(self):
-        with JSContext() as ctxt:
-            self.assertTrue(str(JSEngine.version).startswith("5."))
-            self.assertFalse(JSEngine.dead)
+        self.assertTrue(str(JSEngine.version).startswith("5."))
+        self.assertFalse(JSEngine.dead)
 
     def testCompile(self):
         with JSContext() as ctxt:
@@ -2794,11 +2799,6 @@ if __name__ == '__main__':
         level = logging.DEBUG
     else:
         level = logging.WARN
-
-    if "-p" in sys.argv:
-        sys.argv.remove("-p")
-        print("Press any key to continue or attach process #%d..." % os.getpid())
-        raw_input()
 
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
