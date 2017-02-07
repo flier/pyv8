@@ -2273,7 +2273,7 @@ class TestEngine(unittest.TestCase):
 
     def testOutOfMemory(self):
         with JSIsolate():
-            JSEngine.setMemoryLimit(max_young_space_size=16 * 1024, max_old_space_size=4 * 1024 * 1024)
+            JSEngine.setMemoryLimit(max_semi_space_size=16 * 1024, max_old_space_size=4 * 1024 * 1024)
 
             with JSContext() as ctxt:
                 JSEngine.ignoreOutOfMemoryException()
