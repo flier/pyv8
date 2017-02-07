@@ -7,26 +7,64 @@
 
 class CContext final
 {
-  logger_t m_logger;
   v8::Persistent<v8::Context> m_context;
   py::object m_global;
 
-  void initLogger(v8::Isolate *isolate = v8::Isolate::GetCurrent()) {
-    v8::HandleScope handle_scope(isolate);
-    v8::Handle<v8::Context> context = m_context.Get(isolate);
+  enum EmbedderDataFields
+  {
+    DebugIdIndex = v8::Context::kDebugIdIndex,
+    LoggerIndex,
+    Destroyed,
+    GlobalObject,
+  };
 
-    m_logger.add_attribute(ISOLATE_ATTR, attrs::constant< const v8::Isolate * >(context->GetIsolate()));
-    m_logger.add_attribute(CONTEXT_ATTR, attrs::constant< const v8::Context * >(*context));
+  template <typename T>
+  static T *GetEmbedderData(v8::Handle<v8::Context> context, EmbedderDataFields index)
+  {
+    assert(!context.IsEmpty());
+    assert(index > DebugIdIndex);
+
+    return static_cast<T *>(v8::Handle<v8::External>::Cast(context->GetEmbedderData(index))->Value());
   }
+
+  template <typename T>
+  static void SetEmbedderData(v8::Handle<v8::Context> context, EmbedderDataFields index, T *data)
+  {
+    assert(!context.IsEmpty());
+    assert(index > DebugIdIndex);
+    assert(data);
+
+    context->SetEmbedderData(index, v8::External::New(context->GetIsolate(), (void *)data));
+  }
+
+  static logger_t &GetLogger(v8::Handle<v8::Context> context);
+
+  static bool HasDestroyed(v8::Handle<v8::Context> context);
+
+  logger_t &logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
+  {
+    v8::HandleScope handle_scope(isolate);
+
+    return GetLogger(Context(isolate));
+  }
+
+public:
+  static logger_t &Logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
+  {
+    v8::HandleScope handle_scope(isolate);
+
+    return GetLogger(isolate->GetCurrentContext());
+  }
+
 public:
   CContext(v8::Handle<v8::Context> context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
-  CContext(const CContext& context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
+  CContext(const CContext &context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
   CContext(py::object global, py::list extensions, v8::Isolate *isolate = v8::Isolate::GetCurrent());
-  ~CContext();
+  ~CContext() { Dispose(false); }
 
-  void Dispose(void);
+  void Dispose(bool disposed = true, v8::Isolate *isolate = v8::Isolate::GetCurrent());
 
-  inline v8::Handle<v8::Context> Context(void) const { return m_context.Get(v8::Isolate::GetCurrent()); }
+  inline v8::Handle<v8::Context> Context(v8::Isolate *isolate = v8::Isolate::GetCurrent()) const { return m_context.Get(isolate); }
 
   py::object GetGlobal(void) const;
 
@@ -38,8 +76,8 @@ public:
   void Enter(void);
   void Leave(void);
 
-  py::object Evaluate(const std::string& src, const std::string name = std::string(), int line = -1, int col = -1);
-  py::object EvaluateW(const std::wstring& src, const std::string name = std::string(), int line = -1, int col = -1);
+  py::object Evaluate(const std::string &src, const std::string name = std::string(), int line = -1, int col = -1);
+  py::object EvaluateW(const std::wstring &src, const std::string name = std::string(), int line = -1, int col = -1);
 
   static py::object GetEntered(v8::Isolate *isolate = v8::Isolate::GetCurrent());
   static py::object GetCurrent(v8::Isolate *isolate = v8::Isolate::GetCurrent());
@@ -51,4 +89,3 @@ public:
 };
 
 typedef boost::shared_ptr<CContext> CContextPtr;
-

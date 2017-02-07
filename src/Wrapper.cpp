@@ -803,6 +803,8 @@ v8::Handle<v8::Value> CPythonObject::Wrap(py::object obj)
 
   value = WrapInternal(obj);
 
+  BOOST_LOG_SEV(CContext::Logger(), trace) << "python object " << obj.ptr() << " wrapped as " << *value;
+
   return handle_scope.Escape(value);
 }
 
