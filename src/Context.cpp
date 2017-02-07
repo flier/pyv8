@@ -120,33 +120,19 @@ void CContext::Dispose(bool disposed, v8::Isolate *isolate)
 
   delete GetEmbedderData<logger_t>(context, EmbedderDataFields::LoggerIndex);
 
-  SetEmbedderData(context, EmbedderDataFields::Destroyed, (void *)-1);
-
   m_context.Reset();
-}
-
-bool CContext::HasDestroyed(v8::Handle<v8::Context> context)
-{
-  return GetEmbedderData<void>(context, EmbedderDataFields::Destroyed);
 }
 
 logger_t &CContext::GetLogger(v8::Handle<v8::Context> context)
 {
-  v8::Isolate *isolate = context->GetIsolate();
+  auto logger = GetEmbedderData<logger_t>(context, EmbedderDataFields::LoggerIndex, [context]() -> logger_t * {
+    auto logger = new logger_t();
 
-  v8::HandleScope handle_scope(isolate);
-
-  auto logger = GetEmbedderData<logger_t>(context, EmbedderDataFields::LoggerIndex);
-
-  if (logger == nullptr)
-  {
-    logger = new logger_t();
-
-    logger->add_attribute(ISOLATE_ATTR, attrs::constant<const v8::Isolate *>(isolate));
+    logger->add_attribute(ISOLATE_ATTR, attrs::constant<const v8::Isolate *>(context->GetIsolate()));
     logger->add_attribute(CONTEXT_ATTR, attrs::constant<const v8::Context *>(*context));
 
-    SetEmbedderData(context, EmbedderDataFields::LoggerIndex, logger);
-  }
+    return logger;
+  });
 
   return *logger;
 }

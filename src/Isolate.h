@@ -1,76 +1,118 @@
 #pragma once
 
+#include <functional>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Wrapper.h"
 #include "Utils.h"
 
-class CIsolate final
+class CIsolateBase
 {
-  logger_t m_logger;
+protected:
   v8::Isolate *m_isolate;
-  bool m_owned;
 
-  void initLogger() {
-    m_logger.add_attribute(ISOLATE_ATTR, attrs::constant< const v8::Isolate * >(m_isolate));
+  CIsolateBase(v8::Isolate *isolate) : m_isolate(isolate) { assert(isolate); }
+  virtual ~CIsolateBase() = default;
+
+public: // Operators
+  inline v8::Isolate *operator*(void) { return m_isolate; }
+  inline v8::Isolate *operator->(void) { return m_isolate; }
+
+protected: // Data Slots
+  enum DataSlots
+  {
+    LoggerIndex,
+    ObjectTemplateIndex
+  };
+
+  template <typename T>
+  inline T *GetData(DataSlots slot, std::function<T *()> creator = nullptr) const
+  {
+    auto value = static_cast<T *>(m_isolate->GetData(slot));
+
+    if (value == nullptr && creator != nullptr)
+    {
+      value = creator();
+
+      m_isolate->SetData(slot, value);
+    }
+
+    return value;
   }
+
+  template <typename T>
+  inline void SetData(DataSlots slot, T *data) const
+  {
+    m_isolate->SetData(slot, data);
+  }
+
+public: // Internal Properties
+  inline v8::Isolate *GetIsolate(void) const { return m_isolate; }
+
+  logger_t &Logger(void);
+};
+
+class CIsolate : public CIsolateBase
+{
 public:
-  CIsolate(bool owned=false);
   CIsolate(v8::Isolate *isolate);
-  ~CIsolate(void);
+  virtual ~CIsolate() = default;
 
-  v8::Isolate *GetIsolate(void) { return m_isolate; }
-
-  CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
-    v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview) {
-    return CJavascriptStackTrace::GetCurrentStackTrace(m_isolate, frame_limit, options);
-  }
-
+public: // Internal Properties
   static CIsolate Current(void) { return CIsolate(v8::Isolate::GetCurrent()); }
 
-  static py::object GetCurrent(void);
+  v8::Local<v8::ObjectTemplate> ObjectTemplate(void);
+};
 
-  inline void Enter(void) {
-    m_isolate->Enter();
+class CManagedIsolate : public CIsolateBase, private boost::noncopyable
+{
+  static v8::Isolate *CreateIsolate();
 
-    BOOST_LOG_SEV(m_logger, trace) << "isolated entered";
-  }
-  inline void Leave(void) {
-    m_isolate->Exit();
+  void ClearDataSlots() const;
 
-    BOOST_LOG_SEV(m_logger, trace) << "isolated exited";
-  }
-  inline void Dispose(void) {
-    m_isolate->Dispose();
+public:
+  CManagedIsolate();
+  virtual ~CManagedIsolate(void);
 
-    BOOST_LOG_SEV(m_logger, trace) << "isolated disposed";
-  }
-
+public: // Properties
   inline bool IsLocked(void) const { return v8::Locker::IsLocked(m_isolate); }
 
   inline bool InUse(void) const { return m_isolate->IsInUse(); }
 
-  enum Slots {
-    ObjectTemplate
-  };
+public: // Methods
+  void Enter(void)
+  {
+    BOOST_LOG_SEV(Logger(), trace) << "enter isolate";
 
-  template <typename T>
-  inline v8::Persistent<T> * GetData(Slots slot) const {
-    return static_cast<v8::Persistent<T> *>(m_isolate->GetData(slot));
+    m_isolate->Enter();
   }
 
-  template <typename T>
-  inline void SetData(Slots slot, v8::Persistent<T> * data) const {
-    m_isolate->SetData(slot, data);
+  void Leave(void)
+  {
+    BOOST_LOG_SEV(Logger(), trace) << "exit isolate";
+
+    m_isolate->Exit();
   }
 
-  void ClearDataSlots() const {
-    delete GetData<v8::ObjectTemplate>(CIsolate::Slots::ObjectTemplate);
+  void Dispose(void)
+  {
+    BOOST_LOG_SEV(Logger(), trace) << "destroy isolate";
+
+    m_isolate->Dispose(); // delete m_isolate;
   }
 
-  v8::Local<v8::ObjectTemplate> GetObjectTemplate(void);
+public: // Python Helper
+  CJavascriptStackTracePtr GetCurrentStackTrace(int frame_limit,
+                                                v8::StackTrace::StackTraceOptions options = v8::StackTrace::kOverview)
+  {
+    return CJavascriptStackTrace::GetCurrentStackTrace(m_isolate, frame_limit, options);
+  }
+
+  static py::object GetCurrent(void);
 
   static void Expose(void);
 };
 
 typedef boost::shared_ptr<CIsolate> CIsolatePtr;
+typedef boost::shared_ptr<CManagedIsolate> CManagedIsolatePtr;

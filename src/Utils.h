@@ -5,46 +5,47 @@
 #ifdef _WIN32
 
 #ifdef DEBUG
-# pragma warning( push )
+#pragma warning(push)
 #endif
 
-#pragma warning( disable : 4100 ) // 'identifier' : unreferenced formal parameter
-#pragma warning( disable : 4121 ) // 'symbol' : alignment of a member was sensitive to packing
-#pragma warning( disable : 4127 ) // conditional expression is constant
-#pragma warning( disable : 4189 ) // 'identifier' : local variable is initialized but not referenced
-#pragma warning( disable : 4244 ) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
-#pragma warning( disable : 4505 ) // 'function' : unreferenced local function has been removed
-#pragma warning( disable : 4512 ) // 'class' : assignment operator could not be generated
-#pragma warning( disable : 4800 ) // 'type' : forcing value to bool 'true' or 'false' (performance warning)
-#pragma warning( disable : 4996 ) // 'function': was declared deprecated
+#pragma warning(disable : 4100) // 'identifier' : unreferenced formal parameter
+#pragma warning(disable : 4121) // 'symbol' : alignment of a member was sensitive to packing
+#pragma warning(disable : 4127) // conditional expression is constant
+#pragma warning(disable : 4189) // 'identifier' : local variable is initialized but not referenced
+#pragma warning(disable : 4244) // 'argument' : conversion from 'type1' to 'type2', possible loss of data
+#pragma warning(disable : 4505) // 'function' : unreferenced local function has been removed
+#pragma warning(disable : 4512) // 'class' : assignment operator could not be generated
+#pragma warning(disable : 4800) // 'type' : forcing value to bool 'true' or 'false' (performance warning)
+#pragma warning(disable : 4996) // 'function': was declared deprecated
 
 #ifndef _WIN64
-# ifndef _USE_32BIT_TIME_T
-#  define _USE_32BIT_TIME_T
-# endif
+#ifndef _USE_32BIT_TIME_T
+#define _USE_32BIT_TIME_T
+#endif
 #endif
 
 #else
 
-# if !defined(__GNUC__) || (__GNUC__ <= 4 && __GNUC_MINOR__ < 7)
+#if !defined(__GNUC__) || (__GNUC__ <= 4 && __GNUC_MINOR__ < 7)
 
 #include <cmath>
 using std::isnan;
 
 #ifndef isfinite
-# include <limits>
-namespace std {
-  inline bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
+#include <limits>
+namespace std
+{
+inline bool isfinite(double val) { return val <= std::numeric_limits<double>::max(); }
 }
 
-# endif
+#endif
 
 #endif
 
 #include <strings.h>
 #define strnicmp strncasecmp
 
-#define _countof(array) (sizeof(array)/sizeof(array[0]))
+#define _countof(array) (sizeof(array) / sizeof(array[0]))
 
 #endif
 
@@ -59,9 +60,9 @@ namespace std {
 #undef toupper
 #endif
 
-# if BOOST_VERSION / 100 % 1000 < 50
-#  undef TIME_UTC
-# endif
+#if BOOST_VERSION / 100 % 1000 < 50
+#undef TIME_UTC
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-local-typedef"
@@ -69,72 +70,38 @@ namespace std {
 namespace py = boost::python;
 #pragma GCC diagnostic pop
 
-#include <boost/log/common.hpp>
-namespace logging = boost::log;
-
-#include <boost/log/attributes.hpp>
-namespace attrs = boost::log::attributes;
-
-enum severity_level
-{
-    trace,
-    debug,
-    info,
-    warning,
-    error,
-    fatal
-};
-
-#if !defined(BOOST_LOG_NO_THREADS)
-typedef boost::log::sources::severity_logger_mt< severity_level > logger_t;
-#else
-typedef boost::log::sources::severity_logger< severity_level > logger_t;
-#endif
-
-extern severity_level logging_level;
-
-#define SEVERITY_ATTR "Severity"
-#define TIMESTAMP_ATTR "TimeStamp"
-#define SCOPE_ATTR "Scope"
-#define PROCESS_NAME_ATTR "ProcessName"
-#define PROCESS_ID_ATTR "ProcessID"
-#define THREAD_ID_ATTR "ThreadID"
-#define ISOLATE_ATTR "Isolate"
-#define CONTEXT_ATTR "Context"
-#define SCRIPT_NAME_ATTR "ScriptName"
-#define SCRIPT_LINE_NO_ATTR "ScriptLineNo"
-#define SCRIPT_COLUMN_NO_ATTR "ScriptColumnNo"
-
 #ifdef _WIN32
-  #undef FP_NAN
-  #undef FP_INFINITE
-  #undef FP_ZERO
-  #undef FP_SUBNORMAL
-  #undef FP_NORMAL
+#undef FP_NAN
+#undef FP_INFINITE
+#undef FP_ZERO
+#undef FP_SUBNORMAL
+#undef FP_NORMAL
 #endif
 
 #include <v8.h>
 
+#include "Logger.h"
+
 #ifdef _WIN32
 
 #ifdef DEBUG
-# pragma warning( pop )
+#pragma warning(pop)
 #endif
 
 #endif
 
 #if defined(__GNUC__)
-  #define UNUSED_VAR(x) x __attribute__((unused))
+#define UNUSED_VAR(x) x __attribute__((unused))
 #elif defined(__APPLE__)
-  #define UNUSED_VAR(x) x __unused
+#define UNUSED_VAR(x) x __unused
 #else
-  #define UNUSED_VAR(x) x
+#define UNUSED_VAR(x) x
 #endif
 
 #if PY_MAJOR_VERSION >= 3
 
-#define PyInt_Check               PyLong_Check
-#define PyInt_AsUnsignedLongMask  PyLong_AsUnsignedLong
+#define PyInt_Check PyLong_Check
+#define PyInt_AsUnsignedLongMask PyLong_AsUnsignedLong
 
 #define PySlice_Cast(obj) obj
 
@@ -146,18 +113,18 @@ extern severity_level logging_level;
 
 #else
 
-#define PySlice_Cast(obj) ((PySliceObject *) obj)
+#define PySlice_Cast(obj) ((PySliceObject *)obj)
 
 #define PyErr_OCCURRED() _PyErr_OCCURRED()
 
 #endif
 
-v8::Handle<v8::String> ToString(const std::string& str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
-v8::Handle<v8::String> ToString(const std::wstring& str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
+v8::Handle<v8::String> ToString(const std::string &str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
+v8::Handle<v8::String> ToString(const std::wstring &str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
 v8::Handle<v8::String> ToString(py::object str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
 
-v8::Handle<v8::String> DecodeUtf8(const std::string& str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
-const std::string EncodeUtf8(const std::wstring& str);
+v8::Handle<v8::String> DecodeUtf8(const std::string &str, v8::Isolate *isolate = v8::Isolate::GetCurrent());
+const std::string EncodeUtf8(const std::wstring &str);
 
 struct CPythonGIL
 {
@@ -174,7 +141,7 @@ struct CPythonGIL
 typedef v8::Persistent<v8::Object> V8Object_t;
 typedef v8::Persistent<v8::Object> V8Array_t;
 typedef v8::Handle<v8::Script> V8Script_t;
-typedef const char * string_t;
+typedef const char *string_t;
 
 #include "probes.h"
 

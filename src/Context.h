@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Wrapper.h"
@@ -10,21 +12,30 @@ class CContext final
   v8::Persistent<v8::Context> m_context;
   py::object m_global;
 
+private: // Embeded Data
   enum EmbedderDataFields
   {
     DebugIdIndex = v8::Context::kDebugIdIndex,
     LoggerIndex,
-    Destroyed,
-    GlobalObject,
+    GlobalObjectIndex,
   };
 
   template <typename T>
-  static T *GetEmbedderData(v8::Handle<v8::Context> context, EmbedderDataFields index)
+  static T *GetEmbedderData(v8::Handle<v8::Context> context, EmbedderDataFields index, std::function<T *()> creator = nullptr)
   {
     assert(!context.IsEmpty());
     assert(index > DebugIdIndex);
 
-    return static_cast<T *>(v8::Handle<v8::External>::Cast(context->GetEmbedderData(index))->Value());
+    auto value = static_cast<T *>(v8::Handle<v8::External>::Cast(context->GetEmbedderData(index))->Value());
+
+    if (!value && creator)
+    {
+      value = creator();
+
+      SetEmbedderData(context, index, value);
+    }
+
+    return value;
   }
 
   template <typename T>
@@ -39,22 +50,7 @@ class CContext final
 
   static logger_t &GetLogger(v8::Handle<v8::Context> context);
 
-  static bool HasDestroyed(v8::Handle<v8::Context> context);
-
-  logger_t &logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
-  {
-    v8::HandleScope handle_scope(isolate);
-
-    return GetLogger(Context(isolate));
-  }
-
-public:
-  static logger_t &Logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
-  {
-    v8::HandleScope handle_scope(isolate);
-
-    return GetLogger(isolate->GetCurrentContext());
-  }
+  logger_t &logger(void) { return GetLogger(Context()); }
 
 public:
   CContext(v8::Handle<v8::Context> context, v8::Isolate *isolate = v8::Isolate::GetCurrent());
@@ -84,6 +80,13 @@ public:
   static py::object GetCalling(v8::Isolate *isolate = v8::Isolate::GetCurrent());
 
   static bool InContext(v8::Isolate *isolate = v8::Isolate::GetCurrent()) { return isolate->InContext(); }
+
+  static logger_t &Logger(v8::Isolate *isolate = v8::Isolate::GetCurrent())
+  {
+    v8::HandleScope handle_scope(isolate);
+
+    return GetLogger(isolate->GetCurrentContext());
+  }
 
   static void Expose(void);
 };
