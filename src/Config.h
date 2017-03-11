@@ -16,16 +16,6 @@
 #define SUPPORT_PROPERTY 1
 
 //
-// Enable the Javascript debugger supports
-//
-#define SUPPORT_DEBUGGER 1
-
-//
-// Enable the script AST supports
-//
-#define SUPPORT_AST 1
-
-//
 // Trace the object lifecycle
 //
 #define SUPPORT_TRACE_LIFECYCLE 1

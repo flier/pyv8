@@ -1,0 +1,10 @@
+build
+boost
+v8
+.vscode
+.idea
+
+*.egg-info
+*.pyc
+*.egg
+*.zip

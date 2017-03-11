@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Exception.h"
-#include "Context.h"
+#include "Isolate.h"
 #include "Utils.h"
 
 class CLocker
@@ -9,19 +9,19 @@ class CLocker
   static bool s_preemption;
 
   std::auto_ptr<v8::Locker> m_locker;
-  CIsolatePtr m_isolate;
-public:
-  CLocker() {}
-  CLocker(CIsolatePtr isolate) : m_isolate(isolate)
-  {
+  CIsolateWrapperPtr m_isolate;
 
+public:
+  CLocker() : m_isolate(new CIsolate(v8::Isolate::GetCurrent())) {}
+  CLocker(CIsolateWrapperPtr isolate) : m_isolate(isolate)
+  {
   }
   bool entered(void) { return NULL != m_locker.get(); }
 
   void enter(void);
   void leave(void);
 
-  static bool IsLocked();
+  bool IsLocked();
 
   static void Expose(void);
 };
@@ -29,6 +29,7 @@ public:
 class CUnlocker
 {
   std::auto_ptr<v8::Unlocker> m_unlocker;
+
 public:
   bool entered(void) { return NULL != m_unlocker.get(); }
 
@@ -36,7 +37,7 @@ public:
   {
     Py_BEGIN_ALLOW_THREADS
 
-    m_unlocker.reset(new v8::Unlocker(v8::Isolate::GetCurrent()));
+        m_unlocker.reset(new v8::Unlocker(v8::Isolate::GetCurrent()));
 
     Py_END_ALLOW_THREADS
   }
@@ -44,7 +45,7 @@ public:
   {
     Py_BEGIN_ALLOW_THREADS
 
-    m_unlocker.reset();
+        m_unlocker.reset();
 
     Py_END_ALLOW_THREADS
   }

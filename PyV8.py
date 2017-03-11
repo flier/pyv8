@@ -3,10 +3,11 @@
 from __future__ import with_statement
 from __future__ import print_function
 
-import sys, os, re
+import sys
+import os
+import re
 import logging
 import collections
-import functools
 
 is_py3k = sys.version_info[0] > 2
 
@@ -30,6 +31,12 @@ try:
 except ImportError:
     import simplejson as json
 
+if __name__ == '__main__':
+    if "-p" in sys.argv:
+        sys.argv.remove("-p")
+        print("Press any key to continue or attach process #%d..." % os.getpid())
+        raw_input()
+
 import _PyV8
 
 __author__ = 'Flier Lu <flier.lu@gmail.com>'
@@ -38,9 +45,19 @@ __version__ = '1.0'
 __all__ = ["ReadOnly", "DontEnum", "DontDelete", "Internal",
            "JSError", "JSObject", "JSNull", "JSUndefined", "JSArray", "JSFunction",
            "JSClass", "JSEngine", "JSContext", "JSIsolate",
-           "JSObjectSpace", "JSAllocationAction",
-           "JSStackTrace", "JSStackFrame", "profiler",
-           "JSExtension", "JSLocker", "JSUnlocker", "AST"]
+           "JSStackTrace", "JSStackFrame", "JSExtension", "JSLocker", "JSUnlocker"]
+
+SUPPORT_AST = hasattr(_PyV8, 'AstScope')
+SUPPORT_DEBUGGER = hasattr(_PyV8, 'JSDebug')
+
+SUPPORT_MEMORY_ALLOCATOR = hasattr(_PyV8, 'JSObjectSpace')
+
+if SUPPORT_MEMORY_ALLOCATOR:
+    JSObjectSpace = _PyV8.JSObjectSpace
+    JSAllocationAction = _PyV8.JSAllocationAction
+
+    __all__ += ["JSObjectSpace", "JSAllocationAction"]
+
 
 class JSAttribute(object):
     def __init__(self, name):
@@ -297,443 +314,451 @@ class JSClassPrototype(JSClass):
     def name(self):
         return self.cls.__name__
 
+if SUPPORT_DEBUGGER:
+    class JSDebugProtocol(object):
+        """
+        Support the V8 debugger JSON based protocol.
 
-class JSDebugProtocol(object):
-    """
-    Support the V8 debugger JSON based protocol.
+        <http://code.google.com/p/v8/wiki/DebuggerProtocol>
+        """
+        class Packet(object):
+            REQUEST = 'request'
+            RESPONSE = 'response'
+            EVENT = 'event'
 
-    <http://code.google.com/p/v8/wiki/DebuggerProtocol>
-    """
-    class Packet(object):
-        REQUEST = 'request'
-        RESPONSE = 'response'
-        EVENT = 'event'
+            def __init__(self, payload):
+                self.data = json.loads(payload) if type(payload) in [str, unicode] else payload
 
-        def __init__(self, payload):
-            self.data = json.loads(payload) if type(payload) in [str, unicode] else payload
+            @property
+            def seq(self):
+                return self.data['seq']
+
+            @property
+            def type(self):
+                return self.data['type']
+
+        class Request(Packet):
+            @property
+            def cmd(self):
+                return self.data['command']
+
+            @property
+            def args(self):
+                return self.data['args']
+
+        class Response(Packet):
+            @property
+            def request_seq(self):
+                return self.data['request_seq']
+
+            @property
+            def cmd(self):
+                return self.data['command']
+
+            @property
+            def body(self):
+                return self.data['body']
+
+            @property
+            def running(self):
+                return self.data['running']
+
+            @property
+            def success(self):
+                return self.data['success']
+
+            @property
+            def message(self):
+                return self.data['message']
+
+        class Event(Packet):
+            @property
+            def event(self):
+                return self.data['event']
+
+            @property
+            def body(self):
+                return self.data['body']
+
+        def __init__(self):
+            self.seq = 0
+
+        def nextSeq(self):
+            seq = self.seq
+            self.seq += 1
+
+            return seq
+
+        def parsePacket(self, payload):
+            obj = json.loads(payload)
+
+            return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
+
+
+    class JSDebugEvent(_PyV8.JSDebugEvent):
+        class FrameData(object):
+            def __init__(self, frame, count, name, value):
+                self.frame = frame
+                self.count = count
+                self.name = name
+                self.value = value
+
+            def __len__(self):
+                return self.count(self.frame)
+
+            def __iter__(self):
+                for i in range(self.count(self.frame)):
+                    yield (self.name(self.frame, i), self.value(self.frame, i))
+
+        class Frame(object):
+            def __init__(self, frame):
+                self.frame = frame
+
+            @property
+            def index(self):
+                return int(self.frame.index())
+
+            @property
+            def function(self):
+                return self.frame.func()
+
+            @property
+            def receiver(self):
+                return self.frame.receiver()
+
+            @property
+            def isConstructCall(self):
+                return bool(self.frame.isConstructCall())
+
+            @property
+            def isDebuggerFrame(self):
+                return bool(self.frame.isDebuggerFrame())
+
+            @property
+            def argumentCount(self):
+                return int(self.frame.argumentCount())
+
+            def argumentName(self, idx):
+                return str(self.frame.argumentName(idx))
+
+            def argumentValue(self, idx):
+                return self.frame.argumentValue(idx)
+
+            @property
+            def arguments(self):
+                return JSDebugEvent.FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
+
+            def localCount(self, idx):
+                return int(self.frame.localCount())
+
+            def localName(self, idx):
+                return str(self.frame.localName(idx))
+
+            def localValue(self, idx):
+                return self.frame.localValue(idx)
+
+            @property
+            def locals(self):
+                return JSDebugEvent.FrameData(self, self.localCount, self.localName, self.localValue)
+
+            @property
+            def sourcePosition(self):
+                return self.frame.sourcePosition()
+
+            @property
+            def sourceLine(self):
+                return int(self.frame.sourceLine())
+
+            @property
+            def sourceColumn(self):
+                return int(self.frame.sourceColumn())
+
+            @property
+            def sourceLineText(self):
+                return str(self.frame.sourceLineText())
+
+            def evaluate(self, source, disable_break = True):
+                return self.frame.evaluate(source, disable_break)
+
+            @property
+            def invocationText(self):
+                return str(self.frame.invocationText())
+
+            @property
+            def sourceAndPositionText(self):
+                return str(self.frame.sourceAndPositionText())
+
+            @property
+            def localsText(self):
+                return str(self.frame.localsText())
+
+            def __str__(self):
+                return str(self.frame.toText())
+
+        class Frames(object):
+            def __init__(self, state):
+                self.state = state
+
+            def __len__(self):
+                return self.state.frameCount
+
+            def __iter__(self):
+                for i in range(self.state.frameCount):
+                    yield self.state.frame(i)
+
+        class State(object):
+            def __init__(self, state):
+                self.state = state
+
+            @property
+            def frameCount(self):
+                return int(self.state.frameCount())
+
+            def frame(self, idx = None):
+                return JSDebugEvent.Frame(self.state.frame(idx))
+
+            @property
+            def selectedFrame(self):
+                return int(self.state.selectedFrame())
+
+            @property
+            def frames(self):
+                return JSDebugEvent.Frames(self)
+
+            def __repr__(self):
+                s = StringIO()
+
+                try:
+                    for frame in self.frames:
+                        s.write(str(frame))
+
+                    return s.getvalue()
+                finally:
+                    s.close()
+
+        class DebugEvent(object):
+            pass
+
+        class StateEvent(DebugEvent):
+            __state = None
+
+            @property
+            def state(self):
+                if not self.__state:
+                    self.__state = JSDebugEvent.State(self.event.executionState())
+
+                return self.__state
+
+        class BreakEvent(StateEvent):
+            type = _PyV8.JSDebugEvent.Break
+
+            def __init__(self, event):
+                self.event = event
+
+        class ExceptionEvent(StateEvent):
+            type = _PyV8.JSDebugEvent.Exception
+
+            def __init__(self, event):
+                self.event = event
+
+        class AsyncTaskEvent(DebugEvent):
+            type = _PyV8.JSDebugEvent.AsyncTaskEvent
+
+            def __init__(self, event):
+                self.event = event
+
+        class Script(object):
+            def __init__(self, script):
+                self.script = script
+
+            @property
+            def source(self):
+                return self.script.source()
+
+            @property
+            def id(self):
+                return self.script.id()
+
+            @property
+            def name(self):
+                return self.script.name()
+
+            @property
+            def lineOffset(self):
+                return self.script.lineOffset()
+
+            @property
+            def lineCount(self):
+                return self.script.lineCount()
+
+            @property
+            def columnOffset(self):
+                return self.script.columnOffset()
+
+            @property
+            def type(self):
+                return self.script.type()
+
+            def __repr__(self):
+                return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
+                                                          self.lineOffset, self.columnOffset,
+                                                          self.source)
+
+        class CompileEvent(StateEvent):
+            def __init__(self, event):
+                self.event = event
+
+            @property
+            def script(self):
+                if not hasattr(self, "_script"):
+                    setattr(self, "_script", JSDebugEvent.Script(self.event.script()))
+
+                return self._script
+
+            def __str__(self):
+                return str(self.script)
+
+        class AfterCompileEvent(CompileEvent):
+            type = _PyV8.JSDebugEvent.AfterCompile
+
+            def __init__(self, event):
+                JSDebugEvent.CompileEvent.__init__(self, event)
+
+            def __repr__(self):
+                return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
+
+        class CompileErrorEvent(CompileEvent):
+            type = _PyV8.JSDebugEvent.CompileError
+
+            def __init__(self, event):
+                JSDebugEvent.CompileEvent.__init__(self, event)
+
+            def __repr__(self):
+                return "fail to compile script: %s\n%s" % (repr(self.script), repr(self.state))
+
+        onMessage = None
+        onBreak = None
+        onException = None
+        onAfterCompile = None
+        onCompileError = None
+        onAsyncTaskEvent = None
+
+
+    class JSDebugger(JSDebugProtocol, JSDebugEvent):
+        def __init__(self):
+            JSDebugProtocol.__init__(self)
+            JSDebugEvent.__init__(self)
+
+        def __enter__(self):
+            self.enabled = True
+
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.enabled = False
 
         @property
-        def seq(self):
-            return self.data['seq']
+        def context(self):
+            if not hasattr(self, '_context'):
+                self._context = JSContext(ctxt=_PyV8.debug().context)
 
-        @property
-        def type(self):
-            return self.data['type']
+            return self._context
 
-    class Request(Packet):
-        @property
-        def cmd(self):
-            return self.data['command']
+        def isEnabled(self):
+            return _PyV8.debug().enabled
 
-        @property
-        def args(self):
-            return self.data['args']
+        def setEnabled(self, enable):
+            dbg = _PyV8.debug()
 
-    class Response(Packet):
-        @property
-        def request_seq(self):
-            return self.data['request_seq']
+            if enable:
+                dbg.onDebugEvent = self.onDebugEvent
+                dbg.onDebugMessage = self.onDebugMessage
+                dbg.onDispatchDebugMessages = self.onDispatchDebugMessages
+            else:
+                dbg.onDebugEvent = None
+                dbg.onDebugMessage = None
+                dbg.onDispatchDebugMessages = None
 
-        @property
-        def cmd(self):
-            return self.data['command']
+            dbg.enabled = enable
 
-        @property
-        def body(self):
-            return self.data['body']
+        enabled = property(isEnabled, setEnabled)
 
-        @property
-        def running(self):
-            return self.data['running']
+        def onDebugMessage(self, msg, data):
+            if self.onMessage:
+                self.onMessage(json.loads(msg))
 
-        @property
-        def success(self):
-            return self.data['success']
+        def onDebugEvent(self, type, state, evt):
+            if type == JSDebugEvent.Break:
+                if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
+            elif type == JSDebugEvent.Exception:
+                if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
+            elif type == JSDebugEvent.AfterCompile:
+                if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
+            elif type == JSDebugEvent.CompileError:
+                if self.onCompileError: self.onCompileError(JSDebugEvent.CompileErrorEvent(evt))
+            elif type == JSDebugEvent.AsyncTaskEvent:
+                if self.onAsyncTaskEvent: self.onAsyncTaskEvent(JSDebugEvent.AsyncTaskEvent(evt))
 
-        @property
-        def message(self):
-            return self.data['message']
+        def onDispatchDebugMessages(self):
+            return True
 
-    class Event(Packet):
-        @property
-        def event(self):
-            return self.data['event']
+        def debugBreak(self):
+            _PyV8.debug().debugBreak()
 
-        @property
-        def body(self):
-            return self.data['body']
+        def debugBreakForCommand(self):
+            _PyV8.debug().debugBreakForCommand()
 
-    def __init__(self):
-        self.seq = 0
+        def cancelDebugBreak(self):
+            _PyV8.debug().cancelDebugBreak()
 
-    def nextSeq(self):
-        seq = self.seq
-        self.seq += 1
+        def processDebugMessages(self):
+            _PyV8.debug().processDebugMessages()
 
-        return seq
+        def sendCommand(self, cmd, *args, **kwds):
+            request = json.dumps({
+                'seq': self.nextSeq(),
+                'type': 'request',
+                'command': cmd,
+                'arguments': kwds
+            })
 
-    def parsePacket(self, payload):
-        obj = json.loads(payload)
+            _PyV8.debug().sendCommand(request)
 
-        return JSDebugProtocol.Event(obj) if obj['type'] == 'event' else JSDebugProtocol.Response(obj)
+            return request
 
+        def debugContinue(self, action='next', steps=1):
+            return self.sendCommand('continue', stepaction=action)
 
-class JSDebugEvent(_PyV8.JSDebugEvent):
-    class FrameData(object):
-        def __init__(self, frame, count, name, value):
-            self.frame = frame
-            self.count = count
-            self.name = name
-            self.value = value
+        def stepNext(self, steps=1):
+            """Step to the next statement in the current function."""
+            return self.debugContinue(action='next', steps=steps)
 
-        def __len__(self):
-            return self.count(self.frame)
+        def stepIn(self, steps=1):
+            """Step into new functions invoked or the next statement in the current function."""
+            return self.debugContinue(action='in', steps=steps)
 
-        def __iter__(self):
-            for i in range(self.count(self.frame)):
-                yield (self.name(self.frame, i), self.value(self.frame, i))
+        def stepOut(self, steps=1):
+            """Step out of the current function."""
+            return self.debugContinue(action='out', steps=steps)
 
-    class Frame(object):
-        def __init__(self, frame):
-            self.frame = frame
+        def stepMin(self, steps=1):
+            """Perform a minimum step in the current function."""
+            return self.debugContinue(action='out', steps=steps)
 
-        @property
-        def index(self):
-            return int(self.frame.index())
 
-        @property
-        def function(self):
-            return self.frame.func()
+class Version(collections.namedtuple('Version', ['major', 'minor', 'patch'])):
+    __slots__ = ()
 
-        @property
-        def receiver(self):
-            return self.frame.receiver()
-
-        @property
-        def isConstructCall(self):
-            return bool(self.frame.isConstructCall())
-
-        @property
-        def isDebuggerFrame(self):
-            return bool(self.frame.isDebuggerFrame())
-
-        @property
-        def argumentCount(self):
-            return int(self.frame.argumentCount())
-
-        def argumentName(self, idx):
-            return str(self.frame.argumentName(idx))
-
-        def argumentValue(self, idx):
-            return self.frame.argumentValue(idx)
-
-        @property
-        def arguments(self):
-            return JSDebugEvent.FrameData(self, self.argumentCount, self.argumentName, self.argumentValue)
-
-        def localCount(self, idx):
-            return int(self.frame.localCount())
-
-        def localName(self, idx):
-            return str(self.frame.localName(idx))
-
-        def localValue(self, idx):
-            return self.frame.localValue(idx)
-
-        @property
-        def locals(self):
-            return JSDebugEvent.FrameData(self, self.localCount, self.localName, self.localValue)
-
-        @property
-        def sourcePosition(self):
-            return self.frame.sourcePosition()
-
-        @property
-        def sourceLine(self):
-            return int(self.frame.sourceLine())
-
-        @property
-        def sourceColumn(self):
-            return int(self.frame.sourceColumn())
-
-        @property
-        def sourceLineText(self):
-            return str(self.frame.sourceLineText())
-
-        def evaluate(self, source, disable_break = True):
-            return self.frame.evaluate(source, disable_break)
-
-        @property
-        def invocationText(self):
-            return str(self.frame.invocationText())
-
-        @property
-        def sourceAndPositionText(self):
-            return str(self.frame.sourceAndPositionText())
-
-        @property
-        def localsText(self):
-            return str(self.frame.localsText())
-
-        def __str__(self):
-            return str(self.frame.toText())
-
-    class Frames(object):
-        def __init__(self, state):
-            self.state = state
-
-        def __len__(self):
-            return self.state.frameCount
-
-        def __iter__(self):
-            for i in range(self.state.frameCount):
-                yield self.state.frame(i)
-
-    class State(object):
-        def __init__(self, state):
-            self.state = state
-
-        @property
-        def frameCount(self):
-            return int(self.state.frameCount())
-
-        def frame(self, idx = None):
-            return JSDebugEvent.Frame(self.state.frame(idx))
-
-        @property
-        def selectedFrame(self):
-            return int(self.state.selectedFrame())
-
-        @property
-        def frames(self):
-            return JSDebugEvent.Frames(self)
-
-        def __repr__(self):
-            s = StringIO()
-
-            try:
-                for frame in self.frames:
-                    s.write(str(frame))
-
-                return s.getvalue()
-            finally:
-                s.close()
-
-    class DebugEvent(object):
-        pass
-
-    class StateEvent(DebugEvent):
-        __state = None
-
-        @property
-        def state(self):
-            if not self.__state:
-                self.__state = JSDebugEvent.State(self.event.executionState())
-
-            return self.__state
-
-    class BreakEvent(StateEvent):
-        type = _PyV8.JSDebugEvent.Break
-
-        def __init__(self, event):
-            self.event = event
-
-    class ExceptionEvent(StateEvent):
-        type = _PyV8.JSDebugEvent.Exception
-
-        def __init__(self, event):
-            self.event = event
-
-    class NewFunctionEvent(DebugEvent):
-        type = _PyV8.JSDebugEvent.NewFunction
-
-        def __init__(self, event):
-            self.event = event
-
-    class Script(object):
-        def __init__(self, script):
-            self.script = script
-
-        @property
-        def source(self):
-            return self.script.source()
-
-        @property
-        def id(self):
-            return self.script.id()
-
-        @property
-        def name(self):
-            return self.script.name()
-
-        @property
-        def lineOffset(self):
-            return self.script.lineOffset()
-
-        @property
-        def lineCount(self):
-            return self.script.lineCount()
-
-        @property
-        def columnOffset(self):
-            return self.script.columnOffset()
-
-        @property
-        def type(self):
-            return self.script.type()
-
-        def __repr__(self):
-            return "<%s script %s @ %d:%d> : '%s'" % (self.type, self.name,
-                                                      self.lineOffset, self.columnOffset,
-                                                      self.source)
-
-    class CompileEvent(StateEvent):
-        def __init__(self, event):
-            self.event = event
-
-        @property
-        def script(self):
-            if not hasattr(self, "_script"):
-                setattr(self, "_script", JSDebugEvent.Script(self.event.script()))
-
-            return self._script
-
-        def __str__(self):
-            return str(self.script)
-
-    class BeforeCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.BeforeCompile
-
-        def __init__(self, event):
-            JSDebugEvent.CompileEvent.__init__(self, event)
-
-        def __repr__(self):
-            return "before compile script: %s\n%s" % (repr(self.script), repr(self.state))
-
-    class AfterCompileEvent(CompileEvent):
-        type = _PyV8.JSDebugEvent.AfterCompile
-
-        def __init__(self, event):
-            JSDebugEvent.CompileEvent.__init__(self, event)
-
-        def __repr__(self):
-            return "after compile script: %s\n%s" % (repr(self.script), repr(self.state))
-
-    onMessage = None
-    onBreak = None
-    onException = None
-    onNewFunction = None
-    onBeforeCompile = None
-    onAfterCompile = None
-
-
-class JSDebugger(JSDebugProtocol, JSDebugEvent):
-    def __init__(self):
-        JSDebugProtocol.__init__(self)
-        JSDebugEvent.__init__(self)
-
-    def __enter__(self):
-        self.enabled = True
-
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.enabled = False
-
-    @property
-    def context(self):
-        if not hasattr(self, '_context'):
-            self._context = JSContext(ctxt=_PyV8.debug().context)
-
-        return self._context
-
-    def isEnabled(self):
-        return _PyV8.debug().enabled
-
-    def setEnabled(self, enable):
-        dbg = _PyV8.debug()
-
-        if enable:
-            dbg.onDebugEvent = self.onDebugEvent
-            dbg.onDebugMessage = self.onDebugMessage
-            dbg.onDispatchDebugMessages = self.onDispatchDebugMessages
-        else:
-            dbg.onDebugEvent = None
-            dbg.onDebugMessage = None
-            dbg.onDispatchDebugMessages = None
-
-        dbg.enabled = enable
-
-    enabled = property(isEnabled, setEnabled)
-
-    def onDebugMessage(self, msg, data):
-        if self.onMessage:
-            self.onMessage(json.loads(msg))
-
-    def onDebugEvent(self, type, state, evt):
-        if type == JSDebugEvent.Break:
-            if self.onBreak: self.onBreak(JSDebugEvent.BreakEvent(evt))
-        elif type == JSDebugEvent.Exception:
-            if self.onException: self.onException(JSDebugEvent.ExceptionEvent(evt))
-        elif type == JSDebugEvent.NewFunction:
-            if self.onNewFunction: self.onNewFunction(JSDebugEvent.NewFunctionEvent(evt))
-        elif type == JSDebugEvent.BeforeCompile:
-            if self.onBeforeCompile: self.onBeforeCompile(JSDebugEvent.BeforeCompileEvent(evt))
-        elif type == JSDebugEvent.AfterCompile:
-            if self.onAfterCompile: self.onAfterCompile(JSDebugEvent.AfterCompileEvent(evt))
-
-    def onDispatchDebugMessages(self):
-        return True
-
-    def debugBreak(self):
-        _PyV8.debug().debugBreak()
-
-    def debugBreakForCommand(self):
-        _PyV8.debug().debugBreakForCommand()
-
-    def cancelDebugBreak(self):
-        _PyV8.debug().cancelDebugBreak()
-
-    def processDebugMessages(self):
-        _PyV8.debug().processDebugMessages()
-
-    def sendCommand(self, cmd, *args, **kwds):
-        request = json.dumps({
-            'seq': self.nextSeq(),
-            'type': 'request',
-            'command': cmd,
-            'arguments': kwds
-        })
-
-        _PyV8.debug().sendCommand(request)
-
-        return request
-
-    def debugContinue(self, action='next', steps=1):
-        return self.sendCommand('continue', stepaction=action)
-
-    def stepNext(self, steps=1):
-        """Step to the next statement in the current function."""
-        return self.debugContinue(action='next', steps=steps)
-
-    def stepIn(self, steps=1):
-        """Step into new functions invoked or the next statement in the current function."""
-        return self.debugContinue(action='in', steps=steps)
-
-    def stepOut(self, steps=1):
-        """Step out of the current function."""
-        return self.debugContinue(action='out', steps=steps)
-
-    def stepMin(self, steps=1):
-        """Perform a minimum step in the current function."""
-        return self.debugContinue(action='out', steps=steps)
-
-
-JSObjectSpace = _PyV8.JSObjectSpace
-JSAllocationAction = _PyV8.JSAllocationAction
+    def __str__(self):
+        return "{major}.{minor}.{patch}".format(**self._asdict())
 
 
 class JSEngine(_PyV8.JSEngine):
+    v8_version = Version(*_PyV8.JSEngine.version.split('.'))
+    boost_version = Version(_PyV8.JSEngine.boost / 100000,
+                            _PyV8.JSEngine.boost / 100 % 1000,
+                            _PyV8.JSEngine.boost % 100)
+
     def __init__(self):
         _PyV8.JSEngine.__init__(self)
 
@@ -747,17 +772,21 @@ JSScript = _PyV8.JSScript
 
 JSStackTrace = _PyV8.JSStackTrace
 JSStackTrace.Options = _PyV8.JSStackTraceOptions
-JSStackTrace.GetCurrentStackTrace = staticmethod(lambda frame_limit, options: _PyV8.JSIsolate.current.GetCurrentStackTrace(frame_limit, options))
+JSStackTrace.GetCurrentStackTrace = staticmethod(lambda frame_limit, options: _PyV8.JSManagedIsolate.current.GetCurrentStackTrace(frame_limit, options))
 JSStackFrame = _PyV8.JSStackFrame
 
 
-class JSIsolate(_PyV8.JSIsolate):
+class JSIsolate(_PyV8.JSManagedIsolate):
     def __enter__(self):
         self.enter()
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type:
+            logging.warn("throw exceptions in %r", self)
+            logging.debug(''.join(traceback.format_exception(exc_type, exc_value, tb)))
+
         self.leave()
 
         del self
@@ -779,12 +808,18 @@ class JSContext(_PyV8.JSContext):
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, tb):
         self.leave()
 
         if hasattr(JSLocker, 'lock'):
             self.lock.leave()
             self.lock = None
+
+        if exc_type:
+            logging.warn("throw exceptions in %r", self)
+            logging.debug(''.join(traceback.format_exception(exc_type, exc_value, tb)))
+
+            self.dispose()
 
         del self
 
@@ -800,64 +835,67 @@ def convert(obj):
     return obj
 
 
-class AST:
-    Scope = _PyV8.AstScope
-    VarMode = _PyV8.AstVariableMode
-    Var = _PyV8.AstVariable
-    Label = _PyV8.AstLabel
-    NodeType = _PyV8.AstNodeType
-    Node = _PyV8.AstNode
-    Statement = _PyV8.AstStatement
-    Expression = _PyV8.AstExpression
-    Breakable = _PyV8.AstBreakableStatement
-    Block = _PyV8.AstBlock
-    Declaration = _PyV8.AstDeclaration
-    VariableDeclaration = _PyV8.AstVariableDeclaration
-    Module = _PyV8.AstModule
-    ModuleDeclaration = _PyV8.AstModuleDeclaration
-    ModuleLiteral = _PyV8.AstModuleLiteral
-    ModuleVariable = _PyV8.AstModuleVariable
-    ModulePath = _PyV8.AstModulePath
-    Iteration = _PyV8.AstIterationStatement
-    DoWhile = _PyV8.AstDoWhileStatement
-    While = _PyV8.AstWhileStatement
-    For = _PyV8.AstForStatement
-    ForIn = _PyV8.AstForInStatement
-    ExpressionStatement = _PyV8.AstExpressionStatement
-    Continue = _PyV8.AstContinueStatement
-    Break = _PyV8.AstBreakStatement
-    Return = _PyV8.AstReturnStatement
-    With = _PyV8.AstWithStatement
-    Case = _PyV8.AstCaseClause
-    Switch = _PyV8.AstSwitchStatement
-    Try = _PyV8.AstTryStatement
-    TryCatch = _PyV8.AstTryCatchStatement
-    TryFinally = _PyV8.AstTryFinallyStatement
-    Debugger = _PyV8.AstDebuggerStatement
-    Empty = _PyV8.AstEmptyStatement
-    Literal = _PyV8.AstLiteral
-    MaterializedLiteral = _PyV8.AstMaterializedLiteral
-    PropertyKind = _PyV8.AstPropertyKind
-    ObjectProperty = _PyV8.AstObjectProperty
-    Object = _PyV8.AstObjectLiteral
-    RegExp = _PyV8.AstRegExpLiteral
-    Array = _PyV8.AstArrayLiteral
-    VarProxy = _PyV8.AstVariableProxy
-    Property = _PyV8.AstProperty
-    Call = _PyV8.AstCall
-    CallNew = _PyV8.AstCallNew
-    CallRuntime = _PyV8.AstCallRuntime
-    Op = _PyV8.AstOperation
-    UnaryOp = _PyV8.AstUnaryOperation
-    BinOp = _PyV8.AstBinaryOperation
-    CountOp = _PyV8.AstCountOperation
-    CompOp = _PyV8.AstCompareOperation
-    Conditional = _PyV8.AstConditional
-    Assignment = _PyV8.AstAssignment
-    Throw = _PyV8.AstThrow
-    Function = _PyV8.AstFunctionLiteral
-    NativeFunction = _PyV8.AstNativeFunctionLiteral
-    This = _PyV8.AstThisFunction
+if SUPPORT_AST:
+    class AST:
+        Scope = _PyV8.AstScope
+        VarMode = _PyV8.AstVariableMode
+        Var = _PyV8.AstVariable
+        Label = _PyV8.AstLabel
+        NodeType = _PyV8.AstNodeType
+        Node = _PyV8.AstNode
+        Statement = _PyV8.AstStatement
+        Expression = _PyV8.AstExpression
+        Breakable = _PyV8.AstBreakableStatement
+        Block = _PyV8.AstBlock
+        Declaration = _PyV8.AstDeclaration
+        VariableDeclaration = _PyV8.AstVariableDeclaration
+        Module = _PyV8.AstModule
+        ModuleDeclaration = _PyV8.AstModuleDeclaration
+        ModuleLiteral = _PyV8.AstModuleLiteral
+        ModuleVariable = _PyV8.AstModuleVariable
+        ModulePath = _PyV8.AstModulePath
+        Iteration = _PyV8.AstIterationStatement
+        DoWhile = _PyV8.AstDoWhileStatement
+        While = _PyV8.AstWhileStatement
+        For = _PyV8.AstForStatement
+        ForIn = _PyV8.AstForInStatement
+        ExpressionStatement = _PyV8.AstExpressionStatement
+        Continue = _PyV8.AstContinueStatement
+        Break = _PyV8.AstBreakStatement
+        Return = _PyV8.AstReturnStatement
+        With = _PyV8.AstWithStatement
+        Case = _PyV8.AstCaseClause
+        Switch = _PyV8.AstSwitchStatement
+        Try = _PyV8.AstTryStatement
+        TryCatch = _PyV8.AstTryCatchStatement
+        TryFinally = _PyV8.AstTryFinallyStatement
+        Debugger = _PyV8.AstDebuggerStatement
+        Empty = _PyV8.AstEmptyStatement
+        Literal = _PyV8.AstLiteral
+        MaterializedLiteral = _PyV8.AstMaterializedLiteral
+        PropertyKind = _PyV8.AstPropertyKind
+        ObjectProperty = _PyV8.AstObjectProperty
+        Object = _PyV8.AstObjectLiteral
+        RegExp = _PyV8.AstRegExpLiteral
+        Array = _PyV8.AstArrayLiteral
+        VarProxy = _PyV8.AstVariableProxy
+        Property = _PyV8.AstProperty
+        Call = _PyV8.AstCall
+        CallNew = _PyV8.AstCallNew
+        CallRuntime = _PyV8.AstCallRuntime
+        Op = _PyV8.AstOperation
+        UnaryOp = _PyV8.AstUnaryOperation
+        BinOp = _PyV8.AstBinaryOperation
+        CountOp = _PyV8.AstCountOperation
+        CompOp = _PyV8.AstCompareOperation
+        Conditional = _PyV8.AstConditional
+        Assignment = _PyV8.AstAssignment
+        Throw = _PyV8.AstThrow
+        Function = _PyV8.AstFunctionLiteral
+        NativeFunction = _PyV8.AstNativeFunctionLiteral
+        This = _PyV8.AstThisFunction
+
+    __all__ += ['AST']
 
 from datetime import *
 import unittest
@@ -874,6 +912,7 @@ else:
 
     def toUnicodeString(s, encoding='utf-8'):
         return s if isinstance(s, unicode) else unicode(s, encoding)
+
 
 class TestContext(unittest.TestCase):
     def testMultiNamespace(self):
@@ -1852,7 +1891,7 @@ class TestWrapper(unittest.TestCase):
             self.assertTrue(ctxt.eval('null == returnNone()'))
 
 
-class TestMultithread(unittest.TestCase):
+class TestMultiThread(unittest.TestCase):
     def testLocker(self):
         self.assertFalse(JSLocker.active)
         self.assertFalse(JSLocker.locked)
@@ -1959,11 +1998,20 @@ class TestMultithread(unittest.TestCase):
 
         self.assertEqual(20, len(g.result))
 
+
 class TestEngine(unittest.TestCase):
+    def setUp(self):
+        self.isolate = JSIsolate()
+        self.isolate.enter()
+
+    def tearDown(self):
+        self.isolate.leave()
+
+        del self.isolate
+
     def testClassProperties(self):
-        with JSContext() as ctxt:
-            self.assertTrue(str(JSEngine.version).startswith("3."))
-            self.assertFalse(JSEngine.dead)
+        self.assertTrue(str(JSEngine.version).startswith("5."))
+        self.assertFalse(JSEngine.dead)
 
     def testCompile(self):
         with JSContext() as ctxt:
@@ -2082,7 +2130,11 @@ class TestEngine(unittest.TestCase):
         with JSContext() as ctxt:
             self.assertRaises(ReferenceError, ctxt.eval, "hello('flier')")
 
-        extUnicodeSrc = u"""function helloW(name) { return "hello " + name + " from javascript"; }"""
+        extUnicodeSrc = u"""
+            function helloW(name) {
+                return "hello " + name + " from javascript";
+            }
+        """
         extUnicodeJs = JSExtension(u"helloW/javascript", extUnicodeSrc)
 
         self.assertTrue(extUnicodeJs)
@@ -2212,20 +2264,21 @@ class TestEngine(unittest.TestCase):
         def callback(space, action, size):
             alloc[(space, action)] = alloc.setdefault((space, action), 0) + size
 
-        JSEngine.setMemoryAllocationCallback(callback)
+        if hasattr(JSEngine, 'setMemoryAllocationCallback'):
+            JSEngine.setMemoryAllocationCallback(callback)
 
-        with JSContext() as ctxt:
-            self.assertFalse((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
+            with JSContext() as ctxt:
+                self.assertFalse((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
-            ctxt.eval("var o = new Array(1000);")
+                ctxt.eval("var o = new Array(1000);")
 
-            self.assertTrue((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
+                self.assertTrue((JSObjectSpace.Code, JSAllocationAction.alloc) in alloc)
 
-        JSEngine.setMemoryAllocationCallback(None)
+            JSEngine.setMemoryAllocationCallback(None)
 
     def testOutOfMemory(self):
         with JSIsolate():
-            JSEngine.setMemoryLimit(max_young_space_size=16 * 1024, max_old_space_size=4 * 1024 * 1024)
+            JSEngine.setMemoryLimit(max_semi_space_size=16 * 1024, max_old_space_size=4 * 1024 * 1024)
 
             with JSContext() as ctxt:
                 JSEngine.ignoreOutOfMemoryException()
@@ -2254,490 +2307,492 @@ class TestEngine(unittest.TestCase):
         self.assertTrue(newStackSize > oldStackSize * 2)
 
 
-class TestDebug(unittest.TestCase):
-    def setUp(self):
-        self.engine = JSEngine()
+if SUPPORT_DEBUGGER:
+    class TestDebug(unittest.TestCase):
+        def setUp(self):
+            self.engine = JSEngine()
 
-    def tearDown(self):
-        del self.engine
+        def tearDown(self):
+            del self.engine
 
-    events = []
+        events = []
 
-    def processDebugEvent(self, event):
-        try:
-            logging.debug("receive debug event: %s", repr(event))
+        def processDebugEvent(self, event):
+            try:
+                logging.debug("receive debug event: %s", repr(event))
 
-            self.events.append(repr(event))
-        except:
-            logging.error("fail to process debug event")
-            logging.debug(traceback.extract_stack())
+                self.events.append(repr(event))
+            except:
+                logging.error("fail to process debug event")
+                logging.debug(traceback.extract_stack())
 
-    def testEventDispatch(self):
-        debugger = JSDebugger()
-
-        self.assertTrue(not debugger.enabled)
-
-        debugger.onBreak = lambda evt: self.processDebugEvent(evt)
-        debugger.onException = lambda evt: self.processDebugEvent(evt)
-        debugger.onNewFunction = lambda evt: self.processDebugEvent(evt)
-        debugger.onBeforeCompile = lambda evt: self.processDebugEvent(evt)
-        debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
-
-        with JSContext() as ctxt:
-            debugger.enabled = True
-
-            self.assertEqual(3, int(ctxt.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
-
-            debugger.enabled = False
-
-            self.assertRaises(JSError, JSContext.eval, ctxt, "throw 1")
+        def testEventDispatch(self):
+            debugger = JSDebugger()
 
             self.assertTrue(not debugger.enabled)
 
-        self.assertEqual(4, len(self.events))
-
-
-class TestAST(unittest.TestCase):
-
-    class Checker(object):
-        def __init__(self, testcase):
-            self.testcase = testcase
-            self.called = []
-
-        def __enter__(self):
-            self.ctxt = JSContext()
-            self.ctxt.enter()
-
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.ctxt.leave()
-
-        def __getattr__(self, name):
-            return getattr(self.testcase, name)
-
-        def test(self, script):
-            JSEngine().compile(script).visit(self)
+            debugger.onBreak = lambda evt: self.processDebugEvent(evt)
+            debugger.onException = lambda evt: self.processDebugEvent(evt)
+            debugger.onAfterCompile = lambda evt: self.processDebugEvent(evt)
+            debugger.onCompileError = lambda evt: self.processDebugEvent(evt)
+            debugger.onAsyncTaskEvent = lambda evt: self.processDebugEvent(evt)
 
-            return self.called
-
-        def onProgram(self, prog):
-            self.ast = prog.toAST()
-            self.json = json.loads(prog.toJSON())
-
-            for decl in prog.scope.declarations:
-                decl.visit(self)
-
-            for stmt in prog.body:
-                stmt.visit(self)
+            with JSContext() as ctxt:
+                debugger.enabled = True
 
-        def onBlock(self, block):
-            for stmt in block.statements:
-                stmt.visit(self)
+                self.assertEqual(3, int(ctxt.eval("function test() { text = \"1+2\"; return eval(text) } test()")))
 
-        def onExpressionStatement(self, stmt):
-            stmt.expression.visit(self)
+                debugger.enabled = False
 
-            #print type(stmt.expression), stmt.expression
-
-    def testBlock(self):
-        class BlockChecker(TestAST.Checker):
-            def onBlock(self, stmt):
-                self.called.append('block')
+                self.assertRaises(JSError, JSContext.eval, ctxt, "throw 1")
 
-                self.assertEqual(AST.NodeType.Block, stmt.type)
+                self.assertTrue(not debugger.enabled)
 
-                self.assertTrue(stmt.initializerBlock)
-                self.assertFalse(stmt.anonymous)
+            self.assertEqual(4, len(self.events))
+
+
+if SUPPORT_AST:
+    class TestAST(unittest.TestCase):
+
+        class Checker(object):
+            def __init__(self, testcase):
+                self.testcase = testcase
+                self.called = []
+
+            def __enter__(self):
+                self.ctxt = JSContext()
+                self.ctxt.enter()
 
-                target = stmt.breakTarget
-                self.assertTrue(target)
-                self.assertFalse(target.bound)
-                self.assertTrue(target.unused)
-                self.assertFalse(target.linked)
+                return self
 
-                self.assertEqual(2, len(stmt.statements))
+            def __exit__(self, exc_type, exc_value, traceback):
+                self.ctxt.leave()
 
-                self.assertEqual(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
+            def __getattr__(self, name):
+                return getattr(self.testcase, name)
 
-        with BlockChecker(self) as checker:
-            self.assertEqual(['block'], checker.test("var i, j;"))
-            self.assertEqual("""FUNC
-. NAME ""
-. INFERRED NAME ""
-. DECLS
-. . VAR "i"
-. . VAR "j"
-. BLOCK INIT
-. . EXPRESSION STATEMENT
-. . . CALL RUNTIME
-. . . . NAME InitializeVarGlobal
-. . . . LITERAL "i"
-. . . . LITERAL 0
-. . EXPRESSION STATEMENT
-. . . CALL RUNTIME
-. . . . NAME InitializeVarGlobal
-. . . . LITERAL "j"
-. . . . LITERAL 0
-""", checker.ast)
+            def test(self, script):
+                JSEngine().compile(script).visit(self)
 
-            self.assertEqual([u'FunctionLiteral', {u'name': u''},
-                [u'Declaration', {u'mode': u'VAR'},
-                    [u'Variable', {u'name': u'i'}]
-                ], [u'Declaration', {u'mode':u'VAR'},
-                    [u'Variable', {u'name': u'j'}]
-                ], [u'Block',
-                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                        [u'Literal', {u'handle':u'i'}],
-                        [u'Literal', {u'handle': 0}]]],
-                    [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
-                        [u'Literal', {u'handle': u'j'}],
-                        [u'Literal', {u'handle': 0}]]]
-                ]
-            ], checker.json)
+                return self.called
 
-    def testIfStatement(self):
-        class IfStatementChecker(TestAST.Checker):
-            def onIfStatement(self, stmt):
-                self.called.append('if')
+            def onProgram(self, prog):
+                self.ast = prog.toAST()
+                self.json = json.loads(prog.toJSON())
 
-                self.assertTrue(stmt)
-                self.assertEqual(AST.NodeType.IfStatement, stmt.type)
+                for decl in prog.scope.declarations:
+                    decl.visit(self)
 
-                self.assertEqual(7, stmt.pos)
+                for stmt in prog.body:
+                    stmt.visit(self)
 
-                self.assertTrue(stmt.hasThenStatement)
-                self.assertTrue(stmt.hasElseStatement)
+            def onBlock(self, block):
+                for stmt in block.statements:
+                    stmt.visit(self)
 
-                self.assertEqual("((value % 2) == 0)", str(stmt.condition))
-                self.assertEqual("{ s = \"even\"; }", str(stmt.thenStatement))
-                self.assertEqual("{ s = \"odd\"; }", str(stmt.elseStatement))
+            def onExpressionStatement(self, stmt):
+                stmt.expression.visit(self)
 
-                self.assertFalse(stmt.condition.isPropertyName)
+                #print type(stmt.expression), stmt.expression
 
-        with IfStatementChecker(self) as checker:
-            self.assertEqual(['if'], checker.test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
+        def testBlock(self):
+            class BlockChecker(TestAST.Checker):
+                def onBlock(self, stmt):
+                    self.called.append('block')
 
-    def testForStatement(self):
-        class ForStatementChecker(TestAST.Checker):
-            def onForStatement(self, stmt):
-                self.called.append('for')
+                    self.assertEqual(AST.NodeType.Block, stmt.type)
 
-                self.assertEqual("{ j += i; }", str(stmt.body))
+                    self.assertTrue(stmt.initializerBlock)
+                    self.assertFalse(stmt.anonymous)
 
-                self.assertEqual("i = 0;", str(stmt.init))
-                self.assertEqual("(i < 10)", str(stmt.condition))
-                self.assertEqual("(i++);", str(stmt.nextStmt))
+                    target = stmt.breakTarget
+                    self.assertTrue(target)
+                    self.assertFalse(target.bound)
+                    self.assertTrue(target.unused)
+                    self.assertFalse(target.linked)
 
-                target = stmt.continueTarget
+                    self.assertEqual(2, len(stmt.statements))
 
-                self.assertTrue(target)
-                self.assertFalse(target.bound)
-                self.assertTrue(target.unused)
-                self.assertFalse(target.linked)
-                self.assertFalse(stmt.fastLoop)
+                    self.assertEqual(['%InitializeVarGlobal("i", 0);', '%InitializeVarGlobal("j", 0);'], [str(s) for s in stmt.statements])
 
-            def onForInStatement(self, stmt):
-                self.called.append('forIn')
+            with BlockChecker(self) as checker:
+                self.assertEqual(['block'], checker.test("var i, j;"))
+                self.assertEqual("""FUNC
+    . NAME ""
+    . INFERRED NAME ""
+    . DECLS
+    . . VAR "i"
+    . . VAR "j"
+    . BLOCK INIT
+    . . EXPRESSION STATEMENT
+    . . . CALL RUNTIME
+    . . . . NAME InitializeVarGlobal
+    . . . . LITERAL "i"
+    . . . . LITERAL 0
+    . . EXPRESSION STATEMENT
+    . . . CALL RUNTIME
+    . . . . NAME InitializeVarGlobal
+    . . . . LITERAL "j"
+    . . . . LITERAL 0
+    """, checker.ast)
 
-                self.assertEqual("{ out += name; }", str(stmt.body))
+                self.assertEqual([u'FunctionLiteral', {u'name': u''},
+                    [u'Declaration', {u'mode': u'VAR'},
+                        [u'Variable', {u'name': u'i'}]
+                    ], [u'Declaration', {u'mode':u'VAR'},
+                        [u'Variable', {u'name': u'j'}]
+                    ], [u'Block',
+                        [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                            [u'Literal', {u'handle':u'i'}],
+                            [u'Literal', {u'handle': 0}]]],
+                        [u'ExpressionStatement', [u'CallRuntime', {u'name': u'InitializeVarGlobal'},
+                            [u'Literal', {u'handle': u'j'}],
+                            [u'Literal', {u'handle': 0}]]]
+                    ]
+                ], checker.json)
 
-                self.assertEqual("name", str(stmt.each))
-                self.assertEqual("names", str(stmt.enumerable))
+        def testIfStatement(self):
+            class IfStatementChecker(TestAST.Checker):
+                def onIfStatement(self, stmt):
+                    self.called.append('if')
 
-            def onWhileStatement(self, stmt):
-                self.called.append('while')
+                    self.assertTrue(stmt)
+                    self.assertEqual(AST.NodeType.IfStatement, stmt.type)
 
-                self.assertEqual("{ i += 1; }", str(stmt.body))
+                    self.assertEqual(7, stmt.pos)
 
-                self.assertEqual("(i < 10)", str(stmt.condition))
+                    self.assertTrue(stmt.hasThenStatement)
+                    self.assertTrue(stmt.hasElseStatement)
 
-            def onDoWhileStatement(self, stmt):
-                self.called.append('doWhile')
+                    self.assertEqual("((value % 2) == 0)", str(stmt.condition))
+                    self.assertEqual("{ s = \"even\"; }", str(stmt.thenStatement))
+                    self.assertEqual("{ s = \"odd\"; }", str(stmt.elseStatement))
 
-                self.assertEqual("{ i += 1; }", str(stmt.body))
+                    self.assertFalse(stmt.condition.isPropertyName)
 
-                self.assertEqual("(i < 10)", str(stmt.condition))
-                self.assertEqual(283, stmt.condition.pos)
+            with IfStatementChecker(self) as checker:
+                self.assertEqual(['if'], checker.test("var s; if (value % 2 == 0) { s = 'even'; } else { s = 'odd'; }"))
 
-        with ForStatementChecker(self) as checker:
-            self.assertEqual(['for', 'forIn', 'while', 'doWhile'], checker.test("""
-                var i, j;
+        def testForStatement(self):
+            class ForStatementChecker(TestAST.Checker):
+                def onForStatement(self, stmt):
+                    self.called.append('for')
 
-                for (i=0; i<10; i++) { j+=i; }
+                    self.assertEqual("{ j += i; }", str(stmt.body))
 
-                var names = new Array();
-                var out = '';
+                    self.assertEqual("i = 0;", str(stmt.init))
+                    self.assertEqual("(i < 10)", str(stmt.condition))
+                    self.assertEqual("(i++);", str(stmt.nextStmt))
 
-                for (name in names) { out += name; }
+                    target = stmt.continueTarget
 
-                while (i<10) { i += 1; }
+                    self.assertTrue(target)
+                    self.assertFalse(target.bound)
+                    self.assertTrue(target.unused)
+                    self.assertFalse(target.linked)
+                    self.assertFalse(stmt.fastLoop)
 
-                do { i += 1; } while (i<10);
-            """))
+                def onForInStatement(self, stmt):
+                    self.called.append('forIn')
 
-    def testCallStatements(self):
-        class CallStatementChecker(TestAST.Checker):
-            def onVariableDeclaration(self, decl):
-                self.called.append('var')
+                    self.assertEqual("{ out += name; }", str(stmt.body))
 
-                var = decl.proxy
+                    self.assertEqual("name", str(stmt.each))
+                    self.assertEqual("names", str(stmt.enumerable))
 
-                if var.name == 's':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
+                def onWhileStatement(self, stmt):
+                    self.called.append('while')
 
-                    self.assertTrue(var.isValidLeftHandSide)
-                    self.assertFalse(var.isArguments)
-                    self.assertFalse(var.isThis)
+                    self.assertEqual("{ i += 1; }", str(stmt.body))
 
-            def onFunctionDeclaration(self, decl):
-                self.called.append('func')
+                    self.assertEqual("(i < 10)", str(stmt.condition))
 
-                var = decl.proxy
+                def onDoWhileStatement(self, stmt):
+                    self.called.append('doWhile')
 
-                if var.name == 'hello':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
-                    self.assertTrue(decl.function)
-                    self.assertEqual('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
-                elif var.name == 'dog':
-                    self.assertEqual(AST.VarMode.var, decl.mode)
-                    self.assertTrue(decl.function)
-                    self.assertEqual('(function dog(name) { (this).name = name; })', str(decl.function))
+                    self.assertEqual("{ i += 1; }", str(stmt.body))
 
-            def onCall(self, expr):
-                self.called.append('call')
+                    self.assertEqual("(i < 10)", str(stmt.condition))
+                    self.assertEqual(283, stmt.condition.pos)
 
-                self.assertEqual("hello", str(expr.expression))
-                self.assertEqual(['"flier"'], [str(arg) for arg in expr.args])
-                self.assertEqual(159, expr.pos)
+            with ForStatementChecker(self) as checker:
+                self.assertEqual(['for', 'forIn', 'while', 'doWhile'], checker.test("""
+                    var i, j;
 
-            def onCallNew(self, expr):
-                self.called.append('callNew')
+                    for (i=0; i<10; i++) { j+=i; }
 
-                self.assertEqual("dog", str(expr.expression))
-                self.assertEqual(['"cat"'], [str(arg) for arg in expr.args])
-                self.assertEqual(191, expr.pos)
+                    var names = new Array();
+                    var out = '';
 
-            def onCallRuntime(self, expr):
-                self.called.append('callRuntime')
+                    for (name in names) { out += name; }
 
-                self.assertEqual("InitializeVarGlobal", expr.name)
-                self.assertEqual(['"s"', '0'], [str(arg) for arg in expr.args])
-                self.assertFalse(expr.isJsRuntime)
+                    while (i<10) { i += 1; }
 
-        with CallStatementChecker(self) as checker:
-            self.assertEqual(['var', 'func', 'func', 'callRuntime', 'call', 'callNew'], checker.test("""
-                var s;
-                function hello(name) { s = "Hello " + name; }
-                function dog(name) { this.name = name; }
-                hello("flier");
-                new dog("cat");
-            """))
+                    do { i += 1; } while (i<10);
+                """))
 
-    def testTryStatements(self):
-        class TryStatementsChecker(TestAST.Checker):
-            def onThrow(self, expr):
-                self.called.append('try')
+        def testCallStatements(self):
+            class CallStatementChecker(TestAST.Checker):
+                def onVariableDeclaration(self, decl):
+                    self.called.append('var')
 
-                self.assertEqual('"abc"', str(expr.exception))
-                self.assertEqual(66, expr.pos)
+                    var = decl.proxy
 
-            def onTryCatchStatement(self, stmt):
-                self.called.append('catch')
+                    if var.name == 's':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
 
-                self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
-                #FIXME self.assertEqual([], stmt.targets)
+                        self.assertTrue(var.isValidLeftHandSide)
+                        self.assertFalse(var.isArguments)
+                        self.assertFalse(var.isThis)
 
-                stmt.tryBlock.visit(self)
+                def onFunctionDeclaration(self, decl):
+                    self.called.append('func')
 
-                self.assertEqual("err", str(stmt.variable.name))
-                self.assertEqual("{ s = err; }", str(stmt.catchBlock))
+                    var = decl.proxy
 
-            def onTryFinallyStatement(self, stmt):
-                self.called.append('finally')
+                    if var.name == 'hello':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
+                        self.assertTrue(decl.function)
+                        self.assertEqual('(function hello(name) { s = ("Hello " + name); })', str(decl.function))
+                    elif var.name == 'dog':
+                        self.assertEqual(AST.VarMode.var, decl.mode)
+                        self.assertTrue(decl.function)
+                        self.assertEqual('(function dog(name) { (this).name = name; })', str(decl.function))
 
-                self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
-                #FIXME self.assertEqual([], stmt.targets)
+                def onCall(self, expr):
+                    self.called.append('call')
 
-                self.assertEqual("{ s += \".\"; }", str(stmt.finallyBlock))
+                    self.assertEqual("hello", str(expr.expression))
+                    self.assertEqual(['"flier"'], [str(arg) for arg in expr.args])
+                    self.assertEqual(159, expr.pos)
 
-        with TryStatementsChecker(self) as checker:
-            self.assertEqual(['catch', 'try', 'finally'], checker.test("""
-                var s;
-                try {
-                    throw "abc";
-                }
-                catch (err) {
-                    s = err;
-                };
+                def onCallNew(self, expr):
+                    self.called.append('callNew')
 
-                try {
-                    throw "abc";
-                }
-                finally {
-                    s += ".";
-                }
-            """))
+                    self.assertEqual("dog", str(expr.expression))
+                    self.assertEqual(['"cat"'], [str(arg) for arg in expr.args])
+                    self.assertEqual(191, expr.pos)
 
-    def testLiterals(self):
-        class LiteralChecker(TestAST.Checker):
-            def onCallRuntime(self, expr):
-                expr.args[1].visit(self)
+                def onCallRuntime(self, expr):
+                    self.called.append('callRuntime')
 
-            def onLiteral(self, litr):
-                self.called.append('literal')
+                    self.assertEqual("InitializeVarGlobal", expr.name)
+                    self.assertEqual(['"s"', '0'], [str(arg) for arg in expr.args])
+                    self.assertFalse(expr.isJsRuntime)
 
-                self.assertFalse(litr.isPropertyName)
-                self.assertFalse(litr.isNull)
-                self.assertFalse(litr.isTrue)
+            with CallStatementChecker(self) as checker:
+                self.assertEqual(['var', 'func', 'func', 'callRuntime', 'call', 'callNew'], checker.test("""
+                    var s;
+                    function hello(name) { s = "Hello " + name; }
+                    function dog(name) { this.name = name; }
+                    hello("flier");
+                    new dog("cat");
+                """))
 
-            def onRegExpLiteral(self, litr):
-                self.called.append('regex')
+        def testTryStatements(self):
+            class TryStatementsChecker(TestAST.Checker):
+                def onThrow(self, expr):
+                    self.called.append('try')
 
-                self.assertEqual("test", litr.pattern)
-                self.assertEqual("g", litr.flags)
+                    self.assertEqual('"abc"', str(expr.exception))
+                    self.assertEqual(66, expr.pos)
 
-            def onObjectLiteral(self, litr):
-                self.called.append('object')
+                def onTryCatchStatement(self, stmt):
+                    self.called.append('catch')
 
-                self.assertEqual('constant:"name"="flier",constant:"sex"=true',
-                                  ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
+                    self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
+                    #FIXME self.assertEqual([], stmt.targets)
 
-            def onArrayLiteral(self, litr):
-                self.called.append('array')
+                    stmt.tryBlock.visit(self)
 
-                self.assertEqual('"hello","world",42',
-                                  ",".join([str(value) for value in litr.values]))
-        with LiteralChecker(self) as checker:
-            self.assertEqual(['literal', 'regex', 'literal', 'literal'], checker.test("""
-                false;
-                /test/g;
-                var o = { name: 'flier', sex: true };
-                var a = ['hello', 'world', 42];
-            """))
+                    self.assertEqual("err", str(stmt.variable.name))
+                    self.assertEqual("{ s = err; }", str(stmt.catchBlock))
 
-    def testOperations(self):
-        class OperationChecker(TestAST.Checker):
-            def onUnaryOperation(self, expr):
-                self.called.append('unaryOp')
+                def onTryFinallyStatement(self, stmt):
+                    self.called.append('finally')
 
-                self.assertEqual(AST.Op.BIT_NOT, expr.op)
-                self.assertEqual("i", expr.expression.name)
+                    self.assertEqual("{ throw \"abc\"; }", str(stmt.tryBlock))
+                    #FIXME self.assertEqual([], stmt.targets)
 
-                #print "unary", expr
+                    self.assertEqual("{ s += \".\"; }", str(stmt.finallyBlock))
 
-            def onIncrementOperation(self, expr):
-                self.fail()
+            with TryStatementsChecker(self) as checker:
+                self.assertEqual(['catch', 'try', 'finally'], checker.test("""
+                    var s;
+                    try {
+                        throw "abc";
+                    }
+                    catch (err) {
+                        s = err;
+                    };
 
-            def onBinaryOperation(self, expr):
-                self.called.append('binOp')
+                    try {
+                        throw "abc";
+                    }
+                    finally {
+                        s += ".";
+                    }
+                """))
 
-                if expr.op == AST.Op.BIT_XOR:
-                    self.assertEqual("i", str(expr.left))
-                    self.assertEqual("-1", str(expr.right))
-                    self.assertEqual(124, expr.pos)
-                else:
+        def testLiterals(self):
+            class LiteralChecker(TestAST.Checker):
+                def onCallRuntime(self, expr):
+                    expr.args[1].visit(self)
+
+                def onLiteral(self, litr):
+                    self.called.append('literal')
+
+                    self.assertFalse(litr.isPropertyName)
+                    self.assertFalse(litr.isNull)
+                    self.assertFalse(litr.isTrue)
+
+                def onRegExpLiteral(self, litr):
+                    self.called.append('regex')
+
+                    self.assertEqual("test", litr.pattern)
+                    self.assertEqual("g", litr.flags)
+
+                def onObjectLiteral(self, litr):
+                    self.called.append('object')
+
+                    self.assertEqual('constant:"name"="flier",constant:"sex"=true',
+                                      ",".join(["%s:%s=%s" % (prop.kind, prop.key, prop.value) for prop in litr.properties]))
+
+                def onArrayLiteral(self, litr):
+                    self.called.append('array')
+
+                    self.assertEqual('"hello","world",42',
+                                      ",".join([str(value) for value in litr.values]))
+            with LiteralChecker(self) as checker:
+                self.assertEqual(['literal', 'regex', 'literal', 'literal'], checker.test("""
+                    false;
+                    /test/g;
+                    var o = { name: 'flier', sex: true };
+                    var a = ['hello', 'world', 42];
+                """))
+
+        def testOperations(self):
+            class OperationChecker(TestAST.Checker):
+                def onUnaryOperation(self, expr):
+                    self.called.append('unaryOp')
+
+                    self.assertEqual(AST.Op.BIT_NOT, expr.op)
+                    self.assertEqual("i", expr.expression.name)
+
+                    #print "unary", expr
+
+                def onIncrementOperation(self, expr):
+                    self.fail()
+
+                def onBinaryOperation(self, expr):
+                    self.called.append('binOp')
+
+                    if expr.op == AST.Op.BIT_XOR:
+                        self.assertEqual("i", str(expr.left))
+                        self.assertEqual("-1", str(expr.right))
+                        self.assertEqual(124, expr.pos)
+                    else:
+                        self.assertEqual("i", str(expr.left))
+                        self.assertEqual("j", str(expr.right))
+                        self.assertEqual(36, expr.pos)
+
+                def onAssignment(self, expr):
+                    self.called.append('assign')
+
+                    self.assertEqual(AST.Op.ASSIGN_ADD, expr.op)
+                    self.assertEqual(AST.Op.ADD, expr.binop)
+
+                    self.assertEqual("i", str(expr.target))
+                    self.assertEqual("1", str(expr.value))
+                    self.assertEqual(53, expr.pos)
+
+                    self.assertEqual("(i + 1)", str(expr.binOperation))
+
+                    self.assertTrue(expr.compound)
+
+                def onCountOperation(self, expr):
+                    self.called.append('countOp')
+
+                    self.assertFalse(expr.prefix)
+                    self.assertTrue(expr.postfix)
+
+                    self.assertEqual(AST.Op.INC, expr.op)
+                    self.assertEqual(AST.Op.ADD, expr.binop)
+                    self.assertEqual(71, expr.pos)
+                    self.assertEqual("i", expr.expression.name)
+
+                    #print "count", expr
+
+                def onCompareOperation(self, expr):
+                    self.called.append('compOp')
+
+                    if len(self.called) == 4:
+                        self.assertEqual(AST.Op.EQ, expr.op)
+                        self.assertEqual(88, expr.pos) # i==j
+                    else:
+                        self.assertEqual(AST.Op.EQ_STRICT, expr.op)
+                        self.assertEqual(106, expr.pos) # i===j
+
                     self.assertEqual("i", str(expr.left))
                     self.assertEqual("j", str(expr.right))
-                    self.assertEqual(36, expr.pos)
 
-            def onAssignment(self, expr):
-                self.called.append('assign')
+                    #print "comp", expr
 
-                self.assertEqual(AST.Op.ASSIGN_ADD, expr.op)
-                self.assertEqual(AST.Op.ADD, expr.binop)
+                def onConditional(self, expr):
+                    self.called.append('conditional')
 
-                self.assertEqual("i", str(expr.target))
-                self.assertEqual("1", str(expr.value))
-                self.assertEqual(53, expr.pos)
+                    self.assertEqual("(i > j)", str(expr.condition))
+                    self.assertEqual("i", str(expr.thenExpr))
+                    self.assertEqual("j", str(expr.elseExpr))
 
-                self.assertEqual("(i + 1)", str(expr.binOperation))
+                    self.assertEqual(144, expr.thenExpr.pos)
+                    self.assertEqual(146, expr.elseExpr.pos)
 
-                self.assertTrue(expr.compound)
+            with OperationChecker(self) as checker:
+                self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'binOp', 'conditional'], checker.test("""
+                var i, j;
+                i+j;
+                i+=1;
+                i++;
+                i==j;
+                i===j;
+                ~i;
+                i>j?i:j;
+                """))
 
-            def onCountOperation(self, expr):
-                self.called.append('countOp')
+        def testSwitchStatement(self):
+            class SwitchStatementChecker(TestAST.Checker):
+                def onSwitchStatement(self, stmt):
+                    self.called.append('switch')
 
-                self.assertFalse(expr.prefix)
-                self.assertTrue(expr.postfix)
+                    self.assertEqual('expr', stmt.tag.name)
+                    self.assertEqual(2, len(stmt.cases))
 
-                self.assertEqual(AST.Op.INC, expr.op)
-                self.assertEqual(AST.Op.ADD, expr.binop)
-                self.assertEqual(71, expr.pos)
-                self.assertEqual("i", expr.expression.name)
+                    case = stmt.cases[0]
 
-                #print "count", expr
+                    self.assertFalse(case.isDefault)
+                    self.assertTrue(case.label.isString)
+                    self.assertEqual(0, case.bodyTarget.pos)
+                    self.assertEqual(57, case.pos)
+                    self.assertEqual(1, len(case.statements))
 
-            def onCompareOperation(self, expr):
-                self.called.append('compOp')
+                    case = stmt.cases[1]
 
-                if len(self.called) == 4:
-                    self.assertEqual(AST.Op.EQ, expr.op)
-                    self.assertEqual(88, expr.pos) # i==j
-                else:
-                    self.assertEqual(AST.Op.EQ_STRICT, expr.op)
-                    self.assertEqual(106, expr.pos) # i===j
+                    self.assertTrue(case.isDefault)
+                    self.assertEqual(None, case.label)
+                    self.assertEqual(0, case.bodyTarget.pos)
+                    self.assertEqual(109, case.pos)
+                    self.assertEqual(1, len(case.statements))
 
-                self.assertEqual("i", str(expr.left))
-                self.assertEqual("j", str(expr.right))
-
-                #print "comp", expr
-
-            def onConditional(self, expr):
-                self.called.append('conditional')
-
-                self.assertEqual("(i > j)", str(expr.condition))
-                self.assertEqual("i", str(expr.thenExpr))
-                self.assertEqual("j", str(expr.elseExpr))
-
-                self.assertEqual(144, expr.thenExpr.pos)
-                self.assertEqual(146, expr.elseExpr.pos)
-
-        with OperationChecker(self) as checker:
-            self.assertEqual(['binOp', 'assign', 'countOp', 'compOp', 'compOp', 'binOp', 'conditional'], checker.test("""
-            var i, j;
-            i+j;
-            i+=1;
-            i++;
-            i==j;
-            i===j;
-            ~i;
-            i>j?i:j;
-            """))
-
-    def testSwitchStatement(self):
-        class SwitchStatementChecker(TestAST.Checker):
-            def onSwitchStatement(self, stmt):
-                self.called.append('switch')
-
-                self.assertEqual('expr', stmt.tag.name)
-                self.assertEqual(2, len(stmt.cases))
-
-                case = stmt.cases[0]
-
-                self.assertFalse(case.isDefault)
-                self.assertTrue(case.label.isString)
-                self.assertEqual(0, case.bodyTarget.pos)
-                self.assertEqual(57, case.pos)
-                self.assertEqual(1, len(case.statements))
-
-                case = stmt.cases[1]
-
-                self.assertTrue(case.isDefault)
-                self.assertEqual(None, case.label)
-                self.assertEqual(0, case.bodyTarget.pos)
-                self.assertEqual(109, case.pos)
-                self.assertEqual(1, len(case.statements))
-
-        with SwitchStatementChecker(self) as checker:
-            self.assertEqual(['switch'], checker.test("""
-            switch (expr) {
-                case 'flier':
-                    break;
-                default:
-                    break;
-            }
-            """))
+            with SwitchStatementChecker(self) as checker:
+                self.assertEqual(['switch'], checker.test("""
+                switch (expr) {
+                    case 'flier':
+                        break;
+                    default:
+                        break;
+                }
+                """))
 
 if __name__ == '__main__':
     if "-v" in sys.argv:
@@ -2745,13 +2800,9 @@ if __name__ == '__main__':
     else:
         level = logging.WARN
 
-    if "-p" in sys.argv:
-        sys.argv.remove("-p")
-        print("Press any key to continue or attach process #%d..." % os.getpid())
-        raw_input()
-
     logging.basicConfig(level=level, format='%(asctime)s %(levelname)s %(message)s')
 
-    logging.info("testing PyV8 module %s with V8 v%s", __version__, JSEngine.version)
+    logging.info("testing PyV8 module %s with V8 v%s (boost v%s)",
+                 __version__, JSEngine.v8_version, JSEngine.boost_version)
 
     unittest.main()
